@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using System;
+using System.Threading.Tasks;
 using Crossdeck.Host;
 using Crossdeck.UI.ViewModels;
 using Crossdeck.UI.Views;
@@ -14,7 +15,7 @@ sealed class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(args);
 
@@ -23,15 +24,16 @@ sealed class Program
             .AddSingleton<MainViewModel>();
 
         using var host = builder.Build();
-        host.Start();
 
-        BuildAvaloniaApp(host.Services)
+        BuildAvaloniaApp(host)
             .StartWithClassicDesktopLifetime(args);
+
+        await host.StopAsync();
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
-    public static AppBuilder BuildAvaloniaApp(IServiceProvider services)
-        => AppBuilder.Configure(() => new App(services))
+    public static AppBuilder BuildAvaloniaApp(IHost host)
+        => AppBuilder.Configure(() => new App(host))
             .UsePlatformDetect()
 #if DEBUG
             .WithDeveloperTools()

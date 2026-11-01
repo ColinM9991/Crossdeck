@@ -7,8 +7,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSimulationServices(this IServiceCollection services)
     {
-        services.AddSingleton<IActiveSim, SimSessionSupervisor>();
-        services.AddSingleton<ISimSessionSupervisor, SimSessionSupervisor>();
+        services.AddSingleton<SimSessionSupervisor>();
+        services.AddSingleton<IActiveSim>(sp => sp.GetRequiredService<SimSessionSupervisor>());
+        services.AddSingleton<ISimSessionSupervisor>(sp => sp.GetRequiredService<SimSessionSupervisor>());
         
         return services;
     }

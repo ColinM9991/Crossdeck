@@ -5,18 +5,20 @@ using Avalonia.Markup.Xaml;
 using Crossdeck.UI.ViewModels;
 using Crossdeck.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Crossdeck.UI;
 
 public partial class App : Application
 {
-    private readonly IServiceProvider _services;
-    
-    public App(IServiceProvider serviceProvider)
+    private readonly IHost _host;
+    private bool _hostStarted;
+
+    public App(IHost host)
     {
-        _services = serviceProvider;
+        _host = host;
     }
-    
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -26,10 +28,32 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = _services.GetRequiredService<MainWindow>();
-            desktop.MainWindow.DataContext = _services.GetRequiredService<MainViewModel>();
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            mainWindow.DataContext = _host.Services.GetRequiredService<MainViewModel>();
+            mainWindow.Opened += OnMainWindowOpened;
+
+            desktop.MainWindow = mainWindow;
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private async void OnMainWindowOpened(object? sender, EventArgs e)
+    {
+        if (_hostStarted)
+        {
+            return;
+        }
+
+        _hostStarted = true;
+
+        try
+        {
+            await _host.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            // Ignored
+        }
     }
 }
