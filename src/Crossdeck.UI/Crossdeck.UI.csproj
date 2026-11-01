@@ -21,10 +21,11 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj" />
-    <ProjectReference Include="..\Crossdeck.Sim.XPlane\Crossdeck.Sim.XPlane.csproj" />
+    <ProjectReference Include="..\Crossdeck.Host\Crossdeck.Host.csproj" />
   </ItemGroup>
 </Project>

@@ -17,7 +17,7 @@ namespace Crossdeck.Sim.XPlane;
 /// </remarks>
 public sealed class XPlaneApiSimProducer : ISimProducer
 {
-    private static readonly SimRef AircraftRef = new SimRef("dataref", "sim/aircraft/view/acf_relative_path");
+    private static readonly SimRef AircraftRef = new("dataref", "sim/aircraft/view/acf_relative_path");
 
     /// <summary>
     /// Channel for publishing <see cref="SimEvent"/>s.
@@ -39,14 +39,14 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         });
 
     private readonly HttpClient _httpClient;
-    private readonly string _host = "localhost";
-    private readonly int _port = 8086;
+    private readonly string _host;
+    private readonly int _port;
 
     private int _eventsConsumed;
     private int _requestId;
 
-    private SimStatus _simStatus;
-    private SessionState _sessionState;
+    private SimStatus? _simStatus;
+    private SessionState? _sessionState;
 
     private string? _aircraft;
 
@@ -54,9 +54,14 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
     private Uri _wsUri => new($"ws://{_host}:{_port}/api/v3");
 
-    public XPlaneApiSimProducer(HttpClient httpClient)
+    public XPlaneApiSimProducer(
+        IHttpClientFactory httpClientFactory,
+        XPlaneOptions options)
     {
-        _httpClient = httpClient;
+        _httpClient = httpClientFactory?.CreateClient("xplane") ??
+                      throw new ArgumentNullException(nameof(httpClientFactory));
+        _host = options.Host ?? throw new ArgumentNullException(nameof(options.Host));
+        _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
     }
 
     public IAsyncEnumerable<SimEvent> Events => Interlocked.Exchange(ref _eventsConsumed, 1) == 0
@@ -103,7 +108,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     public ValueTask DisposeAsync()
     {
         _eventsChannel.Writer.TryComplete();
-        _sessionState.Outgoing.Writer.TryComplete();
+        _sessionState?.Outgoing.Writer.TryComplete();
 
         return ValueTask.CompletedTask;
     }
@@ -124,7 +129,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
         var sendLoop = SendLoopAsync(ws, sessionState, cts.Token);
         var subscriptionLoop = SubscriptionLoopAsync(sessionState, cts.Token);
-
 
         try
         {
@@ -247,9 +251,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
 
         JsonElement httpResult;
+        var url = $"{kind}?filter[name]={key}";
         try
         {
-            var url = $"{kind}?filter[name]={key}";
             httpResult = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
         }
         catch (HttpRequestException ex)
@@ -339,8 +343,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
         public readonly ConcurrentDictionary<SimRef, long> RefToId = new();
 
-        public ConcurrentDictionary<string, long> DataRefCache = new();
+        public readonly ConcurrentDictionary<string, long> DataRefCache = new();
 
-        internal ConcurrentDictionary<string, long> CommandCache = new();
+        public readonly ConcurrentDictionary<string, long> CommandCache = new();
     }
 }
