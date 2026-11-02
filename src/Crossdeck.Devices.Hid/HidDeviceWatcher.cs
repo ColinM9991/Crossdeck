@@ -80,10 +80,17 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
                 continue;
             }
 
-            var descriptor = new DeviceDescriptor(identity, device.DevicePath, device.VendorID,
-                device.ProductID, device.GetSerialNumber(), device.GetProductName());
+            try
+            {
+                var descriptor = new DeviceDescriptor(identity, device.DevicePath, device.VendorID,
+                    device.ProductID, device.GetSerialNumber(), device.GetProductName());
 
-            localDevices[device.DevicePath] = descriptor;
+                localDevices[device.DevicePath] = descriptor;
+            }
+            catch (Exception)
+            {
+                continue;
+            }
         }
 
         return localDevices;

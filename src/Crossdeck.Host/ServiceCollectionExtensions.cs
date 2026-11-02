@@ -1,5 +1,7 @@
 ﻿using Crossdeck.Core;
+using Crossdeck.Core.Devices;
 using Crossdeck.Core.Session;
+using Crossdeck.Devices.Hid;
 using Crossdeck.Sim.XPlane;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,9 +13,11 @@ public static class ServiceCollectionExtensions
     {
         services
             .AddSimulationServices()
+            .AddHidServices()
             .AddXPlane();
-        
-        services.AddHostedService<LoopService>(sp => new LoopService(sp.GetRequiredService<ISimSessionSupervisor>()));
+
+        services.AddHostedService<LoopService<SimSessionSupervisor>>();
+        services.AddHostedService<LoopService<DeviceRegistry>>();
 
         return services;
     }
