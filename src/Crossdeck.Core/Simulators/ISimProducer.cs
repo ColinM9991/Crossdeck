@@ -8,5 +8,5 @@ public interface ISimProducer : IAsyncDisposable
 
     Task RunAsync(CancellationToken cancellationToken);
 
-    Task SendCommandAsync(SimCommand command, CancellationToken cancellationToken);
+    Task<CommandResult> SendCommandAsync(SimCommand command, CancellationToken cancellationToken);
 }

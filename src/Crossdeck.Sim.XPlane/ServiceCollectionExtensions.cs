@@ -9,8 +9,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddXPlane(this IServiceCollection services)
     {
         services.AddSingleton<ISimProducerFactory, XPlaneProducerFactory>();
-        services.AddTransient<ISimProducer, XPlaneApiSimProducer>();
         services.AddSingleton<ISimDetector, XPlaneApiSimDetector>();
+        services.AddTransient<ISimProducer, XPlaneApiSimProducer>();
 
         services.AddTransient<XPlaneOptions>(_ => new XPlaneOptions
         {

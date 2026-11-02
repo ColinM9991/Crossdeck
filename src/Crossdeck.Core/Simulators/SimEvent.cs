@@ -20,18 +20,31 @@ public abstract record SimValue
 
 public abstract record SimCommand
 {
-    public sealed record Trigger(SimRef Action);
+    public sealed record Trigger(SimRef Action) : SimCommand;
 
-    public sealed record Begin(SimRef Action);
+    public sealed record Begin(SimRef Action) : SimCommand;
 
-    public sealed record End(SimRef Action);
+    public sealed record End(SimRef Action) : SimCommand;
     
-    public sealed record Set(SimRef Target, SimValue Value);
+    public sealed record Set(SimRef Target, SimValue Value) : SimCommand;
 }
 
 public abstract record SimStatus
 {
     public sealed record Connected : SimStatus;
 
+    public sealed record Disconnected : SimStatus;
+
     public sealed record Gone : SimStatus;
+}
+
+public abstract record CommandResult
+{
+    public sealed record Success : CommandResult;
+
+    public sealed record Failure : CommandResult;
+    
+    public sealed record Unsupported : CommandResult;
+    
+    public sealed record NoConnection : CommandResult;
 }

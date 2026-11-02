@@ -20,7 +20,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private static readonly SimRef AircraftRef = new("dataref", "sim/aircraft/view/acf_relative_path");
 
     /// <summary>
-    /// Channel for publishing <see cref="SimEvent"/>s.
+    /// Internal channel for managing and distributing simulation events.
+    /// Used to handle communication of <see cref="SimEvent"/> instances
+    /// between producers and consumers within the X-Plane simulation API integration.
     /// </summary>
     private readonly Channel<SimEvent> _eventsChannel = Channel.CreateUnbounded<SimEvent>(new UnboundedChannelOptions
     {
@@ -29,7 +31,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     });
 
     /// <summary>
-    /// Channel for announcing subscription changes.
+    /// Internal channel for signaling changes in subscription states
+    /// within the X-Plane simulation API integration.
     /// </summary>
     private readonly Channel<bool> _subscriptionsChangedChannel = Channel.CreateBounded<bool>(
         new BoundedChannelOptions(1)
@@ -45,37 +48,67 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private int _eventsConsumed;
     private int _requestId;
 
-    private SimStatus? _simStatus;
     private SessionState? _sessionState;
 
     private string? _aircraft;
 
     private IReadOnlyList<SimRef> _subscriptions = new List<SimRef>();
 
-    private Uri _wsUri => new($"ws://{_host}:{_port}/api/v3");
+    private Uri WsUri => new($"ws://{_host}:{_port}/api/v3");
 
+    /// <summary>
+    /// Provides an implementation of <see cref="ISimProducer"/> using the X-Plane API for simulating events and commands.
+    /// </summary>
+    /// <remarks>
+    /// Establishes connectivity to the X-Plane simulator via its WebSocket API.
+    /// It manages event consumption and facilitates communication with the simulator.
+    /// </remarks>
     public XPlaneApiSimProducer(
         IHttpClientFactory httpClientFactory,
         XPlaneOptions options)
     {
-        _httpClient = httpClientFactory?.CreateClient("xplane") ??
+        _httpClient = httpClientFactory.CreateClient("xplane") ??
                       throw new ArgumentNullException(nameof(httpClientFactory));
         _host = options.Host ?? throw new ArgumentNullException(nameof(options.Host));
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
     }
 
+    /// <summary>
+    /// Asynchronous stream of <see cref="SimEvent"/>s.
+    /// </summary>
+    /// <remarks>
+    /// This property provides a consumable channel for simulation events. It can only be accessed by a single reader.
+    /// Future attempts to access this property after the first consumption will result in an <see cref="InvalidOperationException"/>.
+    /// </remarks>
     public IAsyncEnumerable<SimEvent> Events => Interlocked.Exchange(ref _eventsConsumed, 1) == 0
         ? _eventsChannel.Reader.ReadAllAsync()
         : throw new InvalidOperationException("Events can only be consumed by a single reader");
 
+    /// <summary>
+    /// Publishes a simulation event to the internal event channel for subscribers to process.
+    /// </summary>
+    /// <param name="e">The simulation event to be published.</param>
     private void Publish(SimEvent e) => _eventsChannel.Writer.TryWrite(e);
 
+    /// <summary>
+    /// Updates the current simulator status and publishes a corresponding status change event.
+    /// </summary>
+    /// <param name="status">The new simulator status to be set and published.</param>
     private void Publish(SimStatus status)
     {
-        _simStatus = status;
         Publish(new SimEvent.StatusChanged(status));
     }
 
+    /// <summary>
+    /// Starts the continuous operation of the simulation producer.
+    /// </summary>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests, allowing the operation to be interrupted gracefully.</param>
+    /// <returns>A task that represents the asynchronous operation of running the simulation producer.</returns>
+    /// <remarks>
+    /// This method runs a loop to maintain the connection to the simulator and retrieve simulation events
+    /// until the cancellation is requested. Upon completion, it publishes a "gone" status and completes
+    /// the events channel.
+    /// </remarks>
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         try
@@ -90,21 +123,97 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
         finally
         {
+            Publish(new SimStatus.Gone());
             _eventsChannel.Writer.TryComplete();
         }
     }
 
+    /// <summary>
+    /// Updates the active set of subscriptions for simulation events.
+    /// </summary>
+    /// <param name="subscriptions">The collection of <see cref="SimRef"/> representing the desired simulation data subscriptions.</param>
+    /// <returns>A task that represents the asynchronous operation of updating the subscriptions.</returns>
+    /// <remarks>
+    /// The method updates the simulator with the specified set of subscriptions
+    /// and broadcasts a notification to indicate that the subscriptions have changed.
+    /// </remarks>
     public async Task SetSubscriptionsAsync(IReadOnlySet<SimRef> subscriptions)
     {
         _subscriptions = [.. subscriptions];
         await _subscriptionsChangedChannel.Writer.WriteAsync(true);
     }
 
-    public Task SendCommandAsync(SimCommand command, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sends a command to the simulator.
+    /// </summary>
+    /// <param name="command">The simulator command to be sent.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the result of the command execution.</returns>
+    /// <remarks>
+    /// The 'command' in this context is not an X-Plane command.
+    /// 'Command' is a request for sending data to the simulator.
+    /// This can be a command or a dataref for X-Plane.
+    /// </remarks>
+    public async Task<CommandResult> SendCommandAsync(SimCommand command, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var session = _sessionState;
+        if (session is null) return new CommandResult.NoConnection();
+
+        return command switch
+        {
+            SimCommand.Trigger trigger => await SendCommandAsync(session, trigger.Action, true, 0, cancellationToken),
+            SimCommand.Begin begin => await SendCommandAsync(session, begin.Action, true, null, cancellationToken),
+            SimCommand.End end => await SendCommandAsync(session, end.Action, false, null, cancellationToken),
+            SimCommand.Set set => await SendDataRefAsync(session, set.Target, set.Value, cancellationToken),
+            _ => new CommandResult.Unsupported()
+        };
     }
 
+    private async Task<CommandResult> SendCommandAsync(
+        SessionState session,
+        SimRef action,
+        bool isActive,
+        int? duration,
+        CancellationToken cancellationToken)
+    {
+        var commandId = await ResolveResourceAsync(action.Key, "commands", session.CommandCache, cancellationToken);
+        if (commandId is null) return new CommandResult.Failure();
+
+        object? command = duration is { } d
+            ? new { id = commandId.Value, is_active = isActive, duration = d }
+            : new { id = commandId.Value, is_active = isActive, };
+
+        await EnqueueAsync(session, "command_set_is_active", command);
+
+        return new CommandResult.Success();
+    }
+
+    private async Task<CommandResult> SendDataRefAsync(
+        SessionState session,
+        SimRef simRef,
+        SimValue simValue,
+        CancellationToken cancellationToken)
+    {
+        var datarefId = await ResolveResourceAsync(simRef.Key, "datarefs", session.DataRefCache, cancellationToken);
+        if (datarefId is null) return new CommandResult.Failure();
+
+        object value = simValue switch
+        {
+            SimValue.Number number => number.Value,
+            SimValue.String str => Convert.ToBase64String(Encoding.UTF8.GetBytes(str.Value)),
+            _ => throw new ArgumentOutOfRangeException(nameof(simValue), simValue, null),
+        };
+
+        await EnqueueAsync(session, "dataref_set_values ",
+            new { datarefs = new[] { new { newid = datarefId.Value, value } } });
+
+        return new CommandResult.Success();
+    }
+
+    /// <summary>
+    /// Releases unmanaged resources asynchronously.
+    /// </summary>
+    /// <returns>A value task that represents the asynchronous disposal operation.</returns>
     public ValueTask DisposeAsync()
     {
         _eventsChannel.Writer.TryComplete();
@@ -116,7 +225,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private async Task RunSessionAsync(CancellationToken cancellationToken)
     {
         using var ws = new ClientWebSocket();
-        await ws.ConnectAsync(_wsUri, cancellationToken);
+        await ws.ConnectAsync(WsUri, cancellationToken);
 
         var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var sessionState = new SessionState();
@@ -144,6 +253,13 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
+    /// <summary>
+    /// Receives incoming messages from the WebSocket and dispatches them.
+    /// </summary>
+    /// <param name="ws">The WebSocket connection to receive messages from.</param>
+    /// <param name="session">The session state that manages incoming messages.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous receive loop operation.</returns>
     private async Task ReceiveLoopAsync(ClientWebSocket ws, SessionState session, CancellationToken cancellationToken)
     {
         var buffer = new ArrayBufferWriter<byte>(16 * 1024);
@@ -166,7 +282,15 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
-    private async Task SendLoopAsync(ClientWebSocket ws, SessionState session, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sends outgoing messages from the session's outgoing channel to the WebSocket.
+    /// </summary>
+    /// <param name="ws">The WebSocket connection to send messages through.</param>
+    /// <param name="session">The session state containing the outgoing message channel.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous send loop operation.</returns>
+    private static async Task SendLoopAsync(ClientWebSocket ws, SessionState session,
+        CancellationToken cancellationToken)
     {
         await foreach (var message in session.Outgoing.Reader.ReadAllAsync(cancellationToken))
         {
@@ -174,6 +298,12 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
+    /// <summary>
+    /// Manages subscription updates in response to changes in the session state and the set of active subscriptions.
+    /// </summary>
+    /// <param name="session">The session state that tracks active subscriptions and their identifiers.</param>
+    /// <param name="cancellationToken">The token used to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous subscription loop operation.</returns>
     private async Task SubscriptionLoopAsync(SessionState session, CancellationToken cancellationToken)
     {
         await foreach (var _ in _subscriptionsChangedChannel.Reader.ReadAllAsync(cancellationToken))
@@ -214,13 +344,13 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
             if (toAddIds.Count > 0)
             {
-                await Enqueue(session, "dataref_subscribe_values",
+                await EnqueueAsync(session, "dataref_subscribe_values",
                     new { datarefs = toAddIds.Select(x => new { id = x }) });
             }
 
             if (toRemoveIds.Count <= 0) continue;
             {
-                await Enqueue(session, "dataref_unsubscribe_values",
+                await EnqueueAsync(session, "dataref_unsubscribe_values",
                     new { datarefs = toRemoveIds.Select(x => new { id = x }) });
                 foreach (var id in toRemoveIds)
                 {
@@ -230,7 +360,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
-    private async Task Enqueue(SessionState session, string type, object @params)
+    private async Task EnqueueAsync(SessionState session, string type, object @params)
     {
         var request = new
             { req_id = Interlocked.Increment(ref _requestId), type, @params };
@@ -250,16 +380,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             return cachedId;
         }
 
-        JsonElement httpResult;
         var url = $"{kind}?filter[name]={key}";
-        try
-        {
-            httpResult = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
-        }
-        catch (HttpRequestException ex)
-        {
-            throw;
-        }
+        JsonElement httpResult = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
 
         var data = httpResult.GetProperty("data");
         if (data.GetArrayLength() == 0)
