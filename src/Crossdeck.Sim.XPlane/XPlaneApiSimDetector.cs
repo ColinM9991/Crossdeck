@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Diagnostics;
+using System.Net.Http.Json;
 using Crossdeck.Core;
 using Crossdeck.Core.Session;
 using Crossdeck.Sim.XPlane.Api;
@@ -7,6 +8,8 @@ namespace Crossdeck.Sim.XPlane;
 
 public class XPlaneApiSimDetector(IHttpClientFactory httpClientFactory) : ISimDetector
 {
+    public bool CanProbe() => Process.GetProcessesByName("X-Plane").Length > 0 || Process.GetProcessesByName("X-Ssytem").Length > 0;
+
     public async Task<SimDetection?> ProbeAsync(CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

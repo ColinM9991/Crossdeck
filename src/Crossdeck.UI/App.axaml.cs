@@ -31,6 +31,7 @@ public partial class App : Application
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.DataContext = _host.Services.GetRequiredService<MainViewModel>();
             mainWindow.Opened += OnMainWindowOpened;
+            mainWindow.Closed += OnMainWindowClosed;
 
             desktop.MainWindow = mainWindow;
         }
@@ -55,5 +56,12 @@ public partial class App : Application
         {
             // Ignored
         }
+    }
+    
+    private async void OnMainWindowClosed(object? sender, EventArgs e)
+    {
+        if (!_hostStarted) return;
+        _hostStarted = false;
+        await _host.StopAsync();
     }
 }

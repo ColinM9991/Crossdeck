@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using Crossdeck.Core.Simulators;
+using Crossdeck.Sim.XPlane.Api;
 
 namespace Crossdeck.Sim.XPlane;
 
@@ -227,17 +228,18 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         using var ws = new ClientWebSocket();
         await ws.ConnectAsync(WsUri, cancellationToken);
 
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var sessionState = new SessionState();
         _sessionState = sessionState;
         _aircraft = null;
 
         Publish(new SimStatus.Connected());
 
+        await WaitForInitializationAsync(cancellationToken);
         await _subscriptionsChangedChannel.Writer.WriteAsync(true, cancellationToken);
 
-        var sendLoop = SendLoopAsync(ws, sessionState, cts.Token);
-        var subscriptionLoop = SubscriptionLoopAsync(sessionState, cts.Token);
+        var sendLoop = RunChildLoopAsync(SendLoopAsync(ws, sessionState, cts.Token), cts);
+        var subscriptionLoop = RunChildLoopAsync(SubscriptionLoopAsync(sessionState, cts.Token), cts);
 
         try
         {
@@ -249,7 +251,23 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
         finally
         {
+            await cts.CancelAsync();
             await Task.WhenAll(sendLoop, subscriptionLoop);
+        }
+    }
+
+    private static async Task RunChildLoopAsync(Task loop, CancellationTokenSource cts)
+    {
+        try
+        {
+            await loop;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            await cts.CancelAsync();
         }
     }
 
@@ -452,6 +470,36 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         JsonValueKind.Number => new SimValue.Number(value.GetDouble()),
         _ => throw new ArgumentOutOfRangeException(nameof(value), value.ValueKind.ToString())
     };
+
+    /// <summary>
+    /// Waits for the X-Plane simulator initialization to complete by polling the data reference count.
+    /// </summary>
+    /// <remarks>
+    /// Continuously checks the simulator's data reference count until it becomes non-zero,
+    /// indicating that the simulator has completed its initialization process.
+    /// This is required to ensure the producer can properly communicate with the simulator.
+    /// </remarks>
+    /// <returns>A task that represents the asynchronous wait operation.</returns>
+    private async Task WaitForInitializationAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            try
+            {
+                var countResponse =
+                    await _httpClient.GetFromJsonAsync<CountResponse>("datarefs/count", cancellationToken);
+                if (countResponse is not null && countResponse.Data != 0)
+                {
+                    return;
+                }
+            }
+            catch (HttpRequestException)
+            {
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+        }
+    }
 
     private sealed class SessionState
     {

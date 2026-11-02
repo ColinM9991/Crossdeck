@@ -58,6 +58,7 @@ public sealed class SimSessionSupervisor : ISimSessionSupervisor
     {
         foreach (var detector in _detectors)
         {
+            if (!detector.CanProbe()) continue;
             var detection = await detector.ProbeAsync(cancellationToken);
             if (detection is not null)
             {

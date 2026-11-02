@@ -16,6 +16,8 @@ public partial class MainViewModel : ViewModelBase
     
     [ObservableProperty] public partial string? Greeting { get; set; } = "Welcome to Avalonia!";
 
+    [ObservableProperty] public partial string? Status { get; set; } = "Disconnected";
+
     public async void OnSimChanged(object? sender, ActiveSimChangedEventArgs args)
     {
         if (args.Current is null) return;
@@ -24,11 +26,21 @@ public partial class MainViewModel : ViewModelBase
         
         await foreach (var simEvent in current.Events)
         {
-            Greeting = simEvent switch
+            switch (simEvent)
             {
-                SimEvent.AircraftChanged path => path.AircraftId,
-                _ => Greeting,
-            };
+                case SimEvent.AircraftChanged aircraftChanged:
+                    Greeting = aircraftChanged.AircraftId;
+                    break;
+                case SimEvent.StatusChanged status:
+                    Status = status.Status switch
+                    {
+                        SimStatus.Connected => "Connected",
+                        SimStatus.Disconnected => "Disconnected",
+                        SimStatus.Gone => "Gone",
+                        _ => "Invalid"
+                    };
+                    break;
+            }
         }
     }
 }
