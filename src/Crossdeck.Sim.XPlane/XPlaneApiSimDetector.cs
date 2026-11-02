@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using Crossdeck.Core;
 using Crossdeck.Core.Session;
+using Crossdeck.Sim.XPlane.Api;
 
 namespace Crossdeck.Sim.XPlane;
 
@@ -15,7 +16,7 @@ public class XPlaneApiSimDetector(IHttpClientFactory httpClientFactory) : ISimDe
         try
         {
             var capabilities = await client
-                .GetFromJsonAsync<XPlaneCapabilities?>("/api/capabilities", timeout.Token);
+                .GetFromJsonAsync<Capabilities?>("/api/capabilities", timeout.Token);
 
             return capabilities is null ? null : new SimDetection(Simulator.XPlane);
         } 

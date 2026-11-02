@@ -7,11 +7,28 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj" />
+        <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14"/>
+        <PackageReference Include="NSwag.ApiDescription.Client" Version="14.7.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0"/>
     </ItemGroup>
-
+    
+    <PropertyGroup>
+        <XPlaneExcludedTypes>$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\OpenApi\excluded-types.txt').Trim()), '\s+', ','))</XPlaneExcludedTypes>
+    </PropertyGroup>
+    <ItemGroup>
+        <OpenApiReference Include="OpenApi\openapi.yml">
+            <ClassName>XPlaneClient</ClassName>
+            <CodeGenerator>NSwagCSharp</CodeGenerator>
+            <OutputPath>XPlaneModels.g.cs</OutputPath>
+            <Namespace>Crossdeck.Sim.XPlane.Api</Namespace>
+            <Options>/JsonLibrary:SystemTextJson /GenerateClientClasses:false /ExcludedTypeNames:$(XPlaneExcludedTypes)</Options>
+        </OpenApiReference>
+    </ItemGroup>
 </Project>

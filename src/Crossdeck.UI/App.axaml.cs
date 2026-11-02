@@ -51,7 +51,7 @@ public partial class App : Application
         {
             await _host.StartAsync();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Ignored
         }

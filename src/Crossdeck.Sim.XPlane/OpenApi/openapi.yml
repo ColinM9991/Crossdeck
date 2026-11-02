@@ -1,0 +1,1508 @@
+openapi: 3.1.0
+ 
+info:
+  title: X-Plane Local Web API
+  version: 3.0.0
+  summary: REST and WebSocket API exposed by X-Plane's built-in web server.
+  description: |
+    Unofficial OpenAPI description of the X-Plane local Web API, derived from:
+ 
+    - https://developer.x-plane.com/article/x-plane-web-api/
+    - https://developer.x-plane.com/article/flight-initialization-api/
+ 
+    The built-in web server is available from X-Plane 12.1.1. API versions:
+ 
+    - **v1** (12.1.1+): datarefs (REST), dataref subscriptions and writes (WebSocket)
+    - **v2** (12.1.4+): capabilities endpoint, commands (REST and WebSocket)
+    - **v3** (12.4.0+): flight initialization (REST)
+ 
+    This document describes the **v3** surface, which is a superset of v1 and v2.
+    Paths are under `/api/v3`, except `/api/capabilities`, which is not versioned.
+ 
+    ## WebSocket
+ 
+    The WebSocket endpoint is `ws://localhost:{port}/api/v3` and shares the REST port.
+    OpenAPI cannot describe WebSocket protocols natively, so the `GET /api/v3`
+    upgrade operation below is a documentation vehicle: its `requestBody` documents
+    the JSON messages a client may send over the socket and its `101` response
+    documents the JSON messages the server sends back. Both are discriminated
+    unions on the `type` field (`WebSocketClientMessage`, `WebSocketServerMessage`).
+ 
+    ## Conventions
+ 
+    - REST requests use `Accept: application/json` and `Content-Type: application/json`.
+    - Successful REST responses are `200 OK` with `{ "data": ... }`, or an empty body
+      for operations that return nothing.
+    - Errors return the matching HTTP status with an `ErrorResponse` body.
+    - If "Disable Incoming Traffic" is set in X-Plane's network settings, every
+      REST method returns `403 Forbidden`.
+    - Dataref and command ids are only stable within one X-Plane session. Do not
+      persist them across sessions.
+    - The server currently listens on the local machine only and is unauthenticated.
+ 
+security: []
+ 
+servers:
+  - url: http://localhost:{port}
+    description: Local X-Plane instance
+    variables:
+      port:
+        default: "8086"
+        description: Change with the `--web_server_port=` command-line flag.
+ 
+tags:
+  - name: Meta
+    description: Server and version information.
+  - name: Datarefs
+    description: Read and write simulator datarefs.
+  - name: Commands
+    description: List and activate simulator commands (v2+).
+  - name: Flight
+    description: Start or update a flight (v3+).
+  - name: WebSocket
+    description: Streaming interface for datarefs and commands.
+ 
+paths:
+  /api/capabilities:
+    get:
+      tags: [Meta]
+      operationId: getCapabilities
+      summary: Get supported API versions and X-Plane version
+      description: |
+        Available since v2. This endpoint is **not versioned**: the path starts
+        with `/api`, not `/api/v1`, `/api/v2` or `/api/v3`.
+      responses:
+        "200":
+          description: Capabilities of the running simulator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capabilities"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+ 
+  /api/v3/datarefs:
+    get:
+      tags: [Datarefs]
+      operationId: listDatarefs
+      summary: List datarefs
+      description: |
+        Returns all registered datarefs (built-in and third-party). Until the first
+        flight is loaded there are no datarefs, so the list is empty and filtering
+        by name returns `404 invalid_dataref_name`.
+ 
+        When filtering by name, results are sorted by name, duplicates are removed,
+        and `start` / `limit` apply to that sorted list.
+      parameters:
+        - $ref: "#/components/parameters/FilterName"
+        - $ref: "#/components/parameters/Start"
+        - $ref: "#/components/parameters/Limit"
+        - name: fields
+          in: query
+          required: false
+          description: |
+            Comma-separated list of fields to return per record, or `all` (default).
+            Currently available fields: `id`, `name`, `value_type`.
+          schema:
+            type: string
+            default: all
+            examples: ["id,name"]
+      responses:
+        "200":
+          description: Matching datarefs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatarefListResponse"
+        "400":
+          description: |
+            Error codes: `start_out_of_range`, `limit_out_of_range`, `invalid_field`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Error code: `invalid_dataref_name`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+ 
+  /api/v3/datarefs/count:
+    get:
+      tags: [Datarefs]
+      operationId: getDatarefCount
+      summary: Get dataref count
+      description: Number of registered datarefs. Zero until the first flight is loaded.
+      responses:
+        "200":
+          description: The dataref count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+ 
+  /api/v3/datarefs/{id}/value:
+    parameters:
+      - $ref: "#/components/parameters/DatarefId"
+    get:
+      tags: [Datarefs]
+      operationId: getDatarefValue
+      summary: Get a dataref value
+      description: |
+        Returns the current value of a dataref, or of one element of an array dataref.
+        Array datarefs return an array of numbers, `data` datarefs return a base64
+        string. If `index` is supplied the result is a single-item array.
+      parameters:
+        - name: index
+          in: query
+          required: false
+          description: Element index, for array datarefs.
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: The dataref value.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatarefValueResponse"
+        "400":
+          description: "Error codes: `index_out_of_range`, `not_an_array`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Error code: `invalid_dataref_id`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags: [Datarefs]
+      operationId: setDatarefValue
+      summary: Set a dataref value
+      description: |
+        For array datarefs you can set one element (with `index`) or the whole array
+        at once, in which case every element must be provided.
+      parameters:
+        - name: index
+          in: query
+          required: false
+          description: Element index to write, for array datarefs.
+          schema:
+            type: integer
+            minimum: 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatarefValueRequest"
+      responses:
+        "200":
+          description: Value written. Empty response.
+        "400":
+          description: |
+            Error codes: `index_out_of_range`, `not_an_array`, `incompatible_data`,
+            `invalid_body`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: |
+            Error code `dataref_is_readonly`, or an empty/`403` response when incoming
+            traffic is disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Error code: `invalid_dataref_id`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+ 
+  /api/v3/commands:
+    get:
+      tags: [Commands]
+      operationId: listCommands
+      summary: List commands
+      description: |
+        Available since v2. Returns all registered commands (built-in and third-party).
+        Until the first flight is loaded there are no commands, so the list is empty
+        and filtering by name returns `404 invalid_command_name`.
+ 
+        When filtering by name, results are sorted by name, duplicates are removed,
+        and `start` / `limit` apply to that sorted list.
+      parameters:
+        - $ref: "#/components/parameters/FilterName"
+        - $ref: "#/components/parameters/Start"
+        - $ref: "#/components/parameters/Limit"
+        - name: fields
+          in: query
+          required: false
+          description: |
+            Comma-separated list of fields to return per record, or `all` (default).
+            Available fields: `id`, `name`, `description`.
+          schema:
+            type: string
+            default: all
+            examples: ["id,name"]
+      responses:
+        "200":
+          description: Matching commands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommandListResponse"
+        "400":
+          description: |
+            Error codes: `start_out_of_range`, `limit_out_of_range`, `invalid_field`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Error code: `invalid_command_name`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+ 
+  /api/v3/commands/count:
+    get:
+      tags: [Commands]
+      operationId: getCommandCount
+      summary: Get command count
+      description: Available since v2. Number of registered commands. Zero until the first flight is loaded.
+      responses:
+        "200":
+          description: The command count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+ 
+  /api/v3/command/{id}/activate:
+    post:
+      tags: [Commands]
+      operationId: activateCommand
+      summary: Activate a command for a fixed duration
+      description: |
+        Available since v2. Fire-and-forget activation: the command is held active
+        for `duration` seconds and then released. A duration of `0` triggers an
+        immediate press and release.
+ 
+        Not intended for command up/down sequences (for example connecting hardware);
+        use the WebSocket `command_set_is_active` message for that.
+ 
+        Each request keeps its own duration, so overlapping activations of the same
+        command produce unpredictable results. Do not send overlapping invocations.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id of the command to activate. Id `0` is a placeholder and is rejected with `invalid_command_id`.
+          schema:
+            $ref: "#/components/schemas/CommandId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateCommandRequest"
+      responses:
+        "200":
+          description: Command activated. Empty response.
+        "400":
+          description: |
+            Error codes: `invalid_body`, `duration_out_of_range`, `duration_missing`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Error code: `invalid_command_id`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+ 
+  /api/v3/flight:
+    post:
+      tags: [Flight]
+      operationId: startFlight
+      summary: Start a new flight
+      description: |
+        Available since v3 (X-Plane 12.4.0). Requires an `aircraft` and exactly one
+        start location key (`runway_start`, `ramp_start`, `lle_ground_start`,
+        `lle_air_start` or `boat_start`). All other keys are optional.
+ 
+        The server also accepts the init structure sent directly, without the
+        `data` wrapper. This specification models the wrapped form.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartFlightRequest"
+      responses:
+        "200":
+          description: Flight started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlightResult"
+        "400":
+          description: |
+            Error codes: `json_invalid`, `missing_aircraft`, `missing_livery`,
+            `missing_airport`, `missing_ramp`, `missing_runway`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    patch:
+      tags: [Flight]
+      operationId: updateFlight
+      summary: Update the current flight
+      description: |
+        Available since v3 (X-Plane 12.4.0). All keys are optional; omitted keys leave
+        the corresponding parameters unchanged. The start location and aircraft
+        cannot be changed during an update.
+ 
+        The server also accepts the init structure sent directly, without the
+        `data` wrapper. This specification models the wrapped form.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFlightRequest"
+      responses:
+        "200":
+          description: Flight updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlightResult"
+        "400":
+          description: |
+            Error codes: `json_invalid` (also when no flight is in progress or when
+            changing the start location or aircraft), `missing_aircraft`,
+            `missing_livery`, `missing_airport`, `missing_ramp`, `missing_runway`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+ 
+  /api/v3:
+    get:
+      tags: [WebSocket]
+      operationId: connectWebSocket
+      summary: WebSocket upgrade (message reference)
+      description: |
+        Upgrade to a WebSocket connection (`ws://localhost:{port}/api/v3`).
+ 
+        This operation exists to document the WebSocket message protocol. The
+        `requestBody` is **not** sent with the HTTP upgrade request: it describes the
+        messages the client sends over the socket afterwards. The `101` response
+        describes the messages the server sends.
+ 
+        Every client message is answered with a `result` message carrying the same
+        `req_id`. Datarefs and commands are then streamed via `dataref_update_values`
+        and `command_update_is_active` messages.
+ 
+        Subscription and write operations are not atomic per item: a failed
+        `*_subscribe_*` message fails every item in it, while `dataref_set_values` and
+        `command_set_is_active` produce one error `result` per failed item.
+      requestBody:
+        required: false
+        description: Messages sent by the client over the open socket.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebSocketClientMessage"
+      responses:
+        "101":
+          description: Switching Protocols. Messages the server sends over the open socket.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebSocketServerMessage"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+ 
+components:
+  parameters:
+    DatarefId:
+      name: id
+      in: path
+      required: true
+      description: Dataref id, valid for the current simulator session only.
+      schema:
+        $ref: "#/components/schemas/DatarefId"
+    FilterName:
+      name: filter[name]
+      in: query
+      required: false
+      description: |
+        Exact-match filter on `name`. Repeat the parameter to match any of several
+        names (OR). `name` is currently the only supported filter field.
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+    Start:
+      name: start
+      in: query
+      required: false
+      description: Index to start from, inclusive (pagination).
+      schema:
+        type: integer
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of results to return (pagination).
+      schema:
+        type: integer
+        minimum: 0
+ 
+  responses:
+    Forbidden:
+      description: |
+        Returned for every method when "Disable Incoming Traffic" is enabled in
+        X-Plane's network settings.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+ 
+  schemas:
+    ErrorCode:
+      type: string
+      description: |
+        Machine-readable error code. `success` is only used by the flight endpoints'
+        success payload.
+      enum:
+        - success
+        - index_out_of_range
+        - not_an_array
+        - incompatible_data
+        - invalid_body
+        - dataref_is_readonly
+        - invalid_dataref_id
+        - invalid_dataref_name
+        - invalid_command_id
+        - invalid_command_name
+        - start_out_of_range
+        - limit_out_of_range
+        - invalid_field
+        - duration_out_of_range
+        - duration_missing
+        - json_invalid
+        - missing_aircraft
+        - missing_livery
+        - missing_airport
+        - missing_ramp
+        - missing_runway
+        - invalid_req_id
+        - invalid_type
+ 
+    ErrorResponse:
+      type: object
+      required: [error_code, error_message]
+      properties:
+        error_code:
+          $ref: "#/components/schemas/ErrorCode"
+        error_message:
+          type: string
+          description: Human-readable message.
+          examples: ["Index is out of range"]
+ 
+    CountResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: integer
+          minimum: 0
+          examples: [9554]
+ 
+    Capabilities:
+      type: object
+      required: [api, x-plane]
+      properties:
+        api:
+          type: object
+          required: [versions]
+          properties:
+            versions:
+              type: array
+              items:
+                type: string
+              examples: [["v1", "v2", "v3"]]
+        x-plane:
+          type: object
+          required: [version]
+          properties:
+            version:
+              type: string
+              examples: ["12.4.0"]
+ 
+    DatarefId:
+      type: integer
+      format: int64
+      description: Session-scoped dataref id. Not stable across X-Plane restarts.
+      examples: [1253033683792]
+ 
+    DatarefValueType:
+      type: string
+      enum: [float, double, int, int_array, float_array, data]
+ 
+    Dataref:
+      type: object
+      required: [id, name, value_type]
+      properties:
+        id:
+          $ref: "#/components/schemas/DatarefId"
+        name:
+          type: string
+          description: Fully qualified dataref name.
+          examples: ["sim/cockpit2/gauges/actuators/radio_altimeter_bug_ft_pilot"]
+        value_type:
+          $ref: "#/components/schemas/DatarefValueType"
+ 
+    DatarefListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dataref"
+ 
+    DatarefValue:
+      description: |
+        A dataref value: a number for scalar datarefs, an array of numbers for array
+        datarefs, or a base64-encoded string for `data` datarefs. Encode `data`
+        values before sending and decode them when receiving.
+      oneOf:
+        - type: number
+        - type: array
+          items:
+            type: number
+        - type: string
+          contentEncoding: base64
+ 
+    DatarefValueResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/DatarefValue"
+ 
+    DatarefValueRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/DatarefValue"
+ 
+    CommandId:
+      type: integer
+      format: int64
+      description: |
+        Session-scoped command id. Not stable across X-Plane restarts. Id `0` is a
+        placeholder that appears in the list but cannot be activated or subscribed to.
+      minimum: 0
+      examples: [2991]
+ 
+    Command:
+      type: object
+      required: [id, name, description]
+      properties:
+        id:
+          $ref: "#/components/schemas/CommandId"
+        name:
+          type: string
+          description: Fully qualified command name.
+          examples: ["sim/developer/toggle_autopilot_constants"]
+        description:
+          type: string
+          examples: ["Toggle the autopilot constants window."]
+ 
+    CommandListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Command"
+ 
+    ActivateCommandRequest:
+      type: object
+      required: [duration]
+      properties:
+        duration:
+          type: number
+          minimum: 0
+          maximum: 10
+          description: |
+            Seconds to hold the command active. `0` presses and releases immediately.
+            Maximum 10 seconds.
+          examples: [0.5]
+ 
+    FlightResult:
+      type: object
+      required: [error_code]
+      properties:
+        error_code:
+          $ref: "#/components/schemas/ErrorCode"
+          description: Always `success` on a 200 response.
+ 
+    StartFlightRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/FlightStart"
+ 
+    UpdateFlightRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/FlightUpdate"
+ 
+    FlightStart:
+      description: |
+        Init structure for a new flight. `aircraft` is required, and exactly one of
+        `runway_start`, `ramp_start`, `lle_ground_start`, `lle_air_start` or
+        `boat_start` must be supplied (having none or several is invalid).
+      allOf:
+        - $ref: "#/components/schemas/FlightUpdate"
+        - type: object
+          required: [aircraft]
+          properties:
+            aircraft:
+              $ref: "#/components/schemas/AircraftSpec"
+            runway_start:
+              $ref: "#/components/schemas/RunwayStart"
+            ramp_start:
+              $ref: "#/components/schemas/RampStart"
+            lle_ground_start:
+              $ref: "#/components/schemas/LleGroundStart"
+            lle_air_start:
+              $ref: "#/components/schemas/LleAirStart"
+            boat_start:
+              $ref: "#/components/schemas/BoatStart"
+ 
+    FlightUpdate:
+      description: |
+        Aspects of a flight that can be set at start or changed during an update. All
+        keys are optional.
+ 
+        Time: supply at most one of `use_system_time`, `local_time`, `gmt_time` or
+        `time_enum`.
+      type: object
+      properties:
+        use_system_time:
+          type: boolean
+        local_time:
+          $ref: "#/components/schemas/DayTime"
+        gmt_time:
+          $ref: "#/components/schemas/DayTime"
+        time_enum:
+          $ref: "#/components/schemas/TimePreset"
+        weather:
+          $ref: "#/components/schemas/Weather"
+        weight:
+          $ref: "#/components/schemas/Weight"
+        engine_status:
+          $ref: "#/components/schemas/EngineStatus"
+        weapons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Weapon"
+        failures:
+          $ref: "#/components/schemas/Failures"
+        ai_aircraft:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiAircraft"
+        formation_aircraft:
+          $ref: "#/components/schemas/AircraftSpec"
+        incursion:
+          $ref: "#/components/schemas/Incursion"
+ 
+    AircraftSpec:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: Path to the `.acf` file, relative to the X-Plane root directory.
+          examples: ["Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf"]
+        livery:
+          type: string
+          description: Name of a livery subdirectory in the aircraft's liveries folder.
+          examples: ["old_style"]
+    RunwayStart:
+      type: object
+      description: |
+        Start on a runway. `final_distance_in_nautical_miles` and `tow_type` cannot be
+        used together.
+      required: [airport_id, runway]
+      properties:
+        airport_id:
+          type: string
+          examples: ["KBOS"]
+        runway:
+          type: string
+          examples: ["22L"]
+        final_distance_in_nautical_miles:
+          type: number
+          description: If present, start on final approach at this distance instead of the threshold.
+        tow_type:
+          type: string
+          enum: [tug, winch, none]
+          default: none
+        tow_aircraft:
+          $ref: "#/components/schemas/AircraftSpec"
+          description: Tow plane. Required when `tow_type` is `tug`.
+ 
+    RampStart:
+      type: object
+      required: [airport_id, ramp]
+      properties:
+        airport_id:
+          type: string
+          examples: ["KBOS"]
+        ramp:
+          type: string
+          description: Name of the ramp start location at the airport.
+          examples: ["B3"]
+ 
+    LleGroundStart:
+      type: object
+      required: [latitude, longitude, heading_true]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        heading_true:
+          type: number
+          minimum: 0
+          maximum: 360
+ 
+    SpeedPreset:
+      type: string
+      enum: [short_field_approach, normal_approach, cruise]
+ 
+    LleAirStart:
+      type: object
+      description: |
+        Start in the air. Supply exactly one of `speed_in_meters_per_second` or
+        `speed_enum`.
+      required: [latitude, longitude, elevation_in_meters, heading_true]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        elevation_in_meters:
+          type: number
+          description: Elevation MSL.
+        heading_true:
+          type: number
+          minimum: 0
+          maximum: 360
+        speed_in_meters_per_second:
+          type: number
+        speed_enum:
+          $ref: "#/components/schemas/SpeedPreset"
+        pitch_in_degrees:
+          type: number
+          default: 0
+ 
+    LatLon:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+ 
+    BoatStart:
+      type: object
+      description: |
+        Start on a boat. `start_position` is required for carrier deck starts and is
+        not allowed together with `final_distance_in_nautical_miles`.
+      required: [boat_name]
+      properties:
+        boat_name:
+          type: string
+          enum: [carrier, frigate]
+        start_position:
+          type: string
+          enum: [catapult_1, catapult_2, catapult_3, catapult_4, deck]
+        boat_location:
+          $ref: "#/components/schemas/LatLon"
+        final_distance_in_nautical_miles:
+          type: number
+ 
+    SlungLoad:
+      type: object
+      required: [path_to_obj, weight_in_kilograms]
+      properties:
+        path_to_obj:
+          type: string
+        weight_in_kilograms:
+          type: number
+ 
+    Weight:
+      type: object
+      required: [payload_weight_in_kilograms, fueltank_weight_in_kilograms]
+      properties:
+        payload_weight_in_kilograms:
+          type: array
+          description: Up to 9 payload station weights.
+          maxItems: 9
+          items:
+            type: number
+        fueltank_weight_in_kilograms:
+          type: array
+          description: 1 to 9 fuel tank weights.
+          minItems: 1
+          maxItems: 9
+          items:
+            type: number
+        jato_weight_in_kilograms:
+          type: number
+        slung_load:
+          $ref: "#/components/schemas/SlungLoad"
+        jettisonable_weight_in_kilograms:
+          type: number
+        shiftable_weight_in_kilograms:
+          type: number
+        deice_holdover_time_in_minutes:
+          type: number
+        oxygen_pressure_in_millibars:
+          type: number
+        deice_fluid_in_liters:
+          type: number
+        external_fueltank_weight_in_kilograms:
+          type: array
+          items:
+            type: number
+ 
+    EngineStatus:
+      type: object
+      required: [all_engines]
+      properties:
+        all_engines:
+          type: object
+          required: [running]
+          properties:
+            running:
+              type: boolean
+ 
+    Weapon:
+      type: object
+      required: [index, filename]
+      properties:
+        index:
+          type: integer
+          description: Hardpoint index from Plane Maker.
+        filename:
+          type: string
+          description: Name of the `.wpn` file (aircraft folder searched first, then global).
+          examples: ["AIM9-Sidewinder.wpn"]
+ 
+    FailureStatus:
+      type: string
+      enum:
+        - always_work
+        - fail_mean_time_in_hours
+        - fail_exact_time_in_hours
+        - fail_at_speed_in_knots
+        - fail_at_altitude_in_feet
+        - fail_at_command_trigger
+        - inoperative
+ 
+    OperationFailure:
+      type: object
+      required: [name, status]
+      properties:
+        name:
+          type: string
+          description: Failure system name.
+          examples: ["fuel_water"]
+        status:
+          $ref: "#/components/schemas/FailureStatus"
+        value:
+          type: number
+          description: Required for time, speed and altitude failure types.
+ 
+    Failures:
+      type: object
+      properties:
+        fix_everything:
+          type: boolean
+          default: true
+          description: Fix all systems before applying the new failures.
+        mean_time_between_failures_in_hours:
+          type: number
+          description: MTBF for random failures. `0` disables.
+        operation_failures:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationFailure"
+ 
+    AiMission:
+      type: string
+      enum: [atc, combat_team_red, combat_team_blue, combat_team_green, combat_team_gold]
+ 
+    AiAircraft:
+      type: object
+      properties:
+        aircraft:
+          $ref: "#/components/schemas/AircraftSpec"
+        mission:
+          $ref: "#/components/schemas/AiMission"
+ 
+    IncursionType:
+      type: string
+      enum: [flight_incursion, runway_incursion_arm, runway_incursion_execute, clear_incursion]
+ 
+    Incursion:
+      type: object
+      properties:
+        aircraft:
+          $ref: "#/components/schemas/AircraftSpec"
+        type:
+          $ref: "#/components/schemas/IncursionType"
+ 
+    DayTime:
+      type: object
+      required: [day_of_year, time_in_24_hours]
+      properties:
+        day_of_year:
+          type: integer
+          description: Day of year, where `0` is January 1.
+        time_in_24_hours:
+          type: number
+          description: Time of day in hours, e.g. `13.5` is 1:30 PM.
+ 
+    TimePreset:
+      type: string
+      enum: [day, sunset, evening, night]
+ 
+    Weather:
+      description: |
+        Either the string `use_real_weather`, or a weather scenario object. Supply
+        exactly one weather configuration.
+      oneOf:
+        - type: string
+          enum: [use_real_weather]
+        - $ref: "#/components/schemas/WeatherScenario"
+ 
+    WeatherPreset:
+      type: string
+      enum:
+        - vfr_few_clouds
+        - vfr_scattered
+        - vfr_broken
+        - marginal_vfr_overcast
+        - ifr_non_precision
+        - ifr_precision
+        - convective
+        - large_cell_thunderstorm
+ 
+    TerrainState:
+      type: string
+      enum:
+        - dry
+        - lightly_wet
+        - medium_wet
+        - very_wet
+        - lightly_puddly
+        - medium_puddly
+        - very_puddly
+        - lightly_snowy
+        - medium_snowy
+        - very_snowy
+        - lightly_icy
+        - medium_icy
+        - very_icy
+        - lightly_snowy_and_icy
+        - medium_snowy_and_icy
+        - very_snowy_and_icy
+ 
+    WeatherEvolution:
+      type: string
+      enum:
+        - rapidly_improving
+        - improving
+        - gradually_improving
+        - static
+        - gradually_deteriorating
+        - deteriorating
+        - rapidly_deteriorating
+ 
+    WeatherScenario:
+      type: object
+      required:
+        - definition
+        - vertical_speed_in_thermal_in_feet_per_minute
+        - wave_height_in_meters
+        - wave_direction_in_degrees
+        - terrain_state
+        - variation_across_region_percentage
+        - evolution_over_time_enum
+      properties:
+        definition:
+          description: A preset name or a custom weather definition.
+          oneOf:
+            - $ref: "#/components/schemas/WeatherPreset"
+            - $ref: "#/components/schemas/WeatherDefinition"
+        vertical_speed_in_thermal_in_feet_per_minute:
+          type: number
+        wave_height_in_meters:
+          type: number
+        wave_direction_in_degrees:
+          type: number
+          description: True heading.
+        terrain_state:
+          $ref: "#/components/schemas/TerrainState"
+        variation_across_region_percentage:
+          type: number
+        evolution_over_time_enum:
+          $ref: "#/components/schemas/WeatherEvolution"
+ 
+    CloudType:
+      type: string
+      enum: [cirrus, stratus, cumulus, cumulunimbus]
+ 
+    CloudLayer:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/CloudType"
+        cover_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+        bases_in_feet_msl:
+          type: number
+        tops_in_feet_msl:
+          type: number
+ 
+    WindLayer:
+      type: object
+      required: [altitude_in_feet_msl, speed_in_knots, direction_in_degrees_true]
+      properties:
+        altitude_in_feet_msl:
+          type: number
+        speed_in_knots:
+          type: number
+        direction_in_degrees_true:
+          type: number
+        gust_increase_in_knots:
+          type: number
+        shear_in_degrees:
+          type: number
+        turbulence_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+ 
+    WeatherDefinition:
+      type: object
+      required:
+        - latitude_in_degrees
+        - longitude_in_degrees
+        - elevation_in_meters
+        - visibility_in_kilometers
+      properties:
+        latitude_in_degrees:
+          type: number
+        longitude_in_degrees:
+          type: number
+        elevation_in_meters:
+          type: number
+        visibility_in_kilometers:
+          type: number
+        temperature_in_degrees_celsius:
+          type: number
+          description: Defaults to ISA (15 degrees C at MSL).
+        altimeter_setting_in_hpa:
+          type: number
+          default: 1013.25
+        precipitation_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0
+        clouds:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/CloudLayer"
+        wind:
+          type: array
+          maxItems: 13
+          items:
+            $ref: "#/components/schemas/WindLayer"
+ 
+    WebSocketRequestId:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 2147483647
+      description: |
+        Unique, non-recyclable request id. The server does not check uniqueness. The
+        matching `result` message carries the same id. A missing or invalid id yields
+        an `invalid_req_id` error `result` without a `req_id`.
+ 
+    WebSocketClientMessage:
+      description: Any message a client may send. Discriminated by `type`. An unknown `type` yields an `invalid_type` error.
+      oneOf:
+        - $ref: "#/components/schemas/DatarefSubscribeValuesRequest"
+        - $ref: "#/components/schemas/DatarefUnsubscribeValuesRequest"
+        - $ref: "#/components/schemas/DatarefSetValuesRequest"
+        - $ref: "#/components/schemas/CommandSubscribeIsActiveRequest"
+        - $ref: "#/components/schemas/CommandUnsubscribeIsActiveRequest"
+        - $ref: "#/components/schemas/CommandSetIsActiveRequest"
+      discriminator:
+        propertyName: type
+        mapping:
+          dataref_subscribe_values: "#/components/schemas/DatarefSubscribeValuesRequest"
+          dataref_unsubscribe_values: "#/components/schemas/DatarefUnsubscribeValuesRequest"
+          dataref_set_values: "#/components/schemas/DatarefSetValuesRequest"
+          command_subscribe_is_active: "#/components/schemas/CommandSubscribeIsActiveRequest"
+          command_unsubscribe_is_active: "#/components/schemas/CommandUnsubscribeIsActiveRequest"
+          command_set_is_active: "#/components/schemas/CommandSetIsActiveRequest"
+ 
+    DatarefIndex:
+      description: A single array index or a list of array indices.
+      oneOf:
+        - type: integer
+          minimum: 0
+        - type: array
+          items:
+            type: integer
+            minimum: 0
+ 
+    DatarefSubscription:
+      type: object
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/DatarefId"
+        index:
+          $ref: "#/components/schemas/DatarefIndex"
+ 
+    DatarefSubscribeValuesRequest:
+      type: object
+      description: |
+        Adds datarefs to the subscription list (idempotent). Updates are then pushed
+        as `dataref_update_values` messages (currently at 10 Hz). A failed
+        subscription fails every dataref in the message.
+ 
+        When subscribing to specific indices, values come back in index order with no
+        sparse arrays: indices `[1, 5, 7]` yield a 3-item array. Prefer a single
+        index, a contiguous range, or all elements; to change, unsubscribe and
+        resubscribe.
+ 
+        Error codes: `index_out_of_range`, `not_an_array`, `invalid_dataref_id`.
+      required: [req_id, type, params]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [dataref_subscribe_values]
+        params:
+          type: object
+          required: [datarefs]
+          properties:
+            datarefs:
+              type: array
+              items:
+                $ref: "#/components/schemas/DatarefSubscription"
+ 
+    DatarefUnsubscribeValuesRequest:
+      type: object
+      description: |
+        Removes datarefs from the subscription list (idempotent; unknown entries are
+        ignored). Send the string `all` instead of an array to remove every
+        subscription.
+ 
+        Error codes: `index_out_of_range`, `not_an_array`, `invalid_dataref_id`.
+      required: [req_id, type, params]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [dataref_unsubscribe_values]
+        params:
+          type: object
+          required: [datarefs]
+          properties:
+            datarefs:
+              oneOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/DatarefSubscription"
+                - type: string
+                  enum: [all]
+ 
+    DatarefSetValue:
+      type: object
+      required: [id, value]
+      properties:
+        id:
+          $ref: "#/components/schemas/DatarefId"
+        value:
+          $ref: "#/components/schemas/DatarefValue"
+        index:
+          type: integer
+          minimum: 0
+          description: Set a single element of an array dataref.
+ 
+    DatarefSetValuesRequest:
+      type: object
+      description: |
+        Sets one or more dataref values. For array datarefs set one element (with
+        `index`) or the whole array (all values required). Each failed item produces
+        its own error `result` message.
+ 
+        Error codes: `index_out_of_range`, `not_an_array`, `incompatible_data`,
+        `dataref_is_readonly`, `invalid_dataref_id`.
+      required: [req_id, type, params]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [dataref_set_values]
+        params:
+          type: object
+          required: [datarefs]
+          properties:
+            datarefs:
+              type: array
+              items:
+                $ref: "#/components/schemas/DatarefSetValue"
+ 
+    CommandRef:
+      type: object
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/CommandId"
+ 
+    CommandSubscribeIsActiveRequest:
+      type: object
+      description: |
+        Adds commands to the subscription list (idempotent). Activation changes are
+        pushed as `command_update_is_active` messages. A failed subscription fails
+        every command in the message.
+ 
+        Error code: `invalid_command_id`.
+      required: [req_id, type, params]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [command_subscribe_is_active]
+        params:
+          type: object
+          required: [commands]
+          properties:
+            commands:
+              type: array
+              items:
+                $ref: "#/components/schemas/CommandRef"
+ 
+    CommandUnsubscribeIsActiveRequest:
+      type: object
+      description: |
+        Removes commands from the subscription list (idempotent). Send the string
+        `all` instead of an array to remove every subscription.
+ 
+        Error code: `invalid_command_id`.
+      required: [req_id, type, params]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [command_unsubscribe_is_active]
+        params:
+          type: object
+          required: [commands]
+          properties:
+            commands:
+              oneOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/CommandRef"
+                - type: string
+                  enum: [all]
+ 
+    CommandSetIsActive:
+      type: object
+      required: [id, is_active]
+      properties:
+        id:
+          $ref: "#/components/schemas/CommandId"
+        is_active:
+          type: boolean
+          description: Whether the command should be active. Activating an active command, or deactivating an inactive one, does nothing.
+        duration:
+          type: number
+          minimum: 0
+          maximum: 86400
+          description: |
+            Seconds after which the command is deactivated. Only meaningful with
+            `is_active: true`; ignored (but still range-checked) when `false`.
+            `0` presses and releases immediately. Omitted means hold until
+            deactivated. Maximum 24 hours.
+ 
+    CommandSetIsActiveRequest:
+      type: object
+      description: |
+        Activates or deactivates one or more commands. Setting a new duration on an
+        already-timed command replaces the previous one; `is_active: false` cancels
+        pending durations. Durations are tracked per WebSocket connection: when the
+        socket disconnects all held commands are released. Each failed item produces
+        its own error `result` message.
+ 
+        Error codes: `invalid_command_id`, `duration_out_of_range`.
+      required: [req_id, type, params]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [command_set_is_active]
+        params:
+          type: object
+          required: [commands]
+          properties:
+            commands:
+              type: array
+              items:
+                $ref: "#/components/schemas/CommandSetIsActive"
+ 
+    WebSocketServerMessage:
+      description: Any message the server may send. Discriminated by `type`.
+      oneOf:
+        - $ref: "#/components/schemas/ResultMessage"
+        - $ref: "#/components/schemas/DatarefUpdateValuesMessage"
+        - $ref: "#/components/schemas/CommandUpdateIsActiveMessage"
+      discriminator:
+        propertyName: type
+        mapping:
+          result: "#/components/schemas/ResultMessage"
+          dataref_update_values: "#/components/schemas/DatarefUpdateValuesMessage"
+          command_update_is_active: "#/components/schemas/CommandUpdateIsActiveMessage"
+ 
+    ResultMessage:
+      type: object
+      description: |
+        Sent in response to every client message. `req_id` matches the request, and
+        is absent only for `invalid_req_id` errors. On failure `error_code` and
+        `error_message` are set.
+      required: [type, success]
+      properties:
+        req_id:
+          $ref: "#/components/schemas/WebSocketRequestId"
+        type:
+          type: string
+          enum: [result]
+        success:
+          type: boolean
+        error_code:
+          $ref: "#/components/schemas/ErrorCode"
+        error_message:
+          type: string
+ 
+    DatarefUpdateValuesMessage:
+      type: object
+      description: |
+        Pushed periodically (currently 10 Hz) to subscribers. Only datarefs whose
+        values changed since the last message are included, except that the first
+        message after subscribing contains every subscribed dataref. Keys are dataref
+        ids (as strings).
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          enum: [dataref_update_values]
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/DatarefValue"
+          examples:
+            - "88491": 0
+              "3994": 5
+              "199": [0, 0, 0, 4]
+ 
+    CommandUpdateIsActiveMessage:
+      type: object
+      description: |
+        Pushed whenever a subscribed command changes activation state. Keys are
+        command ids (as strings); values say whether the command is active.
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          enum: [command_update_is_active]
+        data:
+          type: object
+          additionalProperties:
+            type: boolean
+          examples:
+            - "88491": false
+              "199": true
