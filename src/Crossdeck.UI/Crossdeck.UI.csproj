@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>net$(CrossdeckNetVersion);net$(CrossdeckNetVersion)-windows</TargetFrameworks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
