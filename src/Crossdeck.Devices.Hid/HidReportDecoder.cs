@@ -14,11 +14,11 @@ internal sealed class HidReportDecoder : IHidReportDecoder
     public HidReportDecoder(
         ReportDescriptor reportDescriptor)
     {
-        var seen = new Dictionary<InputKind, int>();
         var controls = new List<DeviceControl>();
-        
+        var factory = new HidControlFactory();
+
         _reportDescriptor = reportDescriptor;
-        _inputParsers = [.. _reportDescriptor.DeviceItems.Select(x => CreateDeviceInputParser(x, controls, seen))];
+        _inputParsers = [.. _reportDescriptor.DeviceItems.Select(x => CreateDeviceInputParser(x, controls, factory))];
 
         Controls = controls;
     }
@@ -40,7 +40,6 @@ internal sealed class HidReportDecoder : IHidReportDecoder
                     continue;
 
                 var val = parser.GetValue(index);
-                var usage = val.Usages.FirstOrDefault();
 
                 var inputChange = new HidInputChange(control.Id, val.GetPhysicalValue());
                 inputChanges.Add(inputChange);
@@ -51,7 +50,7 @@ internal sealed class HidReportDecoder : IHidReportDecoder
     private static DeviceItemInputParserWithControls CreateDeviceInputParser(
         DeviceItem item,
         List<DeviceControl> controls,
-        Dictionary<InputKind, int> seen)
+        HidControlFactory factory)
     {
         var parser = item.CreateDeviceItemInputParser();
         var map = new DeviceControl?[parser.ValueCount];
@@ -60,35 +59,13 @@ internal sealed class HidReportDecoder : IHidReportDecoder
         {
             var value = parser.GetValue(x);
             var usage = value.Usages.FirstOrDefault();
-            var control = CreateControl(usage, value.DataItem, seen);
+            var control = factory.Create(usage, value.DataItem);
 
             map[x] = control;
             if (control != null) controls.Add(control);
         }
 
         return new DeviceItemInputParserWithControls(parser, map);
-    }
-
-    private static DeviceControl? CreateControl(uint usage, DataItem item, Dictionary<InputKind, int> seen)
-    {
-        var page = usage >> 16;
-        var id = usage & 0xFFFF;
-
-        return (page, id) switch
-        {
-            (0x09, > 0) => new ButtonControl(Next(InputKind.Button, seen), $"Button {id}"),
-            (0x01, 0x39) => new HatControl(Next(InputKind.Hat, seen), $"Hat {id}",
-                item.LogicalMaximum - item.LogicalMinimum + 1),
-            (0x01, >= 0x30 and <= 0x38) => new AxisControl(Next(InputKind.Axis, seen),
-                AxisNames[id - 0x30], item.PhysicalMinimum, item.PhysicalMaximum),
-            _ => null,
-        };
-    }
-
-    private static InputId Next(InputKind kind, Dictionary<InputKind, int> seen)
-    {
-        var n = seen[kind] = seen.GetValueOrDefault(kind) + 1;
-        return new InputId(kind, $"#{n}");
     }
 
     private sealed record DeviceItemInputParserWithControls(DeviceItemInputParser Parser, DeviceControl?[] Controls);

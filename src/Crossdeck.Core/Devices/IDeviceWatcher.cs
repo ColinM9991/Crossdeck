@@ -22,6 +22,7 @@ public enum DeviceTransportKind
 public sealed record DeviceDescriptor(
     DeviceIdentity Identity,
     string Path,
+    uint[] Usages,
     int? VendorId,
     int? ProductId,
     string? SerialNumber,

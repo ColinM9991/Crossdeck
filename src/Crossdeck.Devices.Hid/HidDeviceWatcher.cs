@@ -82,8 +82,15 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 
             try
             {
-                var descriptor = new DeviceDescriptor(identity, device.DevicePath, device.VendorID,
-                    device.ProductID, device.GetSerialNumber(), device.GetProductName());
+                var usages = device.GetReportDescriptor().DeviceItems.SelectMany(x => x.Usages.GetAllValues());
+                var descriptor = new DeviceDescriptor(
+                    identity,
+                    device.DevicePath,
+                    [.. usages],
+                    device.VendorID,
+                    device.ProductID,
+                    device.GetSerialNumber(),
+                    device.GetProductName());
 
                 localDevices[device.DevicePath] = descriptor;
             }
