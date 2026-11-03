@@ -41,7 +41,7 @@ internal sealed class HidReportDecoder : IHidReportDecoder
 
                 var val = parser.GetValue(index);
 
-                var inputChange = new HidInputChange(control.Id, val.GetPhysicalValue());
+                var inputChange = new HidInputChange(control.Id, val.GetLogicalValue());
                 inputChanges.Add(inputChange);
             }
         }
