@@ -11,7 +11,7 @@ public interface IDeviceWatcher
     Task RunAsync(CancellationToken cancellationToken);
 }
 
-public readonly record struct DeviceIdentity(DeviceTransportKind Transport, string StableId); // "hid", serial or location id
+public readonly record struct DeviceIdentity(DeviceTransportKind DeviceKind, string StableId); // "hid", serial or location id
 
 public enum DeviceTransportKind
 {
@@ -27,7 +27,12 @@ public sealed record DeviceDescriptor(
     string? SerialNumber,
     string? ProductName);
 
-public readonly record struct InputId(string Value);
+public enum InputKind { Button, Axis, Hat, Encoder, Switch }
+
+public readonly record struct InputId(InputKind Kind, string Name)
+{
+    public override string ToString() => $"{Kind.ToString().ToLowerInvariant()}:{Name}";
+}
 
 public enum InputEventKind
 {

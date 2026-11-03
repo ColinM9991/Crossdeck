@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISimSessionSupervisor>(sp => sp.GetRequiredService<SimSessionSupervisor>());
 
         services.AddSingleton<DeviceRegistry>();
-        services.AddSingleton<IDeviceRegistry>(sp => sp.GetRequiredService<IDeviceRegistry>());
+        services.AddSingleton<IDeviceRegistry>(sp => sp.GetRequiredService<DeviceRegistry>());
         
         return services;
     }
