@@ -21,4 +21,8 @@
         <ProjectReference Include="..\Crossdeck.Sim.MSFS\Crossdeck.Sim.MSFS.csproj"/>
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Windows'">
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+    </PropertyGroup>
+
 </Project>

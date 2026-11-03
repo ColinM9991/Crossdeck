@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Crossdeck.Host;
 
-public sealed class LoopService<T>(T runner) : BackgroundService where T : IRunnable
+public sealed class SupervisorService<T>(T runner) : BackgroundService where T : IRunnable
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

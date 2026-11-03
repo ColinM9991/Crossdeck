@@ -23,8 +23,8 @@ public static class ServiceCollectionExtensions
         services.AddMsfs();
         #endif
 
-        services.AddHostedService<LoopService<SimSessionSupervisor>>();
-        services.AddHostedService<LoopService<DeviceRegistry>>();
+        services.AddHostedService<SupervisorService<SimSessionSupervisor>>();
+        services.AddHostedService<SupervisorService<DeviceRegistry>>();
 
         return services;
     }

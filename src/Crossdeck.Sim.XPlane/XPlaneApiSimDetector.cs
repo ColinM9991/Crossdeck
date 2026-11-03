@@ -22,7 +22,7 @@ public class XPlaneApiSimDetector(IHttpClientFactory httpClientFactory) : ISimDe
                 .GetFromJsonAsync<Capabilities?>("/api/capabilities", timeout.Token);
 
             return capabilities is null ? null : new SimDetection(Simulator.XPlane);
-        } 
+        }
         catch (HttpRequestException) { }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { }
 
