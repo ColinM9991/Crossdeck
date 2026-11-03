@@ -89,7 +89,6 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
             }
             catch (Exception)
             {
-                continue;
             }
         }
 

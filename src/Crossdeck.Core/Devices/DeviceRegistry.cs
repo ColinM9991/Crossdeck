@@ -9,6 +9,10 @@ public sealed class DeviceRegistry : IDeviceRegistry
         _deviceWatchers = deviceWatchers ?? throw new ArgumentNullException(nameof(deviceWatchers));
     }
     
+    // TODO implement retries, fault tolerance
+    // Scenarios:
+    // A supervisor dies. Needs to be restarted
+    // A supervisor dies. Trips RunAsync
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var supervisorTasks = _deviceWatchers.Select(w => SuperviseAsync(w, cancellationToken)).ToList();
@@ -18,16 +22,6 @@ public sealed class DeviceRegistry : IDeviceRegistry
 
     private static async Task SuperviseAsync(IDeviceWatcher watcher, CancellationToken cancellationToken)
     {
-        watcher.DeviceArrived += (sender, args) =>
-        {
-            Console.WriteLine($"Device arrived {args.Descriptor.ProductName}");
-        };
-
-        watcher.DeviceRemoved += (sender, args) =>
-        {
-            Console.WriteLine($"Device removed {args.Identity.StableId}");
-        };
-        
         var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         await watcher.RunAsync(cts.Token);
     }
