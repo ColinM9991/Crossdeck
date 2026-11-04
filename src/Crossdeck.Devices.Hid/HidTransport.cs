@@ -1,4 +1,4 @@
-﻿using Crossdeck.Core.Devices;
+﻿using Crossdeck.Core.Devices.Models;
 using HidSharp;
 using HidSharp.Reports;
 using HidSharp.Reports.Input;

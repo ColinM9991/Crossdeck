@@ -1,6 +1,7 @@
-﻿using Crossdeck.Core;
+﻿using Crossdeck.Core.Models;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators;
+using Crossdeck.Sim.XPlane.Models;
 
 namespace Crossdeck.Sim.XPlane;
 

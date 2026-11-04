@@ -1,4 +1,6 @@
-﻿namespace Crossdeck.Core.Devices;
+﻿using Crossdeck.Core.Devices.Models;
+
+namespace Crossdeck.Core.Devices;
 
 public interface IDeviceTransport : IAsyncDisposable
 {

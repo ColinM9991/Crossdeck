@@ -1,4 +1,6 @@
-﻿namespace Crossdeck.Core.Session;
+﻿using Crossdeck.Core.Models;
+
+namespace Crossdeck.Core.Session.Models;
 
 public sealed record SimDetection
 {

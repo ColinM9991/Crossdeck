@@ -1,7 +1,8 @@
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Crossdeck.Core.Session;
-using Crossdeck.Core.Simulators;
+using Crossdeck.Core.Session.Models;
+using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.UI.ViewModels;
 

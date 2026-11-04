@@ -1,5 +1,6 @@
 ﻿using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators;
+using Crossdeck.Sim.XPlane.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Crossdeck.Sim.XPlane;

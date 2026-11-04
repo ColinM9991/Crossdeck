@@ -1,5 +1,6 @@
 ﻿using System.Threading.Channels;
 using Crossdeck.Core.Devices;
+using Crossdeck.Core.Devices.Models;
 using HidSharp;
 
 namespace Crossdeck.Devices.Hid;

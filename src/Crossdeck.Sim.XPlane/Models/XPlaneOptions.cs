@@ -1,4 +1,4 @@
-﻿namespace Crossdeck.Sim.XPlane;
+﻿namespace Crossdeck.Sim.XPlane.Models;
 
 public sealed class XPlaneOptions
 {

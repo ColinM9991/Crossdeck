@@ -1,4 +1,6 @@
-﻿namespace Crossdeck.Core.Session;
+﻿using Crossdeck.Core.Session.Models;
+
+namespace Crossdeck.Core.Session;
 
 public interface ISimDetector
 {

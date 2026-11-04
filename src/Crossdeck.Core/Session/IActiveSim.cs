@@ -1,4 +1,5 @@
-﻿using Crossdeck.Core.Simulators;
+﻿using Crossdeck.Core.Session.Models;
+using Crossdeck.Core.Simulators;
 
 namespace Crossdeck.Core.Session;
 

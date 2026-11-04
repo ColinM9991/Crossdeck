@@ -1,4 +1,4 @@
-﻿namespace Crossdeck.Core.Devices;
+﻿namespace Crossdeck.Core.Devices.Models;
 
 public abstract record DeviceControl(InputId Id, string Name);
 

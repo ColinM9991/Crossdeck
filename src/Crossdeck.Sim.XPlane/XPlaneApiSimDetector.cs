@@ -1,7 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Net.Http.Json;
-using Crossdeck.Core;
+using Crossdeck.Core.Models;
 using Crossdeck.Core.Session;
+using Crossdeck.Core.Session.Models;
 using Crossdeck.Sim.XPlane.Api;
 
 namespace Crossdeck.Sim.XPlane;

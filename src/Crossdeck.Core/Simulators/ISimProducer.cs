@@ -1,4 +1,6 @@
-﻿namespace Crossdeck.Core.Simulators;
+﻿using Crossdeck.Core.Simulators.Models;
+
+namespace Crossdeck.Core.Simulators;
 
 public interface ISimProducer : IAsyncDisposable
 {

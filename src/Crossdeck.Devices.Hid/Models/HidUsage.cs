@@ -1,4 +1,4 @@
-﻿namespace Crossdeck.Devices.Hid;
+﻿namespace Crossdeck.Devices.Hid.Models;
 
 public readonly record struct HidUsage(uint Page, uint Id)
 {

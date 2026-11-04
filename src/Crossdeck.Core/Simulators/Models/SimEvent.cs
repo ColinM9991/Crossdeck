@@ -1,4 +1,4 @@
-﻿namespace Crossdeck.Core.Simulators;
+﻿namespace Crossdeck.Core.Simulators.Models;
 
 public abstract record SimEvent
 {

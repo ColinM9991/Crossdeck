@@ -6,7 +6,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using Crossdeck.Core.Simulators;
+using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Sim.XPlane.Api;
+using Crossdeck.Sim.XPlane.Models;
 
 namespace Crossdeck.Sim.XPlane;
 

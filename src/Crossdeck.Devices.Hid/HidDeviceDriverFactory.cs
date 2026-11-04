@@ -1,5 +1,7 @@
 ﻿using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Exceptions;
+using Crossdeck.Core.Devices.Models;
+using Crossdeck.Devices.Hid.Models;
 
 namespace Crossdeck.Devices.Hid;
 
