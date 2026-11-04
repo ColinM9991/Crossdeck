@@ -41,7 +41,7 @@ public enum InputEventKind
     Released,
     Increment,
     Decrement,
-    PositionChanged,
+    HatChanged,
     AxisChanged
 }
 

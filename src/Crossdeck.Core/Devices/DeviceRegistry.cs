@@ -16,12 +16,16 @@ public sealed class DeviceRegistry : IDeviceRegistry
 
     private readonly Dictionary<DeviceIdentity, RunningDriver> _deviceDrivers = new();
 
+    private readonly IInputSink _inputSink;
+
     public DeviceRegistry(
         IEnumerable<IDeviceWatcher> deviceWatchers,
-        IEnumerable<IDeviceDriverFactory> deviceDriverFactories)
+        IEnumerable<IDeviceDriverFactory> deviceDriverFactories,
+        IInputSink inputSink)
     {
         _deviceWatchers = deviceWatchers ?? throw new ArgumentNullException(nameof(deviceWatchers));
         _deviceDriverFactories = deviceDriverFactories.OrderByDescending(x => x.Priority).ToList();
+        _inputSink = inputSink ?? throw new ArgumentNullException(nameof(inputSink));
     }
 
     // TODO implement retries, fault tolerance
@@ -56,6 +60,25 @@ public sealed class DeviceRegistry : IDeviceRegistry
         }
     }
 
+    private async Task StartAsync(DeviceDescriptor descriptor, CancellationToken cancellationToken)
+    {
+        var factory = _deviceDriverFactories.FirstOrDefault(f => f.CanCreate(descriptor));
+        if (factory is null)
+            return;
+
+        var driver = await factory.CreateAsync(descriptor, cancellationToken);
+        if (driver is null)
+            return;
+
+        var deviceCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var task = Task.Factory.StartNew(() => driver.RunAsync(deviceCancellationToken.Token),
+            deviceCancellationToken.Token,
+            TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+
+        _deviceDrivers.Add(driver.Identity, new RunningDriver(deviceCancellationToken, driver, task));
+        driver.InputReceived += DriverOnInputReceived;
+    }
+
     private async Task StopAsync(DeviceIdentity identity)
     {
         if (!_deviceDrivers.Remove(identity, out var runningDriver))
@@ -65,30 +88,21 @@ public sealed class DeviceRegistry : IDeviceRegistry
         try
         {
             await runningDriver.Task;
-        } 
-        catch (OperationCanceledException) { }
-        catch (Exception) { }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception)
+        {
+        }
 
+        runningDriver.Driver.InputReceived -= DriverOnInputReceived;
         await runningDriver.Driver.DisposeAsync();
         runningDriver.CancellationTokenSource.Dispose();
     }
 
-    private async Task StartAsync(DeviceDescriptor descriptor, CancellationToken cancellationToken)
-    {
-        var factory = _deviceDriverFactories.FirstOrDefault(f => f.CanCreate(descriptor));
-        if (factory is null)
-            return;
-        
-        var driver = await factory.CreateAsync(descriptor, cancellationToken);
-        if (driver is null)
-            return;
-
-        var deviceCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var task = Task.Factory.StartNew(() => driver.RunAsync(deviceCancellationToken.Token), deviceCancellationToken.Token,
-            TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
-        
-        _deviceDrivers.Add(driver.Identity, new RunningDriver(deviceCancellationToken, driver, task));
-    }
+    private void DriverOnInputReceived(object? sender, DeviceInputEvent e)
+        => _inputSink.Post(e);
 
     private async Task SuperviseAsync(IDeviceWatcher watcher, CancellationToken cancellationToken)
     {
@@ -118,7 +132,10 @@ public sealed class DeviceRegistry : IDeviceRegistry
         _deviceChanges.Writer.TryWrite(new DeviceChange.Arrived(e.Descriptor));
     }
 
-    private sealed record RunningDriver(CancellationTokenSource CancellationTokenSource, IDeviceDriver Driver, Task Task);
+    private sealed record RunningDriver(
+        CancellationTokenSource CancellationTokenSource,
+        IDeviceDriver Driver,
+        Task Task);
 
     internal abstract record DeviceChange
     {

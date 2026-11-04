@@ -6,8 +6,6 @@ namespace Crossdeck.Devices.Hid;
 
 internal sealed class HidReportDecoder : IHidReportDecoder
 {
-    private static readonly string[] AxisNames = ["X", "Y", "Z", "RX", "RY", "RZ", "Slider", "Dial", "Wheel"];
-
     private readonly ReportDescriptor _reportDescriptor;
     private readonly IReadOnlyCollection<DeviceItemInputParserWithControls> _inputParsers;
 
@@ -41,7 +39,7 @@ internal sealed class HidReportDecoder : IHidReportDecoder
 
                 var val = parser.GetValue(index);
 
-                var inputChange = new HidInputChange(control.Id, val.GetLogicalValue());
+                var inputChange = new HidInputChange(control, val.GetLogicalValue());
                 inputChanges.Add(inputChange);
             }
         }

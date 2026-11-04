@@ -1,8 +1,9 @@
-﻿using Crossdeck.Core.Devices;
+﻿using System.Diagnostics;
+using Crossdeck.Core.Devices;
 
 namespace Crossdeck.Devices.Hid;
 
-public class HidJoystickDriver : IDeviceDriver
+public sealed class HidJoystickDriver : IDeviceDriver
 {
     private readonly IHidTransport _transport;
     private readonly IHidReportDecoder _decoder;
@@ -17,6 +18,7 @@ public class HidJoystickDriver : IDeviceDriver
         _decoder = decoder ?? throw new ArgumentNullException(nameof(decoder));
     }
 
+    public event EventHandler<DeviceInputEvent>? InputReceived;
     public DeviceIdentity Identity { get; }
 
     public IReadOnlyList<DeviceControl> Controls => _decoder.Controls;
@@ -36,15 +38,28 @@ public class HidJoystickDriver : IDeviceDriver
 
             foreach (var change in changes)
             {
-                Console.WriteLine($"{change.Id} {change.Value}");
+                var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
+                InputReceived?.Invoke(this,
+                    new DeviceInputEvent(
+                        Identity,
+                        change.DeviceControl.Id,
+                        inputEventKind,
+                        change.Value,
+                        Stopwatch.GetTimestamp()));
             }
         }
     }
 
+    private static InputEventKind GetInputEventKind(DeviceControl deviceControl, double value) => deviceControl switch
+    {
+        ButtonControl => (int)value != 0 ? InputEventKind.Pressed : InputEventKind.Released,
+        AxisControl => InputEventKind.AxisChanged,
+        HatControl => InputEventKind.HatChanged,
+        _ => throw new ArgumentOutOfRangeException(nameof(deviceControl), deviceControl, null)
+    };
+
     public async ValueTask DisposeAsync()
     {
         await _transport.DisposeAsync();
-
-        GC.SuppressFinalize(this);
     }
 }
