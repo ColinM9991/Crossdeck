@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
 
 namespace Crossdeck.Core.Devices;

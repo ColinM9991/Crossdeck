@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Crossdeck.Application/Crossdeck.Application.csproj" />
     <Project Path="src/Crossdeck.Core/Crossdeck.Core.csproj" />
     <Project Path="src/Crossdeck.Devices.Hid/Crossdeck.Devices.Hid.csproj" />
     <Project Path="src/Crossdeck.Host/Crossdeck.Host.csproj" />

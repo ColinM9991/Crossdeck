@@ -1,6 +1,6 @@
 ﻿using Crossdeck.Core.Devices.Models;
 
-namespace Crossdeck.Core.Devices;
+namespace Crossdeck.Core.Devices.Inputs;
 
 public interface IInputSink
 {
