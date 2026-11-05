@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
+using Crossdeck.Core;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Sim.XPlane.Api;
@@ -34,15 +35,10 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     });
 
     /// <summary>
-    /// Internal channel for signaling changes in subscription states
+    /// Internal signal for notifying of changes in subscription states
     /// within the X-Plane simulation API integration.
     /// </summary>
-    private readonly Channel<bool> _subscriptionsChangedChannel = Channel.CreateBounded<bool>(
-        new BoundedChannelOptions(1)
-        {
-            FullMode = BoundedChannelFullMode.DropWrite,
-            SingleReader = true,
-        });
+    private readonly Signal _subscriptionsChangedSignal = new();
 
     private readonly HttpClient _httpClient;
     private readonly string _host;
@@ -140,10 +136,10 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// The method updates the simulator with the specified set of subscriptions
     /// and broadcasts a notification to indicate that the subscriptions have changed.
     /// </remarks>
-    public async Task SetSubscriptionsAsync(IReadOnlySet<SimRef> subscriptions)
+    public async Task SetSubscriptionsAsync(IReadOnlySet<SimRef> subscriptions, CancellationToken cancellationToken)
     {
         _subscriptions = [.. subscriptions];
-        await _subscriptionsChangedChannel.Writer.WriteAsync(true);
+        await _subscriptionsChangedSignal.SetAsync(cancellationToken);
     }
 
     /// <summary>
@@ -238,7 +234,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         Publish(new SimStatus.Connected());
 
         await WaitForInitializationAsync(cancellationToken);
-        await _subscriptionsChangedChannel.Writer.WriteAsync(true, cancellationToken);
+        await _subscriptionsChangedSignal.SetAsync(cancellationToken);
 
         var sendLoop = RunChildLoopAsync(SendLoopAsync(ws, sessionState, cts.Token), cts);
         var subscriptionLoop = RunChildLoopAsync(SubscriptionLoopAsync(sessionState, cts.Token), cts);
@@ -326,7 +322,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// <returns>A task that represents the asynchronous subscription loop operation.</returns>
     private async Task SubscriptionLoopAsync(SessionState session, CancellationToken cancellationToken)
     {
-        await foreach (var _ in _subscriptionsChangedChannel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (var _ in _subscriptionsChangedSignal.WaitAsync(cancellationToken))
         {
             var allSubscriptions = new HashSet<SimRef>(_subscriptions) { AircraftRef };
             var existingSubscriptions = new HashSet<SimRef>(session.IdToRef.Values);

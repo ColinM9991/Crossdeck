@@ -6,7 +6,7 @@ public interface ISimProducer : IAsyncDisposable
 {
     IAsyncEnumerable<SimEvent> Events { get; }
     
-    Task SetSubscriptionsAsync(IReadOnlySet<SimRef> subscriptions);
+    Task SetSubscriptionsAsync(IReadOnlySet<SimRef> subscriptions, CancellationToken cancellationToken);
 
     Task RunAsync(CancellationToken cancellationToken);
 

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using Crossdeck.Core;
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using HidSharp;
@@ -9,11 +10,8 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 {
     private volatile Dictionary<string, DeviceDescriptor> _deviceCache = new();
 
-    private readonly Channel<bool> _deviceChangeChannel = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
-    {
-        SingleReader = true,
-        FullMode = BoundedChannelFullMode.DropWrite
-    });
+
+    private readonly Signal _deviceChangedSignal = new();
 
     public event EventHandler<DeviceArrivedEventArgs>? DeviceArrived;
     public event EventHandler<DeviceRemovedEventArgs>? DeviceRemoved;
@@ -26,8 +24,8 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         DeviceList.Local.Changed += OnChanged;
         try
         {
-            _deviceChangeChannel.Writer.TryWrite(true);
-            await foreach (var _ in _deviceChangeChannel.Reader.ReadAllAsync(cancellationToken))
+            await _deviceChangedSignal.SetAsync(cancellationToken);
+            await foreach (var _ in _deviceChangedSignal.WaitAsync(cancellationToken))
             {
                 var newDeviceCache = BuildDeviceCache(_deviceCache, DeviceList.Local.GetHidDevices());
                 var addedDevices = GetDevices(_deviceCache, newDeviceCache);
@@ -49,7 +47,7 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 
     private void OnChanged(object? sender, DeviceListChangedEventArgs e)
     {
-        _deviceChangeChannel.Writer.TryWrite(true);
+        _deviceChangedSignal.Set();
     }
 
     private void RaiseDevicesChanged(
