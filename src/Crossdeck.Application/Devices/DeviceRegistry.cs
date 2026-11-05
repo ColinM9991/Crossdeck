@@ -1,8 +1,9 @@
 ﻿using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
+using Crossdeck.Core.Devices;
 
-namespace Crossdeck.Core.Devices;
+namespace Crossdeck.Application.Devices;
 
 public sealed class DeviceRegistry : IDeviceRegistry
 {

@@ -1,6 +1,6 @@
-﻿using Crossdeck.Core;
-using Crossdeck.Core.Devices;
-using Crossdeck.Core.Session;
+﻿using Crossdeck.Application;
+using Crossdeck.Application.Devices;
+using Crossdeck.Application.Session;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Sim.XPlane;
 #if WINDOWS

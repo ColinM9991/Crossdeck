@@ -1,8 +1,10 @@
 ﻿using Crossdeck.Core.Devices;
 using Crossdeck.Core.Session;
+using Crossdeck.Application.Devices;
+using Crossdeck.Application.Session;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Crossdeck.Core;
+namespace Crossdeck.Application;
 
 public static class ServiceCollectionExtensions
 {

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Crossdeck.UI;
 
-public partial class App : Application
+public partial class App : Avalonia.Application
 {
     private readonly IHost _host;
     private bool _hostStarted;

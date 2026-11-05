@@ -1,8 +1,9 @@
 ﻿using Crossdeck.Core.Models;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
+using Crossdeck.Core.Session;
 
-namespace Crossdeck.Core.Session;
+namespace Crossdeck.Application.Session;
 
 public sealed class SimSessionSupervisor : ISimSessionSupervisor
 {

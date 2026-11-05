@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <PackageReference Include="HidSharp" Version="2.6.4" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     </ItemGroup>
 
     <ItemGroup>
