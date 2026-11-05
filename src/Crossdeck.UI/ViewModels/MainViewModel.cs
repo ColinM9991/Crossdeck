@@ -19,7 +19,7 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] public partial string? Status { get; set; } = "Disconnected";
 
-    public async void OnSimChanged(object? sender, ActiveSimChangedEventArgs args)
+    public async void OnSimChanged(object? sender, ActiveSimChanged args)
     {
         if (args.Current is null) return;
 

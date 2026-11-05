@@ -22,7 +22,9 @@ public sealed class SimSessionSupervisor : ISimSessionSupervisor
     
     public ISimProducer? Current => _current;
     
-    public event EventHandler<ActiveSimChangedEventArgs>? Changed;
+    public event EventHandler<ActiveSimChanging>? Changing;
+
+    public event EventHandler<ActiveSimChanged>? Changed;
     
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -72,10 +74,11 @@ public sealed class SimSessionSupervisor : ISimSessionSupervisor
         return null;
     }
     
-    private void SetCurrent(ISimProducer? current)
+    private void SetCurrent(ISimProducer? next)
     {
         var previous = Current;
-        _current = current;
-        Changed?.Invoke(this, new ActiveSimChangedEventArgs(previous, current));
+        Changing?.Invoke(this, new ActiveSimChanging(previous, next));
+        _current = next;
+        Changed?.Invoke(this, new ActiveSimChanged(_current));
     }
 }

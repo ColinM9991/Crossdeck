@@ -21,7 +21,7 @@ namespace Crossdeck.Sim.XPlane;
 /// </remarks>
 public sealed class XPlaneApiSimProducer : ISimProducer
 {
-    private static readonly SimRef AircraftRef = new("dataref", "sim/aircraft/view/acf_relative_path");
+    private static readonly SimRef AircraftRef = new("sim/aircraft/view/acf_relative_path");
 
     /// <summary>
     /// Internal channel for managing and distributing simulation events.
@@ -47,6 +47,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private int _eventsConsumed;
     private int _requestId;
 
+    private volatile bool _isReady;
+
+    private SimStatus _simStatus = new SimStatus.Disconnected();
     private SessionState? _sessionState;
 
     private string? _aircraft;
@@ -72,6 +75,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
     }
 
+    public event EventHandler<SimReady>? Ready;
+
     /// <summary>
     /// Asynchronous stream of <see cref="SimEvent"/>s.
     /// </summary>
@@ -90,12 +95,12 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private void Publish(SimEvent e) => _eventsChannel.Writer.TryWrite(e);
 
     /// <summary>
-    /// Updates the current simulator status and publishes a corresponding status change event.
+    /// Updates the current simulator status.
     /// </summary>
-    /// <param name="status">The new simulator status to be set and published.</param>
-    private void Publish(SimStatus status)
+    /// <param name="status">The new simulator status to be set.</param>
+    private void SetStatus(SimStatus status)
     {
-        Publish(new SimEvent.StatusChanged(status));
+        _simStatus = status;
     }
 
     /// <summary>
@@ -122,7 +127,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
         finally
         {
-            Publish(new SimStatus.Gone());
+            SetStatus(new SimStatus.Gone());
             _eventsChannel.Writer.TryComplete();
         }
     }
@@ -157,6 +162,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     {
         var session = _sessionState;
         if (session is null) return new CommandResult.NoConnection();
+        if (!_isReady) return new CommandResult.NotReady();
 
         return command switch
         {
@@ -182,7 +188,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             ? new { id = commandId.Value, is_active = isActive, duration = d }
             : new { id = commandId.Value, is_active = isActive, };
 
-        await EnqueueAsync(session, "command_set_is_active", command);
+        await EnqueueAsync(session, "command_set_is_active", new { commands = new[] { command } });
 
         return new CommandResult.Success();
     }
@@ -223,18 +229,22 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
     private async Task RunSessionAsync(CancellationToken cancellationToken)
     {
+        _isReady = false;
+        SetStatus(new SimStatus.Disconnected());
+
         using var ws = new ClientWebSocket();
         await ws.ConnectAsync(WsUri, cancellationToken);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var sessionState = new SessionState();
-        _sessionState = sessionState;
-        _aircraft = null;
 
-        Publish(new SimStatus.Connected());
+        SetStatus(new SimStatus.Connected());
 
         await WaitForInitializationAsync(cancellationToken);
         await _subscriptionsChangedSignal.SetAsync(cancellationToken);
+
+        var sessionState = new SessionState();
+        _sessionState = sessionState;
+        _aircraft = null;
 
         var sendLoop = RunChildLoopAsync(SendLoopAsync(ws, sessionState, cts.Token), cts);
         var subscriptionLoop = RunChildLoopAsync(SubscriptionLoopAsync(sessionState, cts.Token), cts);
@@ -480,22 +490,32 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// <returns>A task that represents the asynchronous wait operation.</returns>
     private async Task WaitForInitializationAsync(CancellationToken cancellationToken)
     {
+        var lastCount = -1;
         while (true)
         {
             try
             {
                 var countResponse =
                     await _httpClient.GetFromJsonAsync<CountResponse>("datarefs/count", cancellationToken);
-                if (countResponse is not null && countResponse.Data != 0)
+
+                if (countResponse is { Data: > 0 })
                 {
-                    return;
+                    if (countResponse.Data == lastCount)
+                    {
+                        _isReady = true;
+                        Ready?.Invoke(this, new SimReady());
+                        SetStatus(new SimStatus.Ready());
+                        return;
+                    }
+
+                    lastCount = countResponse.Data;
                 }
             }
             catch (HttpRequestException)
             {
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
     }
 

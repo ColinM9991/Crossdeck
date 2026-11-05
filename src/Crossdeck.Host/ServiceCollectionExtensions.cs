@@ -1,5 +1,6 @@
 ﻿using Crossdeck.Application;
 using Crossdeck.Application.Devices;
+using Crossdeck.Application.Routing;
 using Crossdeck.Application.Session;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Sim.XPlane;
@@ -23,8 +24,9 @@ public static class ServiceCollectionExtensions
         services.AddMsfs();
         #endif
 
-        services.AddHostedService<SupervisorService<SimSessionSupervisor>>();
+        services.AddHostedService<SupervisorService<InputDispatcher>>();
         services.AddHostedService<SupervisorService<DeviceRegistry>>();
+        services.AddHostedService<SupervisorService<SimSessionSupervisor>>();
 
         return services;
     }

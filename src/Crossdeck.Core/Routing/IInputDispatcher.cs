@@ -1,6 +1,5 @@
 ﻿namespace Crossdeck.Core.Routing;
 
-public interface IInputDispatcher
+public interface IInputDispatcher : IRunnable
 {
-    
 }
