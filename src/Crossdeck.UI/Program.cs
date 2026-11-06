@@ -1,6 +1,4 @@
 ﻿using Avalonia;
-using System;
-using System.Threading.Tasks;
 using Crossdeck.Host;
 using Crossdeck.UI.ViewModels;
 using Crossdeck.UI.Views;

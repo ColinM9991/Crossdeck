@@ -41,13 +41,14 @@ public sealed class HidJoystickDriver : IDeviceDriver
             foreach (var change in changes)
             {
                 var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
-                InputReceived?.Invoke(this,
-                    new DeviceInputEvent(
-                        Identity,
-                        change.DeviceControl.Id,
-                        inputEventKind,
-                        change.Value,
-                        Stopwatch.GetTimestamp()));
+                var inputEvent = new DeviceInputEvent(
+                    Identity,
+                    change.DeviceControl.Id,
+                    inputEventKind,
+                    change.Value,
+                    Stopwatch.GetTimestamp());
+
+                InputReceived?.Invoke(this, inputEvent);
             }
         }
     }

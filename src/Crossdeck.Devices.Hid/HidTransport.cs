@@ -1,5 +1,4 @@
-﻿using Crossdeck.Core.Devices.Models;
-using HidSharp;
+﻿using HidSharp;
 using HidSharp.Reports;
 using HidSharp.Reports.Input;
 
@@ -13,11 +12,9 @@ internal sealed class HidTransport : IHidTransport
     private readonly byte[] _scratch;
 
     public HidTransport(
-        DeviceDescriptor deviceDescriptor,
         HidStream hidStream,
         ReportDescriptor reportDescriptor)
     {
-        Device = deviceDescriptor ?? throw new ArgumentNullException(nameof(deviceDescriptor));
         _hidStream = hidStream ?? throw new ArgumentNullException(nameof(hidStream));
 
         _receiver = reportDescriptor.CreateHidDeviceInputReceiver();
@@ -26,8 +23,6 @@ internal sealed class HidTransport : IHidTransport
 
         _receiver.Start(_hidStream);
     }
-
-    public DeviceDescriptor Device { get; }
 
     public int MaxInputReportLength { get; }
 

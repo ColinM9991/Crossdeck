@@ -1,5 +1,4 @@
 ﻿using Crossdeck.Core.Devices.Exceptions;
-using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
 using HidSharp;
 
@@ -7,15 +6,15 @@ namespace Crossdeck.Devices.Hid;
 
 internal sealed class HidTransportFactory : IHidTransportFactory
 {
-    public Task<HidConnection> CreateAsync(DeviceDescriptor deviceDescriptor, CancellationToken cancellationToken)
+    public Task<HidConnection> CreateAsync(string path)
     {
         var devices = DeviceList.Local.GetHidDevices();
-        var hidDevice = devices.FirstOrDefault(d => string.Equals(d.DevicePath, deviceDescriptor.Path))
-                        ?? throw new DeviceNotFoundException(deviceDescriptor.Path);
+        var hidDevice = devices.FirstOrDefault(d => string.Equals(d.DevicePath, path))
+                        ?? throw new DeviceNotFoundException(path);
 
         if (!hidDevice.TryOpen(out var hidStream))
         {
-            throw new DeviceNotUsableException(deviceDescriptor.Path);
+            throw new DeviceNotUsableException(path);
         }
 
         hidStream.ReadTimeout = Timeout.Infinite;
@@ -24,7 +23,7 @@ internal sealed class HidTransportFactory : IHidTransportFactory
         try
         {
             var reportDescriptor = hidDevice.GetReportDescriptor();
-            var transport = new HidTransport(deviceDescriptor, hidStream, reportDescriptor);
+            var transport = new HidTransport(hidStream, reportDescriptor);
 
             return Task.FromResult(new HidConnection(transport, new HidReportDecoder(reportDescriptor)));
         }

@@ -1,14 +1,11 @@
 ﻿using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
-using Crossdeck.Devices.Hid.Models;
 
 namespace Crossdeck.Devices.Hid;
 
 internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
 {
-    private static readonly HashSet<HidUsage> GameControllers =
-        [HidUsage.Joystick, HidUsage.Gamepad, HidUsage.MultiAxis, HidUsage.FlightSimDevice];
     private readonly IHidTransportFactory _hidTransportFactory;
 
     public HidDeviceDriverFactory(
@@ -20,14 +17,13 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
     public int Priority => 0;
 
     public bool CanCreate(DeviceDescriptor deviceDescriptor) =>
-        deviceDescriptor.Identity.DeviceKind is DeviceTransportKind.Hid &&
-        deviceDescriptor.Usages.Any(u => GameControllers.Contains(u));
+        deviceDescriptor.Kind is DeviceKind.Hid;
 
     public async Task<IDeviceDriver?> CreateAsync(DeviceDescriptor deviceDescriptor, CancellationToken cancellationToken)
     {
         try
         {
-            var hidConnection = await _hidTransportFactory.CreateAsync(deviceDescriptor, cancellationToken);
+            var hidConnection = await _hidTransportFactory.CreateAsync(deviceDescriptor.Path);
 
             return new HidJoystickDriver(deviceDescriptor.Identity, hidConnection.Transport, hidConnection.Decoder);
         }

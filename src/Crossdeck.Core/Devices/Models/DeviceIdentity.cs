@@ -1,8 +1,13 @@
 namespace Crossdeck.Core.Devices.Models;
 
-public readonly record struct DeviceIdentity(DeviceTransportKind DeviceKind, string StableId); // "hid", serial or location id
+public readonly record struct DeviceIdentity(DeviceIdentitySource Kind, int VendorId, int ProductId, string Value)
+{
+    public override string ToString() => $"{VendorId:X4}:{ProductId:X4}:{Kind.ToString().ToLowerInvariant()}={Value}";
+}
 
-public enum DeviceTransportKind
+public enum DeviceIdentitySource { Serial, Usage, Location }
+
+public enum DeviceKind
 {
     Hid,
     Serial
