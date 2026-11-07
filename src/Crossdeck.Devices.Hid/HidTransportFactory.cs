@@ -25,7 +25,7 @@ internal sealed class HidTransportFactory : IHidTransportFactory
             var reportDescriptor = hidDevice.GetReportDescriptor();
             var transport = new HidTransport(hidStream, reportDescriptor);
 
-            return Task.FromResult(new HidConnection(transport, new HidReportDecoder(reportDescriptor)));
+            return Task.FromResult(new HidConnection(transport, reportDescriptor));
         }
         catch
         {

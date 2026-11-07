@@ -1,3 +1,5 @@
-﻿namespace Crossdeck.Devices.Hid.Models;
+﻿using HidSharp.Reports;
 
-internal sealed record HidConnection(IHidTransport Transport, IHidReportDecoder Decoder);
+namespace Crossdeck.Devices.Hid.Models;
+
+public sealed record HidConnection(IHidTransport Transport, ReportDescriptor ReportDescriptor);

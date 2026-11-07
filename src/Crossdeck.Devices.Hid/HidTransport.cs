@@ -31,9 +31,9 @@ internal sealed class HidTransport : IHidTransport
         await _hidStream.DisposeAsync();
     }
 
-    public Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+    public async Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        await _hidStream.WriteAsync(data, cancellationToken);
     }
 
     public Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
@@ -41,7 +41,7 @@ internal sealed class HidTransport : IHidTransport
         while (!cancellationToken.IsCancellationRequested)
         {
             if (!_receiver.IsRunning) return Task.FromResult(0);
-            if (_receiver.TryRead(_scratch, 0, out var _))
+            if (_receiver.TryRead(_scratch, 0, out _))
             {
                 _scratch.AsSpan(0, MaxInputReportLength).CopyTo(buffer.Span);
                 return Task.FromResult(MaxInputReportLength);

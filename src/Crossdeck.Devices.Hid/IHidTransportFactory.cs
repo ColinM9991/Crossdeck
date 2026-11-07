@@ -2,7 +2,7 @@
 
 namespace Crossdeck.Devices.Hid;
 
-internal interface IHidTransportFactory
+public interface IHidTransportFactory
 {
     Task<HidConnection> CreateAsync(string path);
 }

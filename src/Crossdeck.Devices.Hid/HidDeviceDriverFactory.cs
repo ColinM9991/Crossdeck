@@ -19,13 +19,18 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
     public bool CanCreate(DeviceDescriptor deviceDescriptor) =>
         deviceDescriptor.Kind is DeviceKind.Hid;
 
-    public async Task<IDeviceDriver?> CreateAsync(DeviceDescriptor deviceDescriptor, CancellationToken cancellationToken)
+    public async Task<IDeviceDriver?> CreateAsync(
+        DeviceDescriptor deviceDescriptor,
+        CancellationToken cancellationToken)
     {
         try
         {
             var hidConnection = await _hidTransportFactory.CreateAsync(deviceDescriptor.Path);
 
-            return new HidJoystickDriver(deviceDescriptor.Identity, hidConnection.Transport, hidConnection.Decoder);
+            return new HidDeviceDriver(
+                deviceDescriptor.Identity,
+                hidConnection.Transport,
+                new HidReportDecoder(hidConnection.ReportDescriptor));
         }
         catch (DeviceNotUsableException)
         {

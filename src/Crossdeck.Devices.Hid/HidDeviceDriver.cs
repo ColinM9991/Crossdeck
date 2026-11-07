@@ -5,12 +5,12 @@ using Crossdeck.Devices.Hid.Models;
 
 namespace Crossdeck.Devices.Hid;
 
-public sealed class HidJoystickDriver : IDeviceDriver
+public sealed class HidDeviceDriver : IDeviceDriver
 {
     private readonly IHidTransport _transport;
     private readonly IHidReportDecoder _decoder;
 
-    public HidJoystickDriver(
+    public HidDeviceDriver(
         DeviceIdentity identity,
         IHidTransport transport,
         IHidReportDecoder decoder)
@@ -25,30 +25,41 @@ public sealed class HidJoystickDriver : IDeviceDriver
 
     public IReadOnlyList<DeviceControl> Controls => _decoder.Controls;
 
-    public async Task RunAsync(CancellationToken cancellationToken)
+    public Task RunAsync(CancellationToken cancellationToken)
     {
-        var buffer = new byte[_transport.MaxInputReportLength];
-        var changes = new List<HidInputChange>();
+        return Task
+            .Factory
+            .StartNew(
+                _ => ReadAsyncInternal(),
+                cancellationToken,
+                TaskCreationOptions.LongRunning)
+            .Unwrap();
 
-        while (!cancellationToken.IsCancellationRequested)
+        async Task ReadAsyncInternal()
         {
-            var read = await _transport.ReadAsync(buffer, cancellationToken);
-            if (read == 0) break;
+            var buffer = new byte[_transport.MaxInputReportLength];
+            var changes = new List<HidInputChange>();
 
-            changes.Clear();
-            _decoder.Decode(buffer, changes);
-
-            foreach (var change in changes)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
-                var inputEvent = new DeviceInputEvent(
-                    Identity,
-                    change.DeviceControl.Id,
-                    inputEventKind,
-                    change.Value,
-                    Stopwatch.GetTimestamp());
+                var read = await _transport.ReadAsync(buffer, cancellationToken);
+                if (read == 0) break;
 
-                InputReceived?.Invoke(this, inputEvent);
+                changes.Clear();
+                _decoder.Decode(buffer, changes);
+
+                foreach (var change in changes)
+                {
+                    var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
+                    var inputEvent = new DeviceInputEvent(
+                        Identity,
+                        change.DeviceControl.Id,
+                        inputEventKind,
+                        change.Value,
+                        Stopwatch.GetTimestamp());
+
+                    InputReceived?.Invoke(this, inputEvent);
+                }
             }
         }
     }

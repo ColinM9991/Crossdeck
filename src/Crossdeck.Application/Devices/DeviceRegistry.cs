@@ -16,9 +16,7 @@ public sealed class DeviceRegistry : IDeviceRegistry
 
     private readonly IEnumerable<IDeviceWatcher> _deviceWatchers;
     private readonly IReadOnlyCollection<IDeviceDriverFactory> _deviceDriverFactories;
-
     private readonly Dictionary<DeviceIdentity, RunningDriver> _deviceDrivers = new();
-
     private readonly IInputSink _inputSink;
 
     public DeviceRegistry(
@@ -31,10 +29,6 @@ public sealed class DeviceRegistry : IDeviceRegistry
         _inputSink = inputSink ?? throw new ArgumentNullException(nameof(inputSink));
     }
 
-    // TODO implement retries, fault tolerance
-    // Scenarios:
-    // A supervisor dies. Needs to be restarted
-    // A supervisor dies. Trips RunAsync
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var supervisorTasks = _deviceWatchers.Select(w => SuperviseAsync(w, cancellationToken)).ToList();
@@ -93,9 +87,6 @@ public sealed class DeviceRegistry : IDeviceRegistry
             await runningDriver.Task;
         }
         catch (OperationCanceledException)
-        {
-        }
-        catch (Exception)
         {
         }
 

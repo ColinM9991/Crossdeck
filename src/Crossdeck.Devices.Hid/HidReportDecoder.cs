@@ -5,7 +5,7 @@ using HidSharp.Reports.Input;
 
 namespace Crossdeck.Devices.Hid;
 
-internal sealed class HidReportDecoder : IHidReportDecoder
+public sealed class HidReportDecoder : IHidReportDecoder
 {
     private readonly ReportDescriptor _reportDescriptor;
     private readonly IReadOnlyCollection<DeviceItemInputParserWithControls> _inputParsers;
