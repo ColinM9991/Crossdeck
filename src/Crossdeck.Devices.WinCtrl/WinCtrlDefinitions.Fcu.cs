@@ -65,10 +65,10 @@ public static partial class WinCtrlDefinitions
         Slots.Efis(25), Slots.Efis(26, true), Slots.Efis(27), Slots.Efis(28)
     ]);
 
-    private static readonly IReadOnlyDictionary<string, SegmentWindow> EfisWindows =
+    private static IReadOnlyDictionary<string, SegmentWindow> EfisWindows(string panel) =>
         new Dictionary<string, SegmentWindow>
         {
-            ["baro"] = EfisBaro,
+            [$"{panel}.baro"] = EfisBaro,
         };
 
     private static readonly IReadOnlyDictionary<string, BitAddr[]> EfisLabels = new Dictionary<string, BitAddr[]>
@@ -78,7 +78,7 @@ public static partial class WinCtrlDefinitions
     };
 
     private static SegmentPanel EfisPanel(string name, ushort target) => new(
-        name, target, 5, EfisWindows, EfisLabels,
+        name, target, 5, EfisWindows(name), EfisLabels,
         new SegmentFraming(PayloadLength: 9, WriteId: 0x001DFFFF, CommitId: 0x001D0C4C, CommitInOwnPacket: true));
 
     private static readonly SegmentPanel EfisLPanel = EfisPanel("efisL", EfisLTarget);
@@ -86,22 +86,35 @@ public static partial class WinCtrlDefinitions
 
     private static readonly WinCtrlLight[] FcuLights =
     [
-        Level("fcu.backlight", "Backlight", FcuTarget, 0x00),
-        Level("fcu.lcd", "LCD", FcuTarget, 0x01),
-        Level("fcu.indicatorBrightness", "Indicator brightness", FcuTarget, 0x11),
-        Level("fcu.expedBacklight", "EXPED backlight", FcuTarget, 0x1E),
-        Led("fcu.loc", "LOC", FcuTarget, 0x03),
-        Led("fcu.locYellow", "LOC (yellow)", FcuTarget, 0x04),
-        Led("fcu.ap1", "AP1", FcuTarget, 0x05),
-        Led("fcu.ap1Yellow", "AP1 (yellow)", FcuTarget, 0x06),
-        Led("fcu.ap2", "AP2", FcuTarget, 0x07),
-        Led("fcu.ap2Yellow", "AP2 (yellow)", FcuTarget, 0x08),
-        Led("fcu.athr", "A/THR", FcuTarget, 0x09),
-        Led("fcu.athrYellow", "A/THR (yellow)", FcuTarget, 0x0A),
-        Led("fcu.exped", "EXPED", FcuTarget, 0x0B),
-        Led("fcu.expedYellow", "EXPED (yellow)", FcuTarget, 0x0C),
-        Led("fcu.appr", "APPR", FcuTarget, 0x0D),
-        Led("fcu.apprYellow", "APPR (yellow)", FcuTarget, 0x0E),
+        Level("backlight", "Backlight", FcuTarget, 0x00),
+        Level("lcd", "LCD", FcuTarget, 0x01),
+        Level("indicatorBrightness", "Indicator brightness", FcuTarget, 0x11),
+        Level("expedBacklight", "EXPED backlight", FcuTarget, 0x1E),
+        Led("loc", "LOC", FcuTarget, 0x03),
+        Led("locYellow", "LOC (yellow)", FcuTarget, 0x04),
+        Led("ap1", "AP1", FcuTarget, 0x05),
+        Led("ap1Yellow", "AP1 (yellow)", FcuTarget, 0x06),
+        Led("ap2", "AP2", FcuTarget, 0x07),
+        Led("ap2Yellow", "AP2 (yellow)", FcuTarget, 0x08),
+        Led("athr", "A/THR", FcuTarget, 0x09),
+        Led("athrYellow", "A/THR (yellow)", FcuTarget, 0x0A),
+        Led("exped", "EXPED", FcuTarget, 0x0B),
+        Led("expedYellow", "EXPED (yellow)", FcuTarget, 0x0C),
+        Led("appr", "APPR", FcuTarget, 0x0D),
+        Led("apprYellow", "APPR (yellow)", FcuTarget, 0x0E),
+    ];
+
+    private static readonly WinCtrlDisplay[] FcuDisplays =
+    [
+        Display("spd", "Speed", FcuTarget),
+        Display("hdg", "Heading", FcuTarget),
+        Display("alt", "Altitude", FcuTarget),
+        Display("vs", "V/S", FcuTarget),
+    ];
+
+    private static WinCtrlDisplay[] EfisDisplays(string panel, ushort target) =>
+    [
+        Display($"{panel}.baro", "Baro", target),
     ];
 
     private static WinCtrlLight[] EfisLights(string panel, ushort target) =>
@@ -122,7 +135,8 @@ public static partial class WinCtrlDefinitions
         "fcu", FcuTarget, new HashSet<ushort> { 0xBB10, 0xBC1D, 0xBC1E, 0xBA01 },
         [.. FcuLights, .. EfisLights("efisL", EfisLTarget), .. EfisLights("efisR", EfisRTarget)],
         WinCtrlKind.Segment, EmptyRoles,
-        Segment: new SegmentLayout([FcuPanel, EfisLPanel, EfisRPanel]));
+        Segment: new SegmentLayout([FcuPanel, EfisLPanel, EfisRPanel]),
+        Displays: [.. FcuDisplays, .. EfisDisplays("efisL", EfisLTarget), .. EfisDisplays("efisR", EfisRTarget)]);
 
     private static readonly IReadOnlyDictionary<ushort, string[]> FcuPanelsByPid = new Dictionary<ushort, string[]>
     {

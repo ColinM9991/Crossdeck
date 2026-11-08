@@ -11,9 +11,9 @@ public sealed class WinCtrlSegmentDeviceDriver(
     SegmentFrameSource source)
     : WinCtrlDeviceDriverBase(hid, writer), ISegmentDisplayOutput
 {
-    public void SetText(string window, string text)
+    public void SetText(OutputId id, string text)
     {
-        source.SetText(window, text);
+        source.SetText(id, text);
         Writer.MarkDirty();
     }
 

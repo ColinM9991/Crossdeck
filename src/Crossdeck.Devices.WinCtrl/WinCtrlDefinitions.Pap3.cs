@@ -57,30 +57,40 @@ public static partial class WinCtrlDefinitions
 
     private static readonly WinCtrlLight[] Pap3Lights =
     [
-        Level("pap3.backlight", "Backlight", Pap3Target, 0x00),
-        Level("pap3.lcd", "LCD", Pap3Target, 0x01),
-        Level("pap3.backlight3", "Backlight 3", Pap3Target, 0x02),
-        Led("pap3.n1", "N1", Pap3Target, 0x03),
-        Led("pap3.speed", "Speed", Pap3Target, 0x04),
-        Led("pap3.vnav", "VNAV", Pap3Target, 0x05),
-        Led("pap3.lvlChg", "LVL CHG", Pap3Target, 0x06),
-        Led("pap3.hdgSel", "HDG SEL", Pap3Target, 0x07),
-        Led("pap3.lnav", "LNAV", Pap3Target, 0x08),
-        Led("pap3.vorLoc", "VOR LOC", Pap3Target, 0x09),
-        Led("pap3.app", "APP", Pap3Target, 0x0A),
-        Led("pap3.altHld", "ALT HLD", Pap3Target, 0x0B),
-        Led("pap3.vs", "V/S", Pap3Target, 0x0C),
-        Led("pap3.cmdA", "CMD A", Pap3Target, 0x0D),
-        Led("pap3.cwsA", "CWS A", Pap3Target, 0x0E),
-        Led("pap3.cmdB", "CMD B", Pap3Target, 0x0F),
-        Led("pap3.cwsB", "CWS B", Pap3Target, 0x10),
-        Led("pap3.atArm", "A/T ARM", Pap3Target, 0x11),
-        Led("pap3.maCapt", "MA CAPT", Pap3Target, 0x12),
-        Led("pap3.maFo", "MA F/O", Pap3Target, 0x13),
-        Led("pap3.atSolenoid", "A/T Solenoid", Pap3Target, 0x1E),
+        Level("backlight", "Backlight", Pap3Target, 0x00),
+        Level("lcd", "LCD", Pap3Target, 0x01),
+        Level("backlight3", "Backlight 3", Pap3Target, 0x02),
+        Led("n1", "N1", Pap3Target, 0x03),
+        Led("speed", "Speed", Pap3Target, 0x04),
+        Led("vnav", "VNAV", Pap3Target, 0x05),
+        Led("lvlChg", "LVL CHG", Pap3Target, 0x06),
+        Led("hdgSel", "HDG SEL", Pap3Target, 0x07),
+        Led("lnav", "LNAV", Pap3Target, 0x08),
+        Led("vorLoc", "VOR LOC", Pap3Target, 0x09),
+        Led("app", "APP", Pap3Target, 0x0A),
+        Led("altHld", "ALT HLD", Pap3Target, 0x0B),
+        Led("vs", "V/S", Pap3Target, 0x0C),
+        Led("cmdA", "CMD A", Pap3Target, 0x0D),
+        Led("cwsA", "CWS A", Pap3Target, 0x0E),
+        Led("cmdB", "CMD B", Pap3Target, 0x0F),
+        Led("cwsB", "CWS B", Pap3Target, 0x10),
+        Led("atArm", "A/T ARM", Pap3Target, 0x11),
+        Led("maCapt", "MA CAPT", Pap3Target, 0x12),
+        Led("maFo", "MA F/O", Pap3Target, 0x13),
+        Led("atSolenoid", "A/T Solenoid", Pap3Target, 0x1E),
+    ];
+
+    private static readonly WinCtrlDisplay[] Pap3Displays =
+    [
+        Display("spd", "Speed", Pap3Target),
+        Display("crsCapt", "Course (Capt)", Pap3Target),
+        Display("hdg", "Heading", Pap3Target),
+        Display("alt", "Altitude", Pap3Target),
+        Display("vs", "V/S", Pap3Target),
+        Display("crsFo", "Course (F/O)", Pap3Target),
     ];
 
     private static readonly WinCtrlDefinition Pap3 = new(
         "pap3", Pap3Target, new HashSet<ushort> { Pap3Target }, Pap3Lights,
-        WinCtrlKind.Segment, EmptyRoles, Segment: new SegmentLayout([Pap3Panel]));
+        WinCtrlKind.Segment, EmptyRoles, Segment: new SegmentLayout([Pap3Panel]), Displays: Pap3Displays);
 }

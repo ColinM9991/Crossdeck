@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.WinCtrl.Encoders;
 
 namespace Crossdeck.Devices.WinCtrl.Frames;
@@ -9,9 +10,9 @@ public sealed class SegmentFrameSource(WinCtrlSegmentEncoder encoder) : IWinCtrl
     private readonly ConcurrentDictionary<string, bool> _flags = new();
     private int _dirty;
 
-    public void SetText(string window, string text)
+    public void SetText(OutputId id, string text)
     {
-        _texts[window] = text;
+        _texts[id.Name] = text;
         _dirty = 1;
     }
 

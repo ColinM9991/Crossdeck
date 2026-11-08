@@ -61,7 +61,7 @@ public sealed class WinCtrlSegmentEncoder(IReadOnlyList<SegmentPanel> panels)
             var buffer = new byte[panel.BufferSize];
 
             foreach (var (name, window) in panel.Windows)
-                if (texts.TryGetValue($"{panel.Name}.{name}", out var text))
+                if (texts.TryGetValue(name, out var text))
                     DrawWindow(buffer, window, text);
 
             foreach (var (name, addresses) in panel.Labels)

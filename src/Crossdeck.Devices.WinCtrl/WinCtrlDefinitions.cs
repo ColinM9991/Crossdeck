@@ -21,6 +21,8 @@ public sealed record CduScreenSettings(ushort Left, ushort Top, uint LargeFontId
 
 public sealed record WinCtrlLight(OutputId Id, string Label, byte Light, ushort Target, int Max = 1);
 
+public sealed record WinCtrlDisplay(OutputId Id, string Label, ushort Target);
+
 public sealed record WinCtrlDefinition(
     string Part,
     ushort BasePid,
@@ -29,7 +31,8 @@ public sealed record WinCtrlDefinition(
     WinCtrlKind Kind,
     IReadOnlyDictionary<ushort, DisplayRole> Roles,
     CduScreenSettings? Cdu = null,
-    SegmentLayout? Segment = null);
+    SegmentLayout? Segment = null,
+    IReadOnlyList<WinCtrlDisplay> Displays = null!);
 
 /// <summary>
 /// TODO: replace with a JSON catalogue describing the devices
@@ -43,6 +46,9 @@ public static partial class WinCtrlDefinitions
 
     private static WinCtrlLight Level(string name, string label, ushort target, byte light) =>
         new(new OutputId(OutputKind.Level, name), label, light, target, 255);
+
+    private static WinCtrlDisplay Display(string name, string label, ushort target) =>
+        new(new OutputId(OutputKind.Display, name), label, target);
 
     private static WinCtrlLight[] Backlights(ushort target) =>
     [
@@ -88,22 +94,22 @@ public static partial class WinCtrlDefinitions
     private static readonly WinCtrlDefinition Mcdu = new(
         "mcdu", 0xBB32, new HashSet<ushort> { 0xBB32, 0xBB36, 0xBB3A, 0xBB3E }, McduLights(0xBB32),
         WinCtrlKind.Cdu, CduRoles(0xBB32, 0xBB36, 0xBB3E, 0xBB3A),
-        Cdu: new CduScreenSettings(Left: 52, Top: 37, LargeFontId: 5, SmallFontId: 6));
+        Cdu: new CduScreenSettings(Left: 52, Top: 37, LargeFontId: 5, SmallFontId: 6), Displays: []);
 
     private static readonly WinCtrlDefinition Pfp3N = new(
         "pfp-3n", 0xBB31, new HashSet<ushort> { 0xBB31, 0xBB35, 0xBB3D, 0xBB39 }, PfpLights(0xBB31),
         WinCtrlKind.Cdu, CduRoles(0xBB31, 0xBB35, 0xBB3D, 0xBB39),
-        Cdu: new CduScreenSettings(Left: 50, Top: 19, LargeFontId: 1, SmallFontId: 2));
+        Cdu: new CduScreenSettings(Left: 50, Top: 19, LargeFontId: 1, SmallFontId: 2), Displays: []);
 
     private static readonly WinCtrlDefinition Pfp4 = new(
         "pfp-4", 0xBB34, new HashSet<ushort> { 0xBB34, 0xBB38, 0xBB40, 0xBB3C }, PfpLights(0xBB34),
         WinCtrlKind.Cdu, CduRoles(0xBB34, 0xBB38, 0xBB40, 0xBB3C),
-        Cdu: new CduScreenSettings(Left: 50, Top: 19, LargeFontId: 1, SmallFontId: 2));
+        Cdu: new CduScreenSettings(Left: 50, Top: 19, LargeFontId: 1, SmallFontId: 2), Displays: []);
 
     private static readonly WinCtrlDefinition Pfp7 = new(
         "pfp-7", 0xBB33, new HashSet<ushort> { 0xBB33, 0xBB37, 0xBB3F, 0xBB3B }, PfpLights(0xBB33),
         WinCtrlKind.Cdu, CduRoles(0xBB33, 0xBB37, 0xBB3F, 0xBB3B),
-        Cdu: new CduScreenSettings(Left: 50, Top: 19, LargeFontId: 1, SmallFontId: 2));
+        Cdu: new CduScreenSettings(Left: 50, Top: 19, LargeFontId: 1, SmallFontId: 2), Displays: []);
 
     private static IReadOnlyList<WinCtrlDefinition> All() =>
         [Mcdu, Pfp3N, Pfp4, Pfp7, Pap3, Fcu, Pdc3N, Pdc3M];
