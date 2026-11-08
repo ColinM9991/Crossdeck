@@ -1,11 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using Crossdeck.Core;
+using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
 
 namespace Crossdeck.Devices.Hid;
 
-public sealed class HidOutputWriter
+public sealed class HidOutputWriter : IDeviceOutputWriter
 {
     private readonly IHidTransport _transport;
     private readonly IHidReportEncoder _encoder;

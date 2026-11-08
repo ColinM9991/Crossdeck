@@ -1,17 +1,22 @@
 ﻿using Crossdeck.Core.Devices;
+using Crossdeck.Core.Devices.Display;
+using Crossdeck.Core.Devices.Display.Models;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 
 namespace Crossdeck.Devices.WinCtrl;
 
-public sealed class WinCtrlCduDeviceDriver : IDeviceDriver, IIndicatorOutput
+public sealed class WinCtrlCduDeviceDriver : 
+    IDeviceDriver,
+    IIndicatorOutput,
+    ITextDisplayOutput
 {
     private readonly HidDeviceDriver _driver;
-    private readonly HidOutputWriter _writer;
+    private readonly IDisplayOutputWriter _writer;
 
     public WinCtrlCduDeviceDriver(
         HidDeviceDriver driver,
-        HidOutputWriter writer)
+        IDisplayOutputWriter writer)
     {
         _driver = driver ?? throw new ArgumentNullException(nameof(driver));
         _writer = writer ?? throw new ArgumentNullException(nameof(writer));
@@ -48,6 +53,8 @@ public sealed class WinCtrlCduDeviceDriver : IDeviceDriver, IIndicatorOutput
     }
 
     public void Set(OutputId id, int value) => _writer.Set(id, value);
+
+    public void Show(TextScreen screen) => _writer.Set(screen);
 
     public async ValueTask DisposeAsync()
     {

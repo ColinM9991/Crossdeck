@@ -1,4 +1,5 @@
 ﻿using Crossdeck.Core.Devices;
+using Crossdeck.Core.Devices.Display.Models;
 using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
@@ -36,9 +37,10 @@ public sealed class WinCtrlDeviceDriverFactory : IDeviceDriverFactory
                 return null;
             }
 
-            var outputWriter = new HidOutputWriter(
+            var outputWriter = new WinCtrlOutputWriter(
                 hidConnection.Transport,
-                new WinCtrlHidReportEncoder(definition));
+                new WinCtrlHidReportEncoder(definition),
+                new WinCtrlScreenEncoder(definition, TextPalette.Default));
 
             return new WinCtrlCduDeviceDriver(hidDevice, outputWriter);
         }
