@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Text;
 using Crossdeck.Core.Devices.Display.Models;
@@ -7,28 +7,29 @@ namespace Crossdeck.Devices.WinCtrl.Encoders;
 
 internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
 {
-    private const int F0StreamSize = 56;
     private const int F2StreamSize = 63;
     private const int NumberOfOperations = 3;
 
-    private readonly WinCtrlDefinition _definition;
+    private readonly CduScreenSettings _cdu;
+    private readonly WinCtrlF0Stream _stream;
     private readonly uint[] _paletteArgb;
 
     private uint _id = 1;
-    private byte _sequence = 1;
 
     public WinCtrlWinCtrlDisplayEncoder(
         WinCtrlDefinition definition,
         TextPalette palette)
     {
-        _definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        ArgumentNullException.ThrowIfNull(definition);
+        _cdu = definition.Cdu ?? throw new ArgumentException($"'{definition.Part}' has no CDU screen settings", nameof(definition));
+        _stream = new WinCtrlF0Stream(definition.BasePid);
         _paletteArgb = [.. Enum.GetValues<TextColour>().Select(c => ToArgb(palette[c]))];
     }
 
     public void Reset()
     {
         _id = 1;
-        _sequence = 1;
+        _stream.Reset();
     }
 
     public byte[][] EncodeInit()
@@ -38,39 +39,29 @@ internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
 
         List<byte[]> list =
         [
-            Record(WinCtrlCduCommands.ClearStyleTable, id, []),
-            Record(WinCtrlCduCommands.TextGrid, id, Grid(_definition)),
-            Record(WinCtrlCduCommands.AddStyle, id,
-                Style(WinCtrlCduStyleFeatures.Font, _definition.LargeFontId, ++recordNumber)),
-            Record(WinCtrlCduCommands.AddStyle, id,
-                Style(WinCtrlCduStyleFeatures.Font, _definition.SmallFontId, ++recordNumber)),
+            _stream.Record(WinCtrlCduCommands.ClearStyleTable, id, []),
+            _stream.Record(WinCtrlCduCommands.TextGrid, id, Grid(_cdu)),
+            _stream.Record(WinCtrlCduCommands.AddStyle, id,
+                Style(WinCtrlCduStyleFeatures.Font, _cdu.LargeFontId, ++recordNumber)),
+            _stream.Record(WinCtrlCduCommands.AddStyle, id,
+                Style(WinCtrlCduStyleFeatures.Font, _cdu.SmallFontId, ++recordNumber)),
             .. _paletteArgb.Select(c =>
-                Record(WinCtrlCduCommands.AddStyle, id, Style(WinCtrlCduStyleFeatures.TextColour, c, ++recordNumber))),
-            .. _paletteArgb.Select(c => Record(WinCtrlCduCommands.AddStyle, id,
+                _stream.Record(WinCtrlCduCommands.AddStyle, id, Style(WinCtrlCduStyleFeatures.TextColour, c, ++recordNumber))),
+            .. _paletteArgb.Select(c => _stream.Record(WinCtrlCduCommands.AddStyle, id,
                 Style(WinCtrlCduStyleFeatures.BackgroundColour, c, ++recordNumber))),
             .. Enumerable.Range(0, NumberOfOperations)
-                .Select(op => Record(WinCtrlCduCommands.AddStyle, id,
+                .Select(op => _stream.Record(WinCtrlCduCommands.AddStyle, id,
                     Style(WinCtrlCduStyleFeatures.Operations, (uint)op, ++recordNumber))),
-            Record(WinCtrlCduCommands.StyleIndexWidth, id, [02]),
-            Record(WinCtrlCduCommands.BuildStyleTable, id, []),
-            Record(WinCtrlCduCommands.FontColour, id, [0xFF, 0x00, 0x00, 0x00]),
-            Record(WinCtrlCduCommands.BackgroundColour, id, [0xFF, 0x00, 0x00, 0x00]),
-            Record(WinCtrlCduCommands.FillRectangle, id, Rect(0, 0, 640, 480)),
-            Record(WinCtrlCduCommands.RefreshLcd, id, [])
+            _stream.Record(WinCtrlCduCommands.StyleIndexWidth, id, [02]),
+            _stream.Record(WinCtrlCduCommands.BuildStyleTable, id, []),
+            _stream.Record(WinCtrlCduCommands.FontColour, id, [0xFF, 0x00, 0x00, 0x00]),
+            _stream.Record(WinCtrlCduCommands.BackgroundColour, id, [0xFF, 0x00, 0x00, 0x00]),
+            _stream.Record(WinCtrlCduCommands.FillRectangle, id, Rect(0, 0, 640, 480)),
+            _stream.Record(WinCtrlCduCommands.RefreshLcd, id, [])
         ];
 
         var records = list.SelectMany(x => x).ToArray();
-        return Packetise(
-            records.AsSpan(),
-            WinCtrlCduReports.Setup,
-            F0StreamSize,
-            4,
-            (buffer, length) =>
-            {
-                buffer[1] = 0x00;
-                buffer[2] = _sequence++;
-                buffer[3] = (byte)length;
-            });
+        return _stream.Packetise(records);
     }
 
     public byte[][] EncodeFrame(TextScreen screen)
@@ -96,15 +87,15 @@ internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
             buffer.Write(utf8[..length]);
         }
 
-        return Packetise(buffer.WrittenSpan, WinCtrlCduReports.Screen, F2StreamSize, 1);
+        return PacketiseFrame(buffer.WrittenSpan, WinCtrlCduReports.Screen, F2StreamSize, 1);
     }
 
-    private static byte[] Grid(WinCtrlDefinition definition)
+    private static byte[] Grid(CduScreenSettings cdu)
     {
         var bytes = new byte[8];
 
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(0), definition.Left);
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2), definition.Top);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(0), cdu.Left);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2), cdu.Top);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(4), TextScreen.Rows);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(6), TextScreen.Columns);
 
@@ -114,12 +105,12 @@ internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
     private static byte[] Rect(ushort x, ushort y, ushort width, ushort height)
     {
         var bytes = new byte[8];
-        
+
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(0), x);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2), y);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(4), width);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(6), height);
-        
+
         return bytes;
     }
 
@@ -148,12 +139,11 @@ internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
 
     private static uint ToArgb(Rgb c) => 0xFF000000u | (uint)(c.R << 16 | c.G << 8 | c.B);
 
-    private static byte[][] Packetise(
+    private static byte[][] PacketiseFrame(
         ReadOnlySpan<byte> data,
         byte id,
         int packetSize,
-        int offset,
-        Action<byte[], int>? packetAction = null)
+        int offset)
     {
         var numberOfPackets = (data.Length + packetSize - 1) / packetSize;
         var packets = new byte[numberOfPackets][];
@@ -166,31 +156,10 @@ internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
             var buffer = new byte[64];
             buffer[0] = id;
 
-            packetAction?.Invoke(buffer, length);
-
             data.Slice(start, length).CopyTo(buffer.AsSpan(offset));
             packets[i] = buffer;
         }
 
         return packets;
-    }
-
-    private byte[] Record(uint command, uint id, byte[] payload)
-    {
-        const int recordHeaderSize = 17;
-        var record = new byte[recordHeaderSize + payload.Length];
-        record[0] = _definition.TargetLo;
-        record[1] = _definition.TargetHi;
-
-        BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(4), command);
-        BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(8), id);
-
-        record[12] = 0x00;
-
-        BinaryPrimitives.WriteUInt32LittleEndian(record.AsSpan(13), (uint)payload.Length);
-
-        payload.CopyTo(record.AsSpan(recordHeaderSize));
-
-        return record;
     }
 }

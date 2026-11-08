@@ -1,52 +1,55 @@
-﻿using Crossdeck.Core.Devices;
-using Crossdeck.Core.Devices.Display.Models;
+using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
-using Crossdeck.Devices.WinCtrl.Drivers;
-using Crossdeck.Devices.WinCtrl.Encoders;
-using Crossdeck.Devices.WinCtrl.Frames;
+using Crossdeck.Devices.WinCtrl.Assemblers;
 
 namespace Crossdeck.Devices.WinCtrl;
 
 public sealed class WinCtrlDeviceDriverFactory : IDeviceDriverFactory
 {
     private readonly IHidTransportFactory _hidTransportFactory;
+    private readonly IReadOnlyDictionary<WinCtrlKind, IWinCtrlDriverAssembler> _assemblers;
 
-    public WinCtrlDeviceDriverFactory(IHidTransportFactory hidTransportFactory)
+    public WinCtrlDeviceDriverFactory(IHidTransportFactory hidTransportFactory,
+        IEnumerable<IWinCtrlDriverAssembler> assemblers)
     {
         _hidTransportFactory = hidTransportFactory ?? throw new ArgumentNullException(nameof(hidTransportFactory));
+        _assemblers = (assemblers ?? throw new ArgumentNullException(nameof(assemblers))).ToDictionary(a => a.Kind);
     }
 
     public int Priority => 100;
 
-    public bool CanCreate(DeviceDescriptor deviceDescriptor) => deviceDescriptor.Identity.VendorId == 0x4098;
+    public bool CanCreate(DeviceDescriptor deviceDescriptor) =>
+        deviceDescriptor.Identity.VendorId == 0x4098 &&
+        WinCtrlDefinitions.ForPid(deviceDescriptor.Identity.ProductId) is { } definition &&
+        _assemblers.ContainsKey(definition.Kind);
 
     public async Task<IDeviceDriver?> CreateAsync(DeviceDescriptor deviceDescriptor,
         CancellationToken cancellationToken)
     {
+        var definition = WinCtrlDefinitions.ForPid(deviceDescriptor.Identity.ProductId);
+        if (definition is null) return null;
+        if (!_assemblers.TryGetValue(definition.Kind, out var assembler)) return null;
+
         try
         {
             var hidConnection = await _hidTransportFactory.CreateAsync(deviceDescriptor.Path);
 
-            var hidDevice = new HidDeviceDriver(
-                deviceDescriptor.Identity,
-                hidConnection.Transport,
-                new HidReportDecoder(hidConnection.ReportDescriptor));
-
-            var definition = WinCtrlDefinitions.ForPid(deviceDescriptor.Identity.ProductId);
-            if (definition == null)
+            try
             {
-                return null;
+                var hidDevice = new HidDeviceDriver(
+                    deviceDescriptor.Identity,
+                    hidConnection.Transport,
+                    new HidReportDecoder(hidConnection.ReportDescriptor));
+
+                return assembler.Assemble(definition, hidDevice, hidConnection.Transport);
             }
-
-            var frameSource = new CduFrameSource(new WinCtrlWinCtrlDisplayEncoder(definition, TextPalette.Default));
-            var outputWriter = new WinCtrlOutputWriter(
-                hidConnection.Transport,
-                new WinCtrlHidReportEncoder(definition),
-                frameSource);
-
-            return new WinCtrlCduDeviceDriver(hidDevice, outputWriter, frameSource);
+            catch
+            {
+                await hidConnection.Transport.DisposeAsync();
+                throw;
+            }
         }
         catch (DeviceNotUsableException)
         {

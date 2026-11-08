@@ -4,8 +4,8 @@ internal static class Slots
 {
     private const int First = 25;
 
-    static readonly int[] FcuBit = [0, 2, 3, 1, 4, 5, 6, 7];
-    static readonly int[] EfisBit = [7, 1, 0, 2, 3, 6, 5, 4];
+    private static readonly int[] FcuBit = [0, 2, 3, 1, 4, 5, 6, 7];
+    private static readonly int[] EfisBit = [7, 1, 0, 2, 3, 6, 5, 4];
 
     public static DigitSlot Pap(int group, byte bit, bool hasDot = false) =>
         new(Build(k => k == 0 && !hasDot ? null : new BitAddr(k * 4 + group, bit)));
@@ -25,8 +25,10 @@ internal static class Slots
                 : new BitAddr(start + i + 1 - First, (byte)(1 << (n - 4)));
         }));
 
-    public static DigitSlot Efis(int packetByte) =>
-        new(Build(k => new BitAddr(packetByte - First, (byte)(1 << EfisBit[k]))));
+    public static DigitSlot Efis(int packetByte, bool hasDot = false) =>
+        new(Build(k => k == 0 && !hasDot
+            ? null
+            : new BitAddr(packetByte - First, (byte)(1 << EfisBit[k]))));
 
     private static BitAddr?[] Build(Func<int, BitAddr?> at)
     {

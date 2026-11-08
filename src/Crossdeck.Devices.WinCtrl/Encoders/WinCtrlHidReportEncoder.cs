@@ -25,8 +25,8 @@ public sealed class WinCtrlHidReportEncoder : IHidReportEncoder
 
             var data = new byte[14];
             data[0] = 0x02;
-            data[1] = _definition.TargetLo;
-            data[2] = _definition.TargetHi;
+            data[1] = (byte)(light.Target & 0xFF);
+            data[2] = (byte)(light.Target >> 8);
             data[5] = 0x03;
             data[6] = 0x49;
             data[7] = light.Light;
