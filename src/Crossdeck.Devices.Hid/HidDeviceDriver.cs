@@ -7,6 +7,7 @@ namespace Crossdeck.Devices.Hid;
 
 public sealed class HidDeviceDriver : IDeviceDriver
 {
+    private readonly Dictionary<byte, byte[]> _lastReports = [];
     private readonly IHidTransport _transport;
     private readonly IHidReportDecoder _decoder;
 
@@ -45,6 +46,8 @@ public sealed class HidDeviceDriver : IDeviceDriver
                 var read = await _transport.ReadAsync(buffer, cancellationToken);
                 if (read == 0) break;
 
+                if (IsRepeat(buffer.AsSpan(0, read))) continue;
+
                 changes.Clear();
                 _decoder.Decode(buffer, changes);
 
@@ -62,6 +65,15 @@ public sealed class HidDeviceDriver : IDeviceDriver
                 }
             }
         }
+    }
+
+    private bool IsRepeat(ReadOnlySpan<byte> report)
+    {
+        if (_lastReports.TryGetValue(report[0], out var last) && report.SequenceEqual(last))
+            return true;
+
+        _lastReports[report[0]] = report.ToArray();
+        return false;
     }
 
     private static InputEventKind GetInputEventKind(DeviceControl deviceControl, double value) => deviceControl switch
