@@ -1,8 +1,8 @@
 ﻿using Crossdeck.Core.Devices.Display.Models;
 
-namespace Crossdeck.Devices.WinCtrl;
+namespace Crossdeck.Devices.WinCtrl.Encoders;
 
-internal interface IScreenEncoder
+public interface IWinCtrlDisplayEncoder
 {
     void Reset();
     

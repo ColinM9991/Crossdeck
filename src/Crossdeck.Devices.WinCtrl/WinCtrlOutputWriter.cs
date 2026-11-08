@@ -1,106 +1,56 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using Crossdeck.Core;
-using Crossdeck.Core.Devices.Display;
-using Crossdeck.Core.Devices.Display.Models;
+using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
+using Crossdeck.Devices.WinCtrl.Frames;
 
 namespace Crossdeck.Devices.WinCtrl;
 
-internal sealed class WinCtrlOutputWriter : IDisplayOutputWriter
+public sealed class WinCtrlOutputWriter(
+    IHidTransport transport,
+    IHidReportEncoder ledEncoder,
+    IWinCtrlFrameSource frames) : IDeviceOutputWriter
 {
-    private readonly IHidTransport _transport;
-    private readonly IHidReportEncoder _encoder;
-    private readonly IScreenEncoder _screenEncoder;
-    private readonly Signal _dirtySignal = new();
-
-    private long _lastFrameStart;
-    private TextScreen? _screen;
     private readonly ConcurrentDictionary<OutputId, int> _state = new();
+    private readonly Signal _dirty = new();
+    private long _lastFrame;
 
-    public WinCtrlOutputWriter(
-        IHidTransport transport,
-        IHidReportEncoder encoder,
-        IScreenEncoder screenEncoder)
-    {
-        _transport = transport ?? throw new ArgumentNullException(nameof(transport));
-        _encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
-        _screenEncoder = screenEncoder ?? throw new ArgumentNullException(nameof(screenEncoder));
-    }
-    
     public void Set(OutputId id, int value)
     {
         _state[id] = value;
-        _dirtySignal.Set();
+        _dirty.Set();
     }
 
-    public void Set(TextScreen screen)
+    public void MarkDirty() => _dirty.Set();
+
+    public async Task RunAsync(CancellationToken ct)
     {
-        Interlocked.Exchange(ref _screen, screen);
-        _dirtySignal.Set();
-    }
+        await SendLedsAsync(ct);
+        await WriteAllAsync(frames.EncodeInit(), ct);
+        await _dirty.SetAsync(ct);
 
-    public async Task RunAsync(CancellationToken cancellationToken)
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-        await InitialiseScreenAsync(cts.Token);
-        await _dirtySignal.SetAsync(cancellationToken);
-
-        await foreach (var _ in _dirtySignal.WaitAsync(cts.Token))
+        await foreach (var _ in _dirty.WaitAsync(ct))
         {
-            await SendLedStatesAsync(cts.Token);
-            await SendScreenAsync(cts.Token);
-        }
-    }
-    
-    private async Task InitialiseScreenAsync(CancellationToken cancellationToken)
-    {
-        _state[BacklightOutput()] = 255;
-        await SendLedStatesAsync(cancellationToken);
+            await SendLedsAsync(ct);
 
-        foreach (var report in _screenEncoder.EncodeInit())
-        {
-            await _transport.WriteAsync(report, cancellationToken);
-        }
-        
-        foreach (var report in _screenEncoder.EncodeFrame(TextScreen.WaitingForData))
-        {
-            await _transport.WriteAsync(report, cancellationToken);
-        }
+            var wait = TimeSpan.FromMilliseconds(66) - Stopwatch.GetElapsedTime(_lastFrame);
+            if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
 
-        return;
-        static OutputId BacklightOutput()
-        {
-            return new OutputId(OutputKind.Level, "screen");
+            if (frames.TakeFrame() is not { } reports) continue;
+            
+            await WriteAllAsync(reports, ct);
+            _lastFrame = Stopwatch.GetTimestamp();
         }
     }
 
-    private async Task SendLedStatesAsync(CancellationToken cancellationToken)
+    private Task SendLedsAsync(CancellationToken ct) =>
+        WriteAllAsync(ledEncoder.Encode(_state.ToDictionary()).Select(r => r.Data), ct);
+
+    private async Task WriteAllAsync(IEnumerable<byte[]> reports, CancellationToken ct)
     {
-        var snapshot = _state.ToDictionary();
-
-        foreach (var report in _encoder.Encode(snapshot))
-        {
-            await _transport.WriteAsync(report.Data, cancellationToken);
-        }
-    }
-
-    private async Task SendScreenAsync(CancellationToken cancellationToken)
-    {
-        var current = Stopwatch.GetTimestamp();
-        var elapsed = current - _lastFrameStart;
-        if (elapsed < 66) return;
-        
-        var currentScreen = Interlocked.Exchange(ref _screen, null);
-        if (currentScreen is null) return;
-
-        foreach (var report in _screenEncoder.EncodeFrame(currentScreen))
-        {
-            await _transport.WriteAsync(report, cancellationToken);
-        }
-
-        _lastFrameStart = current;
+        foreach (var report in reports)
+            await transport.WriteAsync(report, ct);
     }
 }

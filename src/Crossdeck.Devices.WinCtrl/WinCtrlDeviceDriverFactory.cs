@@ -3,6 +3,9 @@ using Crossdeck.Core.Devices.Display.Models;
 using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
+using Crossdeck.Devices.WinCtrl.Drivers;
+using Crossdeck.Devices.WinCtrl.Encoders;
+using Crossdeck.Devices.WinCtrl.Frames;
 
 namespace Crossdeck.Devices.WinCtrl;
 
@@ -30,19 +33,20 @@ public sealed class WinCtrlDeviceDriverFactory : IDeviceDriverFactory
                 deviceDescriptor.Identity,
                 hidConnection.Transport,
                 new HidReportDecoder(hidConnection.ReportDescriptor));
-            
+
             var definition = WinCtrlDefinitions.ForPid(deviceDescriptor.Identity.ProductId);
             if (definition == null)
             {
                 return null;
             }
 
+            var frameSource = new CduFrameSource(new WinCtrlWinCtrlDisplayEncoder(definition, TextPalette.Default));
             var outputWriter = new WinCtrlOutputWriter(
                 hidConnection.Transport,
                 new WinCtrlHidReportEncoder(definition),
-                new WinCtrlScreenEncoder(definition, TextPalette.Default));
+                frameSource);
 
-            return new WinCtrlCduDeviceDriver(hidDevice, outputWriter);
+            return new WinCtrlCduDeviceDriver(hidDevice, outputWriter, frameSource);
         }
         catch (DeviceNotUsableException)
         {

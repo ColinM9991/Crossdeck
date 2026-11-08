@@ -2,7 +2,7 @@
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Hid.Models;
 
-namespace Crossdeck.Devices.WinCtrl;
+namespace Crossdeck.Devices.WinCtrl.Encoders;
 
 public sealed class WinCtrlHidReportEncoder : IHidReportEncoder
 {

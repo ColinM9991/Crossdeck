@@ -3,9 +3,9 @@ using System.Buffers.Binary;
 using System.Text;
 using Crossdeck.Core.Devices.Display.Models;
 
-namespace Crossdeck.Devices.WinCtrl;
+namespace Crossdeck.Devices.WinCtrl.Encoders;
 
-internal sealed class WinCtrlScreenEncoder : IScreenEncoder
+internal sealed class WinCtrlWinCtrlDisplayEncoder : IWinCtrlDisplayEncoder
 {
     private const int F0StreamSize = 56;
     private const int F2StreamSize = 63;
@@ -17,7 +17,7 @@ internal sealed class WinCtrlScreenEncoder : IScreenEncoder
     private uint _id = 1;
     private byte _sequence = 1;
 
-    public WinCtrlScreenEncoder(
+    public WinCtrlWinCtrlDisplayEncoder(
         WinCtrlDefinition definition,
         TextPalette palette)
     {
@@ -38,31 +38,31 @@ internal sealed class WinCtrlScreenEncoder : IScreenEncoder
 
         List<byte[]> list =
         [
-            Record(WinCtrlCommands.ClearStyleTable, id, []),
-            Record(WinCtrlCommands.TextGrid, id, Grid(_definition)),
-            Record(WinCtrlCommands.AddStyle, id,
-                Style(WinCtrlStyleFeatures.Font, _definition.LargeFontId, ++recordNumber)),
-            Record(WinCtrlCommands.AddStyle, id,
-                Style(WinCtrlStyleFeatures.Font, _definition.SmallFontId, ++recordNumber)),
+            Record(WinCtrlCduCommands.ClearStyleTable, id, []),
+            Record(WinCtrlCduCommands.TextGrid, id, Grid(_definition)),
+            Record(WinCtrlCduCommands.AddStyle, id,
+                Style(WinCtrlCduStyleFeatures.Font, _definition.LargeFontId, ++recordNumber)),
+            Record(WinCtrlCduCommands.AddStyle, id,
+                Style(WinCtrlCduStyleFeatures.Font, _definition.SmallFontId, ++recordNumber)),
             .. _paletteArgb.Select(c =>
-                Record(WinCtrlCommands.AddStyle, id, Style(WinCtrlStyleFeatures.TextColour, c, ++recordNumber))),
-            .. _paletteArgb.Select(c => Record(WinCtrlCommands.AddStyle, id,
-                Style(WinCtrlStyleFeatures.BackgroundColour, c, ++recordNumber))),
+                Record(WinCtrlCduCommands.AddStyle, id, Style(WinCtrlCduStyleFeatures.TextColour, c, ++recordNumber))),
+            .. _paletteArgb.Select(c => Record(WinCtrlCduCommands.AddStyle, id,
+                Style(WinCtrlCduStyleFeatures.BackgroundColour, c, ++recordNumber))),
             .. Enumerable.Range(0, NumberOfOperations)
-                .Select(op => Record(WinCtrlCommands.AddStyle, id,
-                    Style(WinCtrlStyleFeatures.Operations, (uint)op, ++recordNumber))),
-            Record(WinCtrlCommands.StyleIndexWidth, id, [02]),
-            Record(WinCtrlCommands.BuildStyleTable, id, []),
-            Record(WinCtrlCommands.FontColour, id, [0xFF, 0x00, 0x00, 0x00]),
-            Record(WinCtrlCommands.BackgroundColour, id, [0xFF, 0x00, 0x00, 0x00]),
-            Record(WinCtrlCommands.FillRectangle, id, Rect(0, 0, 640, 480)),
-            Record(WinCtrlCommands.RefreshLcd, id, [])
+                .Select(op => Record(WinCtrlCduCommands.AddStyle, id,
+                    Style(WinCtrlCduStyleFeatures.Operations, (uint)op, ++recordNumber))),
+            Record(WinCtrlCduCommands.StyleIndexWidth, id, [02]),
+            Record(WinCtrlCduCommands.BuildStyleTable, id, []),
+            Record(WinCtrlCduCommands.FontColour, id, [0xFF, 0x00, 0x00, 0x00]),
+            Record(WinCtrlCduCommands.BackgroundColour, id, [0xFF, 0x00, 0x00, 0x00]),
+            Record(WinCtrlCduCommands.FillRectangle, id, Rect(0, 0, 640, 480)),
+            Record(WinCtrlCduCommands.RefreshLcd, id, [])
         ];
 
         var records = list.SelectMany(x => x).ToArray();
         return Packetise(
             records.AsSpan(),
-            WinCtrlReports.Setup,
+            WinCtrlCduReports.Setup,
             F0StreamSize,
             4,
             (buffer, length) =>
@@ -96,7 +96,7 @@ internal sealed class WinCtrlScreenEncoder : IScreenEncoder
             buffer.Write(utf8[..length]);
         }
 
-        return Packetise(buffer.WrittenSpan, WinCtrlReports.Screen, F2StreamSize, 1);
+        return Packetise(buffer.WrittenSpan, WinCtrlCduReports.Screen, F2StreamSize, 1);
     }
 
     private static byte[] Grid(WinCtrlDefinition definition)

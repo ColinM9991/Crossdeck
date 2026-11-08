@@ -1,6 +1,6 @@
 ﻿namespace Crossdeck.Devices.WinCtrl;
 
-internal static class WinCtrlCommands
+internal static class WinCtrlCduCommands
 {
     public const int RefreshLcd = 0x0103;
     public const int TestPattern = 0x0104;
@@ -24,7 +24,7 @@ internal static class WinCtrlCommands
     public const int ClearStyleTable = 0x011E;
 }
 
-internal static class WinCtrlStyleFeatures
+internal static class WinCtrlCduStyleFeatures
 {
     public const ushort Font = 1;
     public const ushort TextColour = 2;
@@ -32,7 +32,7 @@ internal static class WinCtrlStyleFeatures
     public const ushort Operations = 4;
 }
 
-internal static class WinCtrlReports
+internal static class WinCtrlCduReports
 {
     public const int Setup = 0xF0;
     public const int Screen = 0xF2;
