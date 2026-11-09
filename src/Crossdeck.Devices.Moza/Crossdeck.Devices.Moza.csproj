@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net$(CrossdeckNetVersion)</TargetFramework>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="System.IO.Ports" Version="10.0.11"/>
+        <PackageReference Include="System.IO.Hashing" Version="9.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj"/>
+        <ProjectReference Include="..\Crossdeck.Devices.Hid\Crossdeck.Devices.Hid.csproj"/>
+    </ItemGroup>
+
+</Project>

@@ -3,10 +3,21 @@
     <Project Path="src/Crossdeck.Application/Crossdeck.Application.csproj" />
     <Project Path="src/Crossdeck.Core/Crossdeck.Core.csproj" />
     <Project Path="src/Crossdeck.Devices.Hid/Crossdeck.Devices.Hid.csproj" />
+    <Project Path="src/Crossdeck.Devices.Moza/Crossdeck.Devices.Moza.csproj" />
+    <Project Path="src/Crossdeck.Devices.Serial/Crossdeck.Devices.Serial.csproj" />
     <Project Path="src/Crossdeck.Devices.WinCtrl/Crossdeck.Devices.WinCtrl.csproj" />
     <Project Path="src/Crossdeck.Host/Crossdeck.Host.csproj" />
     <Project Path="src/Crossdeck.Sim.MSFS/Crossdeck.Sim.MSFS.csproj" />
     <Project Path="src/Crossdeck.Sim.XPlane/Crossdeck.Sim.XPlane.csproj" />
     <Project Path="src/Crossdeck.UI/Crossdeck.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Crossdeck.Testing/Crossdeck.Testing.csproj" />
+    <Project Path="tests/Crossdeck.Core.Tests/Crossdeck.Core.Tests.csproj" />
+    <Project Path="tests/Crossdeck.Application.Tests/Crossdeck.Application.Tests.csproj" />
+    <Project Path="tests/Crossdeck.Devices.Hid.Tests/Crossdeck.Devices.Hid.Tests.csproj" />
+    <Project Path="tests/Crossdeck.Host.Tests/Crossdeck.Host.Tests.csproj" />
+    <Project Path="tests/Crossdeck.Sim.XPlane.Tests/Crossdeck.Sim.XPlane.Tests.csproj" />
+    <Project Path="tests/Crossdeck.Devices.WinCtrl.Tests/Crossdeck.Devices.WinCtrl.Tests.csproj" />
   </Folder>
 </Solution>

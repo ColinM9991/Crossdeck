@@ -11,4 +11,10 @@
       <ProjectReference Include="..\Crossdeck.Devices.Hid\Crossdeck.Devices.Hid.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+        <_Parameter1>Crossdeck.Devices.WinCtrl.Tests</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+
 </Project>

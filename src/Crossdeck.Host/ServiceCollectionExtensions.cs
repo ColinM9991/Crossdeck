@@ -3,6 +3,7 @@ using Crossdeck.Application.Devices;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Session;
 using Crossdeck.Devices.Hid;
+using Crossdeck.Devices.Moza;
 using Crossdeck.Devices.WinCtrl;
 using Crossdeck.Sim.XPlane;
 #if WINDOWS
@@ -20,6 +21,7 @@ public static class ServiceCollectionExtensions
             .AddSimulationServices()
             .AddHidServices()
             .AddWinCtrlDevices()
+            .AddMozaServices()
             .AddXPlane();
         
         #if WINDOWS
