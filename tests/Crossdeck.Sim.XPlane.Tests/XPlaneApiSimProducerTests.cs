@@ -1,8 +1,5 @@
 using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Sim.XPlane.Models;
-using Crossdeck.Testing;
-using NSubstitute;
-using Xunit;
 
 namespace Crossdeck.Sim.XPlane.Tests;
 

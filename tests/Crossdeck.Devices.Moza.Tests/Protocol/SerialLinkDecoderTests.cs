@@ -1,6 +1,4 @@
-﻿using Crossdeck.Devices.Moza.Protocol;
-using Crossdeck.Testing;
-using Xunit;
+using Crossdeck.Devices.Moza.Protocol;
 
 namespace Crossdeck.Devices.Moza.Tests.Protocol;
 

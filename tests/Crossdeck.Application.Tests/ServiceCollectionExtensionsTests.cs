@@ -5,8 +5,6 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Session;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace Crossdeck.Application.Tests;
 

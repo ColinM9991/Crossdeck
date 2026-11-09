@@ -1,7 +1,5 @@
 using System.Buffers.Binary;
 using Crossdeck.Devices.WinCtrl.Encoders;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 

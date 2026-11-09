@@ -72,7 +72,9 @@ public sealed class SerialLinkDecoder
         }
 
         _isInFrame = false;
-        if ((byte)_sum != b)
+        
+        var checksumMismatch = (byte)_sum != b;
+        if (checksumMismatch)
             return;
 
         var payload = _buffer.AsSpan(HeaderSize, _buffer[0]).ToArray();

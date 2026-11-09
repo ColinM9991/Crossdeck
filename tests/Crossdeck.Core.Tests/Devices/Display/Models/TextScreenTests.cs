@@ -1,5 +1,4 @@
 using Crossdeck.Core.Devices.Display.Models;
-using Xunit;
 
 namespace Crossdeck.Core.Tests.Devices.Display.Models;
 

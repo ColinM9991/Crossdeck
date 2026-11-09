@@ -1,5 +1,4 @@
 using Crossdeck.Devices.WinCtrl.Frames;
-using Xunit;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Frames;
 

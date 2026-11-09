@@ -1,12 +1,7 @@
-using AutoFixture;
-using AutoFixture.AutoNSubstitute;
-using AutoFixture.Idioms;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
 using Crossdeck.Devices.WinCtrl;
 using Crossdeck.Devices.WinCtrl.Encoders;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 

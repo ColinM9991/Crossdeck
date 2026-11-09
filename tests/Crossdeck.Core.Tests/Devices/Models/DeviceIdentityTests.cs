@@ -1,6 +1,4 @@
 using Crossdeck.Core.Devices.Models;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Core.Tests.Devices.Models;
 

@@ -1,6 +1,4 @@
 using Crossdeck.Core;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Core.Tests;
 

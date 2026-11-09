@@ -1,6 +1,4 @@
 using Crossdeck.Core.Devices;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace Crossdeck.Devices.Hid.Tests;
 

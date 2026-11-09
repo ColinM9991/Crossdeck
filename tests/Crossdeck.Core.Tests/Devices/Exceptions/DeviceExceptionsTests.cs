@@ -1,6 +1,4 @@
 using Crossdeck.Core.Devices.Exceptions;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Core.Tests.Devices.Exceptions;
 

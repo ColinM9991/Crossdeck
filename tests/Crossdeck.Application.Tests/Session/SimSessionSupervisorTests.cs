@@ -3,9 +3,6 @@ using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Core.Simulators;
-using Crossdeck.Testing;
-using NSubstitute;
-using Xunit;
 
 namespace Crossdeck.Application.Tests.Session;
 

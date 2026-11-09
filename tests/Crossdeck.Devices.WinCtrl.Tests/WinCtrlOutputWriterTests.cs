@@ -1,11 +1,7 @@
-using AutoFixture.Xunit2;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Hid.Models;
 using Crossdeck.Devices.WinCtrl.Frames;
-using Crossdeck.Testing;
-using NSubstitute;
-using Xunit;
 
 namespace Crossdeck.Devices.WinCtrl.Tests;
 

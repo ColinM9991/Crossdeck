@@ -6,7 +6,7 @@ using Crossdeck.Devices.Moza.Drivers;
 
 namespace Crossdeck.Devices.Moza;
 
-internal sealed class MozaDeviceDriverFactory : IDeviceDriverFactory
+public sealed class MozaDeviceDriverFactory : IDeviceDriverFactory
 {
     private readonly IHidTransportFactory _hidTransportFactory;
     

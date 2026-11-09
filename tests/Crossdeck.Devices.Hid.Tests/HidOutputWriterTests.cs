@@ -1,12 +1,5 @@
-using AutoFixture;
-using AutoFixture.AutoNSubstitute;
-using AutoFixture.Idioms;
-using AutoFixture.Xunit2;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
-using Crossdeck.Testing;
-using NSubstitute;
-using Xunit;
 
 namespace Crossdeck.Devices.Hid.Tests;
 

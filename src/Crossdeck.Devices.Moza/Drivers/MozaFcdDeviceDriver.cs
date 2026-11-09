@@ -4,7 +4,7 @@ using Crossdeck.Devices.Hid;
 
 namespace Crossdeck.Devices.Moza.Drivers;
 
-internal sealed class MozaFcdDeviceDriver : IDeviceDriver
+public sealed class MozaFcdDeviceDriver : IDeviceDriver
 {
     private readonly HidDeviceDriver _hidDeviceDriver;
 

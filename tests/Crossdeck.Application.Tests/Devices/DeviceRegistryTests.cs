@@ -2,9 +2,6 @@ using Crossdeck.Application.Devices;
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
-using NSubstitute;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Application.Tests.Devices;
 

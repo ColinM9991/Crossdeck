@@ -1,8 +1,6 @@
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Sim.XPlane.Models;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace Crossdeck.Sim.XPlane.Tests;
 

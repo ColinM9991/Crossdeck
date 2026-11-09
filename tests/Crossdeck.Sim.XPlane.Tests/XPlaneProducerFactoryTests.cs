@@ -1,7 +1,5 @@
 using Crossdeck.Core.Models;
 using Crossdeck.Sim.XPlane.Models;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Sim.XPlane.Tests;
 

@@ -8,11 +8,11 @@ public sealed class SerialLinkCodec
         var frame = new List<byte>
         {
             MozaFrameConstants.SerialLinkFrameId,
-            length,
         };
 
-        var checksum = 0x0D + MozaFrameConstants.SerialLinkFrameId + length;
+        var checksum = 0x0D + MozaFrameConstants.SerialLinkFrameId;
 
+        Put(length);
         Put(command);
         Put(pair);
         foreach (var b in payload)
@@ -26,16 +26,16 @@ public sealed class SerialLinkCodec
         
         return [.. frame];
 
-        void Put(byte b, bool escape = true)
+        void Put(byte b, bool shouldEscape = true)
         {
             while (true)
             {
                 frame.Add(b);
                 checksum += b;
 
-                if (escape && b == MozaFrameConstants.SerialLinkFrameId)
+                if (shouldEscape && b == MozaFrameConstants.SerialLinkFrameId)
                 {
-                    escape = false;
+                    shouldEscape = false;
                     continue;
                 }
 

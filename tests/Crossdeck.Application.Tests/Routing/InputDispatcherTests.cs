@@ -1,16 +1,9 @@
-using AutoFixture;
-using AutoFixture.AutoNSubstitute;
-using AutoFixture.Idioms;
-using AutoFixture.Xunit2;
 using Crossdeck.Application.Routing;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
-using Crossdeck.Testing;
-using NSubstitute;
-using Xunit;
 
 namespace Crossdeck.Application.Tests.Routing;
 

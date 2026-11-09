@@ -1,7 +1,5 @@
 using Crossdeck.Core.Models;
 using Crossdeck.Core.Session.Models;
-using Crossdeck.Testing;
-using Xunit;
 
 namespace Crossdeck.Core.Tests.Session.Models;
 

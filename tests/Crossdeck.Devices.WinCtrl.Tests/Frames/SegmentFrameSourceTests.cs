@@ -1,7 +1,6 @@
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.WinCtrl.Encoders;
 using Crossdeck.Devices.WinCtrl.Frames;
-using Xunit;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Frames;
 
