@@ -18,6 +18,7 @@
     <Project Path="tests/Crossdeck.Devices.Hid.Tests/Crossdeck.Devices.Hid.Tests.csproj" />
     <Project Path="tests/Crossdeck.Host.Tests/Crossdeck.Host.Tests.csproj" />
     <Project Path="tests/Crossdeck.Sim.XPlane.Tests/Crossdeck.Sim.XPlane.Tests.csproj" />
+    <Project Path="tests/Crossdeck.Devices.Moza.Tests/Crossdeck.Devices.Moza.Tests.csproj" />
     <Project Path="tests/Crossdeck.Devices.WinCtrl.Tests/Crossdeck.Devices.WinCtrl.Tests.csproj" />
   </Folder>
 </Solution>
