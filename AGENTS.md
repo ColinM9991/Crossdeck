@@ -28,13 +28,3 @@ Applies to all written communication.
 ## Unit testing
 
 - The unit testing rules are in `agents/unit-testing.md`. Read that file in full before you write, change or review unit tests, and follow it exactly. Do not read it for any other task.
-
-## Project context
-
-- Crossdeck syncs flight simulators with cockpit hardware in both directions. Sim values go to device outputs (LEDs, CDU screens, segment displays). Device inputs go to sim commands. Simulators: X-Plane (UDP and the 12.1+ Web API) and MSFS (SimConnect, Windows only, behind `#if`). Hardware: WINWING panels and CDUs over HID, MOZA FCD over serial plus HID, other HID devices.
-- The user builds the application. Agents act as consultants: advise, review, answer questions and help plan. No agent writes or builds code, scaffolds projects or opens pull requests unless the user explicitly asks for that specific thing, and then only `developer` does it.
-- One topic per task. If a request is not clearly part of the current task, ask the user whether it belongs to the current task or should be a new one, and wait for the answer. Do not fold it into the current task on a guess.
-- Projects, their references and their tests: infer them from the graph (`graphify query`, `graphify explain`) at the start of a task. Do not rely on a fixed list.
-- Dependency rule: Routing and Profiles may depend on Devices and Simulators, never the reverse. `Crossdeck.Core` holds interfaces, records and enums only. Implementations live in `Crossdeck.Application` or the device and sim projects.
-- Design pages are HTML under `docs/`. Recorded decisions: `docs/decisions.html`, `docs/decisions-devices.html`, `docs/decisions-output.html`. Specs: `docs/spec-*.html`. Diagram colours: `docs/files/diagram-legend.md`. `docs/files/Contracts.cs` and `docs/files/interfaces.md` are early design sketches, not the code.
-- Vendor sources of truth: WINWING behaviour comes from SimAppPro (the vendor app), as recorded on the `docs/winwing-*.html` pages. MOZA FCD behaviour comes from `docs/files/vendor/moza/fcd-display/` (developer guide and example scripts). Anything else is unverified and is labelled "community" at best.
