@@ -4,7 +4,8 @@ public sealed class SerialLinkCodec
 {
     public byte[] Encode(byte command, byte pair, ReadOnlySpan<byte> payload)
     {
-        var length = (byte)payload.Length;
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(payload.Length, 64);
+        
         var frame = new List<byte>
         {
             MozaFrameConstants.SerialLinkFrameId,
@@ -12,7 +13,7 @@ public sealed class SerialLinkCodec
 
         var checksum = 0x0D + MozaFrameConstants.SerialLinkFrameId;
 
-        Put(length);
+        Put((byte)payload.Length);
         Put(command);
         Put(pair);
         foreach (var b in payload)
