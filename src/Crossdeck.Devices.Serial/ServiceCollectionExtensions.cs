@@ -7,7 +7,7 @@ namespace Crossdeck.Devices.Serial;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddMozaServices(this IServiceCollection services)
+    public static IServiceCollection AddSerialServices(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<ISerialTransportFactory, SerialTransportFactory>();

@@ -26,10 +26,5 @@ internal sealed class SerialTransportFactory : ISerialTransportFactory
 
             throw;
         }
-        finally
-        {
-            if (serialPort.IsOpen)
-                serialPort.Close();
-        }
     }
 }
