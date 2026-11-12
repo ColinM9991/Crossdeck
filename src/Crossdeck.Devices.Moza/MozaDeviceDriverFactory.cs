@@ -3,25 +3,35 @@ using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Moza.Drivers;
+using Crossdeck.Devices.Serial;
+using Crossdeck.Devices.Serial.Pairing;
 
 namespace Crossdeck.Devices.Moza;
 
 public sealed class MozaDeviceDriverFactory : IDeviceDriverFactory
 {
     private readonly IHidTransportFactory _hidTransportFactory;
-    
+    private readonly ISerialTransportFactory _serialTransportFactory;
+    private readonly ISerialPortLocator _serialPortLocator;
+
     public MozaDeviceDriverFactory(
-        IHidTransportFactory hidTransportFactory)
+        IHidTransportFactory hidTransportFactory,
+        ISerialTransportFactory serialTransportFactory,
+        ISerialPortLocator serialPortLocator)
     {
         _hidTransportFactory = hidTransportFactory ?? throw new ArgumentNullException(nameof(hidTransportFactory));
+        _serialTransportFactory =
+            serialTransportFactory ?? throw new ArgumentNullException(nameof(serialTransportFactory));
+        _serialPortLocator = serialPortLocator ?? throw new ArgumentNullException(nameof(serialPortLocator));
     }
-    
+
     public int Priority => 101;
 
     public bool CanCreate(DeviceDescriptor deviceDescriptor) => MozaIds.IsFcdDisplay(deviceDescriptor.Identity.VendorId,
         deviceDescriptor.Identity.ProductId);
 
-    public async Task<IDeviceDriver?> CreateAsync(DeviceDescriptor deviceDescriptor, CancellationToken cancellationToken)
+    public async Task<IDeviceDriver?> CreateAsync(DeviceDescriptor deviceDescriptor,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -31,6 +41,12 @@ public sealed class MozaDeviceDriverFactory : IDeviceDriverFactory
                 deviceDescriptor.Identity,
                 hidConnection.Transport,
                 new HidReportDecoder(hidConnection.ReportDescriptor));
+
+            var serialPortName = _serialPortLocator.FindSiblingPort(deviceDescriptor);
+            if (string.IsNullOrWhiteSpace(serialPortName))
+                return null;
+
+            var serialTransport = _serialTransportFactory.Create(new SerialSettings(serialPortName, 2_000_000, false, false));
 
             return new MozaFcdDeviceDriver(hidDeviceDriver);
         }

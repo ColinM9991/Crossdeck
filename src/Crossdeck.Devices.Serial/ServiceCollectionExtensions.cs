@@ -10,6 +10,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMozaServices(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<ISerialTransportFactory, SerialTransportFactory>();
 
         if (OperatingSystem.IsWindows())
             services.AddSingleton<ISerialPortLocator, WindowsSerialPortLocator>();

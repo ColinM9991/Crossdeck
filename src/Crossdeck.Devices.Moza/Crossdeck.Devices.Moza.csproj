@@ -15,6 +15,7 @@
     <ItemGroup>
         <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj"/>
         <ProjectReference Include="..\Crossdeck.Devices.Hid\Crossdeck.Devices.Hid.csproj"/>
+        <ProjectReference Include="..\Crossdeck.Devices.Serial\Crossdeck.Devices.Serial.csproj" />
     </ItemGroup>
 
     <ItemGroup>
