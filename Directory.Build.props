@@ -4,5 +4,8 @@
         <CrossdeckNetVersion>10.0</CrossdeckNetVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!-- Central Package Management, versions defined in Directory.Packages.props -->
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+        <CentralPackageManagementEnabled>true</CentralPackageManagementEnabled>
     </PropertyGroup>
 </Project>

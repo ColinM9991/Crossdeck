@@ -1,5 +1,7 @@
 using Crossdeck.Core.Devices;
 using Crossdeck.Devices.Hid;
+using Crossdeck.Devices.Serial;
+using Crossdeck.Devices.Serial.Pairing;
 
 namespace Crossdeck.Devices.Moza.Tests;
 
@@ -35,6 +37,8 @@ public sealed class ServiceCollectionExtensionsTests
 
     private static ServiceProvider CreateServiceProvider() => new ServiceCollection()
         .AddSingleton(Substitute.For<IHidTransportFactory>())
+        .AddSingleton(Substitute.For<ISerialTransportFactory>())
+        .AddSingleton(Substitute.For<ISerialPortLocator>())
         .AddMozaServices()
         .BuildServiceProvider();
 }

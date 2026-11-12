@@ -1,12 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>net$(CrossdeckNetVersion);net$(CrossdeckNetVersion)-windows</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Http"/>
     </ItemGroup>
 
     <ItemGroup>
