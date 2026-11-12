@@ -1,7 +1,7 @@
 ---
 description: Reviews architecture and code structure. Use to review a design, a diff or a module boundary before or after implementation. Read-only.
 mode: all
-model: ollama/gpt-oss-20b-128k
+model: ollama/qwen3.5-35b-256k
 permissions:
   - action: edit
     resource: "*"

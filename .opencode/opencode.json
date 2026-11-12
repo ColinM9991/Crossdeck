@@ -16,13 +16,6 @@
             "output": 8192
           }
         },
-        "gpt-oss-20b-128k": {
-          "name": "GPT-OSS 20B - Architecture",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          }
-        },
         "qwen3.5-35b-256k": {
           "name": "Qwen 3.5 35B - Reasoning",
           "limit": {
