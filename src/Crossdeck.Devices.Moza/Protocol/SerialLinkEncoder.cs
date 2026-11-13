@@ -1,8 +1,8 @@
 ﻿namespace Crossdeck.Devices.Moza.Protocol;
 
-public sealed class SerialLinkCodec
+public static class SerialLinkEncoder
 {
-    public byte[] Encode(byte command, byte pair, ReadOnlySpan<byte> payload)
+    public static byte[] Encode(byte command, byte pair, ReadOnlySpan<byte> payload)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(payload.Length, 64);
         
@@ -45,5 +45,5 @@ public sealed class SerialLinkCodec
         }
     }
 
-    public byte[] Tunnel(ReadOnlySpan<byte> inner) => Encode(0x43, 0x12, inner);
+    public static byte[] Tunnel(ReadOnlySpan<byte> inner) => Encode(0x43, 0x12, inner);
 }

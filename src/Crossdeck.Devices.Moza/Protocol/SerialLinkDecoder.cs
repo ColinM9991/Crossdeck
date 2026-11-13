@@ -5,14 +5,16 @@ public sealed class SerialLinkDecoder
     private const int HeaderSize = 3;
     private const int MaxPayloadSize = 64;
     private const int ChecksumSize = 1;
-    
+
     private readonly byte[] _buffer = new byte[HeaderSize + MaxPayloadSize + ChecksumSize];
     private bool _isInFrame;
     private bool _isEscapeSequence;
     private int _count;
     private int _sum;
 
-    public void Decode(ReadOnlySpan<byte> data, List<SerialLinkFrame> frames)
+    public void Decode(
+        ReadOnlySpan<byte> data,
+        ICollection<SerialLinkFrame> frames)
     {
         foreach (var b in data)
         {
@@ -20,7 +22,7 @@ public sealed class SerialLinkDecoder
             if (_isEscapeSequence)
             {
                 _isEscapeSequence = false;
-                
+
                 if (isSofByte)
                 {
                     Take(b, 2, frames);
@@ -54,7 +56,10 @@ public sealed class SerialLinkDecoder
         _sum = 0x0D + MozaFrameConstants.SerialLinkFrameId;
     }
 
-    private void Take(byte b, int copies, List<SerialLinkFrame> frames)
+    private void Take(
+        byte b,
+        int copies,
+        ICollection<SerialLinkFrame> frames)
     {
         if (_count == 0 && b > MaxPayloadSize)
         {
@@ -72,7 +77,7 @@ public sealed class SerialLinkDecoder
         }
 
         _isInFrame = false;
-        
+
         var checksumMismatch = (byte)_sum != b;
         if (checksumMismatch)
             return;

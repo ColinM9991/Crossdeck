@@ -8,8 +8,5 @@ internal static class MozaIds
 
     private static readonly int[] FcdDisplayProductIds = [Ma3FProductId, Mb7FProductId];
 
-    public static bool IsFcdDisplay(int vendorId, int productId)
-    {
-        return vendorId == VendorId && FcdDisplayProductIds.Contains(productId);
-    }
+    public static bool IsFcdDisplay(int vendorId, int productId) => vendorId == VendorId && FcdDisplayProductIds.Contains(productId);
 }
