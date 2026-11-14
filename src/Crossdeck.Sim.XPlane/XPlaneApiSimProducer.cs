@@ -28,7 +28,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// Used to handle communication of <see cref="SimEvent"/> instances
     /// between producers and consumers within the X-Plane simulation API integration.
     /// </summary>
-    private readonly Channel<SimEvent> _eventsChannel = Channel.CreateUnbounded<SimEvent>(new UnboundedChannelOptions
+    private readonly Channel<SimEvent> _eventsChannel = Channel.CreateBounded<SimEvent>(new BoundedChannelOptions(512)
     {
         SingleReader = true,
         SingleWriter = true

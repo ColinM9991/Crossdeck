@@ -17,7 +17,8 @@ public sealed class InputDispatcher :
         Channel.CreateUnbounded<DeviceInputEvent>(new UnboundedChannelOptions { SingleReader = true });
 
     private readonly Channel<DeviceInputEvent> _recent =
-        Channel.CreateBounded<DeviceInputEvent>(new BoundedChannelOptions(256));
+        Channel.CreateBounded<DeviceInputEvent>(new BoundedChannelOptions(256)
+            { FullMode = BoundedChannelFullMode.DropOldest });
 
     private readonly IActiveSim _activeSim;
     private volatile bool _isSimReady;
@@ -38,7 +39,7 @@ public sealed class InputDispatcher :
         {
             outgoing.Ready -= SimulatorReady;
         }
-        
+
         _isSimReady = false;
     }
 
@@ -50,10 +51,7 @@ public sealed class InputDispatcher :
         }
     }
 
-    private void SimulatorReady(object? sender, SimReady e)
-    {
-        _isSimReady = true;
-    }
+    private void SimulatorReady(object? sender, SimReady e) => _isSimReady = true;
 
     public void Post(DeviceInputEvent inputEvent)
     {
@@ -79,7 +77,7 @@ public sealed class InputDispatcher :
                 continue;
 
             var simRef = new SimRef("laminar/B738/pfd/dh_pilot_dn");
-            
+
             // TODO: Hardcoded for now. Should come from profile bindings
             SimCommand? simCommand = inputEvent.Kind switch
             {
@@ -87,10 +85,10 @@ public sealed class InputDispatcher :
                 InputEventKind.Released => new SimCommand.End(simRef),
                 _ => null,
             };
-            
+
             if (simCommand is null)
                 continue;
-            
+
             await _activeSim.Current.SendCommandAsync(simCommand, cancellationToken);
         }
     }

@@ -25,6 +25,11 @@ Applies to all written communication.
 - Avoid buzzwords and jargon where a plain word works.
 - Avoid hyperbole and poetic or flowery language. Describe things plainly.
 
+## Code comments
+
+- Do not write comments that restate what the code does or narrate a change. In production code the only comments are XMLDOC (`///`) on types and members; any other comment must carry information the code itself cannot, such as a non-obvious workaround or a `TODO` marking missing work.
+- Exception: the `// Arrange` / `// Act` / `// Assert` block markers that `agents/unit-testing.md` requires in test files.
+
 ## Unit testing
 
 - The unit testing rules are in `agents/unit-testing.md`. Read that file in full before you write, change or review unit tests, and follow it exactly. Do not read it for any other task.
