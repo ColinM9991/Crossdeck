@@ -5,23 +5,6 @@ namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 
 public sealed class WinCtrlSegmentEncoderTests
 {
-    private static SegmentPanel CreateSinglePanel()
-    {
-        var digit = new DigitSlot([
-            new BitAddr(0, 1), new BitAddr(0, 2), new BitAddr(0, 4), new BitAddr(0, 8),
-            new BitAddr(0, 16), new BitAddr(0, 32), new BitAddr(0, 64), new BitAddr(0, 128),
-        ]);
-        var window = new SegmentWindow([digit]);
-
-        return new SegmentPanel(
-            "test",
-            Target: 1,
-            BufferSize: 2,
-            Windows: new Dictionary<string, SegmentWindow> { ["digit"] = window },
-            Labels: new Dictionary<string, BitAddr[]>(),
-            Framing: new SegmentFraming(PayloadLength: 6, WriteId: 1, CommitId: 2, CommitInOwnPacket: false));
-    }
-
     [Fact]
     public void EncodeFrame_WhenPanelContentIsUnchanged_ReturnsNoPacketsOnSecondCall()
     {
@@ -63,5 +46,22 @@ public sealed class WinCtrlSegmentEncoderTests
 
         // Act / Assert
         Assert.Throws<ArgumentException>(() => sut.EncodeFrame(texts, new HashSet<string>()));
+    }
+
+    private static SegmentPanel CreateSinglePanel()
+    {
+        var digit = new DigitSlot([
+            new BitAddr(0, 1), new BitAddr(0, 2), new BitAddr(0, 4), new BitAddr(0, 8),
+            new BitAddr(0, 16), new BitAddr(0, 32), new BitAddr(0, 64), new BitAddr(0, 128),
+        ]);
+        var window = new SegmentWindow([digit]);
+
+        return new SegmentPanel(
+            "test",
+            Target: 1,
+            BufferSize: 2,
+            Windows: new Dictionary<string, SegmentWindow> { ["digit"] = window },
+            Labels: new Dictionary<string, BitAddr[]>(),
+            Framing: new SegmentFraming(PayloadLength: 6, WriteId: 1, CommitId: 2, CommitInOwnPacket: false));
     }
 }

@@ -23,8 +23,6 @@ public sealed class InputDispatcher :
     private readonly IActiveSim _activeSim;
     private volatile bool _isSimReady;
 
-    public IAsyncEnumerable<DeviceInputEvent> Recent => _recent.Reader.ReadAllAsync();
-
     public InputDispatcher(
         IActiveSim activeSim)
     {
@@ -33,25 +31,7 @@ public sealed class InputDispatcher :
         _activeSim.Changed += ActiveSimOnChanged;
     }
 
-    private void ActiveSimOnChanging(object? sender, ActiveSimChanging e)
-    {
-        if (e.Current is { } outgoing)
-        {
-            outgoing.Ready -= SimulatorReady;
-        }
-
-        _isSimReady = false;
-    }
-
-    private void ActiveSimOnChanged(object? sender, ActiveSimChanged e)
-    {
-        if (e.Current is { } incoming)
-        {
-            incoming.Ready += SimulatorReady;
-        }
-    }
-
-    private void SimulatorReady(object? sender, SimReady e) => _isSimReady = true;
+    public IAsyncEnumerable<DeviceInputEvent> Recent => _recent.Reader.ReadAllAsync();
 
     public void Post(DeviceInputEvent inputEvent)
     {
@@ -92,4 +72,24 @@ public sealed class InputDispatcher :
             await _activeSim.Current.SendCommandAsync(simCommand, cancellationToken);
         }
     }
+
+    private void ActiveSimOnChanging(object? sender, ActiveSimChanging e)
+    {
+        if (e.Current is { } outgoing)
+        {
+            outgoing.Ready -= SimulatorReady;
+        }
+
+        _isSimReady = false;
+    }
+
+    private void ActiveSimOnChanged(object? sender, ActiveSimChanged e)
+    {
+        if (e.Current is { } incoming)
+        {
+            incoming.Ready += SimulatorReady;
+        }
+    }
+
+    private void SimulatorReady(object? sender, SimReady e) => _isSimReady = true;
 }

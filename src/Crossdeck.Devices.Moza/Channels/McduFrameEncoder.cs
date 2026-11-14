@@ -9,10 +9,12 @@ namespace Crossdeck.Devices.Moza.Channels;
 
 internal static class McduFrameEncoder
 {
+    public const byte ClientCapabilityPackage = 0x33;
+    public static readonly IReadOnlyList<int> AllRows = [.. Enumerable.Range(0, TextScreen.Rows)];
+
     private const byte KeyframePackage = 0x30;
     private const byte DeltaPackage = 0x31;
     private const byte InitConfigPackage = 0x32;
-    public const byte ClientCapabilityPackage = 0x33;
 
     private const byte FrameVersion = 2;
     private const byte TextFlag = 0x01;
@@ -20,8 +22,6 @@ internal static class McduFrameEncoder
     private const byte CompressedFlag = 0x08;
     private const byte LargeFont = 0x80;
     private const byte WhiteColourCode = 7;
-
-    public static readonly IReadOnlyList<int> AllRows = [.. Enumerable.Range(0, TextScreen.Rows)];
 
     public static byte[] InitConfig() => NetworkPackage.Encode(InitConfigPackage,
         [0x02, 0x0E, 0x00, 0x18, 0x00, 0x02, 0x00, 0x00, 0x5B, 0x23, 0xEE, 0x02]);
@@ -39,14 +39,6 @@ internal static class McduFrameEncoder
         return NetworkPackage.Encode(keyframe ? KeyframePackage : DeltaPackage, frame);
     }
 
-    private static byte[] EncodeBody(TextScreen screen, IReadOnlyList<int> rows)
-    {
-        var body = new ArrayBufferWriter<byte>();
-        WriteTextRows(body, screen, rows);
-        WriteStyleRows(body, screen, rows);
-        return body.WrittenSpan.ToArray();
-    }
-
     public static List<int> ChangedRows(TextScreen previous, TextScreen current)
     {
         var rows = new List<int>();
@@ -57,6 +49,14 @@ internal static class McduFrameEncoder
         }
 
         return rows;
+    }
+
+    private static byte[] EncodeBody(TextScreen screen, IReadOnlyList<int> rows)
+    {
+        var body = new ArrayBufferWriter<byte>();
+        WriteTextRows(body, screen, rows);
+        WriteStyleRows(body, screen, rows);
+        return body.WrittenSpan.ToArray();
     }
 
     private static byte Style(TextCell cell) =>

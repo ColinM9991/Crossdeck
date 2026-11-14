@@ -20,24 +20,13 @@ public sealed class MozaFcdDeviceDriver : IDeviceDriver, ITextDisplayOutput
         _hidDeviceDriver.InputReceived += OnInputReceived;
     }
 
-    public event EventHandler<DeviceInputEvent>? InputReceived;
-
     public DeviceIdentity Identity => _hidDeviceDriver.Identity;
 
     public IReadOnlyList<DeviceControl> Controls => _hidDeviceDriver.Controls;
 
+    public event EventHandler<DeviceInputEvent>? InputReceived;
+
     public void Show(TextScreen screen) => _fcdSession.Show(screen);
-
-    private void OnInputReceived(object? sender, DeviceInputEvent e)
-    {
-        InputReceived?.Invoke(this, e);
-
-        if (e.Control is not ButtonControl button ||
-            e.Kind is not (InputEventKind.Pressed or InputEventKind.Released))
-            return;
-
-        _fcdSession.PostButton((int)button.ButtonId, e.Kind is InputEventKind.Pressed);
-    }
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -58,5 +47,16 @@ public sealed class MozaFcdDeviceDriver : IDeviceDriver, ITextDisplayOutput
     {
         await _hidDeviceDriver.DisposeAsync();
         await _fcdSession.DisposeAsync();
+    }
+
+    private void OnInputReceived(object? sender, DeviceInputEvent e)
+    {
+        InputReceived?.Invoke(this, e);
+
+        if (e.Control is not ButtonControl button ||
+            e.Kind is not (InputEventKind.Pressed or InputEventKind.Released))
+            return;
+
+        _fcdSession.PostButton((int)button.ButtonId, e.Kind is InputEventKind.Pressed);
     }
 }

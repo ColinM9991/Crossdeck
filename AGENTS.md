@@ -30,6 +30,10 @@ Applies to all written communication.
 - Do not write comments that restate what the code does or narrate a change. In production code the only comments are XMLDOC (`///`) on types and members; any other comment must carry information the code itself cannot, such as a non-obvious workaround or a `TODO` marking missing work.
 - Exception: the `// Arrange` / `// Act` / `// Assert` block markers that `agents/unit-testing.md` requires in test files.
 
+## C# style
+
+- The C# style rules are in `agents/csharp-style.md`. Read that file in full before you write or modify C# code, and follow it exactly. Do not read it for any other task.
+
 ## Unit testing
 
 - The unit testing rules are in `agents/unit-testing.md`. Read that file in full before you write, change or review unit tests, and follow it exactly. Do not read it for any other task.

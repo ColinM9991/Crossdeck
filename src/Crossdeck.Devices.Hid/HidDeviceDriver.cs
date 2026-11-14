@@ -20,11 +20,11 @@ public sealed class HidDeviceDriver : IDeviceDriver
         _transport = transport ?? throw new ArgumentNullException(nameof(transport));
         _decoder = decoder ?? throw new ArgumentNullException(nameof(decoder));
     }
-
-    public event EventHandler<DeviceInputEvent>? InputReceived;
     public DeviceIdentity Identity { get; }
 
     public IReadOnlyList<DeviceControl> Controls => _decoder.Controls;
+
+    public event EventHandler<DeviceInputEvent>? InputReceived;
 
     public Task RunAsync(CancellationToken cancellationToken)
     {
@@ -67,13 +67,9 @@ public sealed class HidDeviceDriver : IDeviceDriver
         }
     }
 
-    private bool IsRepeat(ReadOnlySpan<byte> report)
+    public async ValueTask DisposeAsync()
     {
-        if (_lastReports.TryGetValue(report[0], out var last) && report.SequenceEqual(last))
-            return true;
-
-        _lastReports[report[0]] = [.. report];
-        return false;
+        await _transport.DisposeAsync();
     }
 
     private static InputEventKind GetInputEventKind(DeviceControl deviceControl, double value) => deviceControl switch
@@ -84,8 +80,12 @@ public sealed class HidDeviceDriver : IDeviceDriver
         _ => throw new ArgumentOutOfRangeException(nameof(deviceControl), deviceControl, null)
     };
 
-    public async ValueTask DisposeAsync()
+    private bool IsRepeat(ReadOnlySpan<byte> report)
     {
-        await _transport.DisposeAsync();
+        if (_lastReports.TryGetValue(report[0], out var last) && report.SequenceEqual(last))
+            return true;
+
+        _lastReports[report[0]] = [.. report];
+        return false;
     }
 }

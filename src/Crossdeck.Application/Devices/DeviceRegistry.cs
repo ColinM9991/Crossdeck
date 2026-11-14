@@ -141,15 +141,15 @@ public sealed class DeviceRegistry : IDeviceRegistry
     private void WatcherOnDeviceArrived(object? sender, DeviceArrivedEventArgs e)
         => _deviceChanges.Writer.TryWrite(new DeviceChange.Arrived(e.Descriptor));
 
-    private sealed record RunningDriver(
-        CancellationTokenSource CancellationTokenSource,
-        IDeviceDriver Driver,
-        Task Task);
-
     internal abstract record DeviceChange
     {
         public sealed record Arrived(DeviceDescriptor Descriptor) : DeviceChange;
 
         public sealed record Removed(DeviceIdentity Identity) : DeviceChange;
     }
+
+    private sealed record RunningDriver(
+        CancellationTokenSource CancellationTokenSource,
+        IDeviceDriver Driver,
+        Task Task);
 }

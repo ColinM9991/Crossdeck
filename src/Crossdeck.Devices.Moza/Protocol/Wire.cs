@@ -7,9 +7,9 @@ internal static class Wire
 {
     public const byte RequestCommand = 0x7C;
     public const byte AckCommand = 0xFC;
+    public const int CrcSize = 4;
     private const byte TunnelCommand = 0x43;
     private const byte DeviceToHostPair = 0x21;
-    public const int CrcSize = 4;
 
     public static bool IsTunnel(SerialLinkFrame frame) =>
         (frame.Command & 0x7F) == TunnelCommand && frame.Pair == DeviceToHostPair;

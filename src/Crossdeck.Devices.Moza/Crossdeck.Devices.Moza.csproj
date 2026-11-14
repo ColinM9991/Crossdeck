@@ -8,8 +8,6 @@
     <ItemGroup>
         <PackageReference Include="System.IO.Ports"/>
         <PackageReference Include="System.IO.Hashing"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
     </ItemGroup>
 
     <ItemGroup>

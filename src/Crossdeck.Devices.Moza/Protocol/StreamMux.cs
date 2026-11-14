@@ -18,11 +18,11 @@ internal sealed class StreamMux(TimeProvider clock, ILogger logger)
     private readonly Dictionary<ushort, StreamConnection> _byLocal = [];
     private readonly Dictionary<ushort, StreamConnection> _byService = [];
 
-    public event Action<StreamConnection>? Opened;
-
     public bool Closing { get; set; }
 
     public bool HasConnections => _byLocal.Count > 0;
+
+    public event Action<StreamConnection>? Opened;
 
     public void OnTunnel(ReadOnlySpan<byte> payload, long now, List<byte[]> outgoing)
     {

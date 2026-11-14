@@ -93,6 +93,8 @@ public sealed class FcdSession : IAsyncDisposable
         }
     }
 
+    public async ValueTask DisposeAsync() => await _transport.DisposeAsync();
+
     private ITimer StartTicker() =>
         _timeProvider.CreateTimer(_ => _events.Writer.TryWrite(TickEvent.Instance.Value), null, TickInterval,
             TickInterval);
@@ -304,6 +306,4 @@ public sealed class FcdSession : IAsyncDisposable
         while (_outbox.TryDequeue(out var buffer))
             await _transport.WriteAsync(buffer, cancellationToken);
     }
-
-    public async ValueTask DisposeAsync() => await _transport.DisposeAsync();
 }

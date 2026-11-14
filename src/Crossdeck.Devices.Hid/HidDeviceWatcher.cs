@@ -11,15 +11,15 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
     private static readonly HashSet<uint> SupportedDevices = new()
         { 0x0001_0004, 0x0001_0005, 0x0001_0008, 0x0002_0001 };
 
-    private volatile Dictionary<string, DeviceDescriptor> _deviceCache = new();
-
     private readonly Signal _deviceChangedSignal = new();
 
-    public event EventHandler<DeviceArrivedEventArgs>? DeviceArrived;
-    public event EventHandler<DeviceRemovedEventArgs>? DeviceRemoved;
+    private volatile Dictionary<string, DeviceDescriptor> _deviceCache = new();
 
     public IReadOnlyCollection<DeviceDescriptor> ConnectedDevices =>
         [.. _deviceCache.Values];
+
+    public event EventHandler<DeviceArrivedEventArgs>? DeviceArrived;
+    public event EventHandler<DeviceRemovedEventArgs>? DeviceRemoved;
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {

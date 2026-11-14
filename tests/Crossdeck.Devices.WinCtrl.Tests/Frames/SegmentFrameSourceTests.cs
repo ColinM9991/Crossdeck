@@ -6,8 +6,6 @@ namespace Crossdeck.Devices.WinCtrl.Tests.Frames;
 
 public sealed class SegmentFrameSourceTests
 {
-    private static SegmentFrameSource CreateSut() => new(new WinCtrlSegmentEncoder([]));
-
     [Fact]
     public void TakeFrame_WithNoPendingChanges_ReturnsNull()
     {
@@ -76,4 +74,6 @@ public sealed class SegmentFrameSourceTests
         // Assert
         Assert.Empty(result);
     }
+
+    private static SegmentFrameSource CreateSut() => new(new WinCtrlSegmentEncoder([]));
 }

@@ -6,10 +6,6 @@ namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 
 public sealed class WinCtrlWinCtrlDisplayEncoderTests
 {
-    private static WinCtrlDefinition CreateCduDefinition() =>
-        new("test", 1, new HashSet<ushort>(), [], WinCtrlKind.Cdu, new Dictionary<ushort, DisplayRole>(),
-            Cdu: new CduScreenSettings(Left: 0, Top: 0, LargeFontId: 1, SmallFontId: 2), Displays: []);
-
     [Fact]
     public void Constructor_WithDefinitionMissingCduSettings_ThrowsArgumentException()
     {
@@ -65,4 +61,8 @@ public sealed class WinCtrlWinCtrlDisplayEncoderTests
         // Assert
         Assert.Equal(1, packets[0][2]);
     }
+
+    private static WinCtrlDefinition CreateCduDefinition() =>
+        new("test", 1, new HashSet<ushort>(), [], WinCtrlKind.Cdu, new Dictionary<ushort, DisplayRole>(),
+            Cdu: new CduScreenSettings(Left: 0, Top: 0, LargeFontId: 1, SmallFontId: 2), Displays: []);
 }

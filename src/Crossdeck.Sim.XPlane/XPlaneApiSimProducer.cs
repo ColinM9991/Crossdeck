@@ -56,8 +56,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
     private IReadOnlyList<SimRef> _subscriptions = new List<SimRef>();
 
-    private Uri WsUri => new($"ws://{_host}:{_port}/api/v3");
-
     /// <summary>
     /// Provides an implementation of <see cref="ISimProducer"/> using the X-Plane API for simulating events and commands.
     /// </summary>
@@ -75,8 +73,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
     }
 
-    public event EventHandler<SimReady>? Ready;
-
     /// <summary>
     /// Asynchronous stream of <see cref="SimEvent"/>s.
     /// </summary>
@@ -88,20 +84,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         ? _eventsChannel.Reader.ReadAllAsync()
         : throw new InvalidOperationException("Events can only be consumed by a single reader");
 
-    /// <summary>
-    /// Publishes a simulation event to the internal event channel for subscribers to process.
-    /// </summary>
-    /// <param name="e">The simulation event to be published.</param>
-    private void Publish(SimEvent e) => _eventsChannel.Writer.TryWrite(e);
+    private Uri WsUri => new($"ws://{_host}:{_port}/api/v3");
 
-    /// <summary>
-    /// Updates the current simulator status.
-    /// </summary>
-    /// <param name="status">The new simulator status to be set.</param>
-    private void SetStatus(SimStatus status)
-    {
-        _simStatus = status;
-    }
+    public event EventHandler<SimReady>? Ready;
 
     /// <summary>
     /// Starts the continuous operation of the simulation producer.
@@ -174,6 +159,72 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         };
     }
 
+    /// <summary>
+    /// Releases unmanaged resources asynchronously.
+    /// </summary>
+    /// <returns>A value task that represents the asynchronous disposal operation.</returns>
+    public ValueTask DisposeAsync()
+    {
+        _eventsChannel.Writer.TryComplete();
+        _sessionState?.Outgoing.Writer.TryComplete();
+
+        return ValueTask.CompletedTask;
+    }
+
+    private static async Task RunChildLoopAsync(Task loop, CancellationTokenSource cts)
+    {
+        try
+        {
+            await loop;
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            await cts.CancelAsync();
+        }
+    }
+
+    /// <summary>
+    /// Sends outgoing messages from the session's outgoing channel to the WebSocket.
+    /// </summary>
+    /// <param name="ws">The WebSocket connection to send messages through.</param>
+    /// <param name="session">The session state containing the outgoing message channel.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous send loop operation.</returns>
+    private static async Task SendLoopAsync(ClientWebSocket ws, SessionState session,
+        CancellationToken cancellationToken)
+    {
+        await foreach (var message in session.Outgoing.Reader.ReadAllAsync(cancellationToken))
+        {
+            await ws.SendAsync(message, WebSocketMessageType.Text, true, cancellationToken);
+        }
+    }
+
+    private static SimValue ToSimValue(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.String => new SimValue.String(
+            Encoding.UTF8.GetString(Convert.FromBase64String(value.GetString()!))),
+        JsonValueKind.Number => new SimValue.Number(value.GetDouble()),
+        _ => throw new ArgumentOutOfRangeException(nameof(value), value.ValueKind.ToString())
+    };
+
+    /// <summary>
+    /// Publishes a simulation event to the internal event channel for subscribers to process.
+    /// </summary>
+    /// <param name="e">The simulation event to be published.</param>
+    private void Publish(SimEvent e) => _eventsChannel.Writer.TryWrite(e);
+
+    /// <summary>
+    /// Updates the current simulator status.
+    /// </summary>
+    /// <param name="status">The new simulator status to be set.</param>
+    private void SetStatus(SimStatus status)
+    {
+        _simStatus = status;
+    }
+
     private async Task<CommandResult> SendCommandAsync(
         SessionState session,
         SimRef action,
@@ -215,18 +266,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         return new CommandResult.Success();
     }
 
-    /// <summary>
-    /// Releases unmanaged resources asynchronously.
-    /// </summary>
-    /// <returns>A value task that represents the asynchronous disposal operation.</returns>
-    public ValueTask DisposeAsync()
-    {
-        _eventsChannel.Writer.TryComplete();
-        _sessionState?.Outgoing.Writer.TryComplete();
-
-        return ValueTask.CompletedTask;
-    }
-
     private async Task RunSessionAsync(CancellationToken cancellationToken)
     {
         _isReady = false;
@@ -264,21 +303,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
-    private static async Task RunChildLoopAsync(Task loop, CancellationTokenSource cts)
-    {
-        try
-        {
-            await loop;
-        }
-        catch (OperationCanceledException) when (cts.IsCancellationRequested)
-        {
-        }
-        catch
-        {
-            await cts.CancelAsync();
-        }
-    }
-
     /// <summary>
     /// Receives incoming messages from the WebSocket and dispatches them.
     /// </summary>
@@ -305,22 +329,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             }
 
             Dispatch(buffer.WrittenMemory, session);
-        }
-    }
-
-    /// <summary>
-    /// Sends outgoing messages from the session's outgoing channel to the WebSocket.
-    /// </summary>
-    /// <param name="ws">The WebSocket connection to send messages through.</param>
-    /// <param name="session">The session state containing the outgoing message channel.</param>
-    /// <param name="cancellationToken">The token used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous send loop operation.</returns>
-    private static async Task SendLoopAsync(ClientWebSocket ws, SessionState session,
-        CancellationToken cancellationToken)
-    {
-        await foreach (var message in session.Outgoing.Reader.ReadAllAsync(cancellationToken))
-        {
-            await ws.SendAsync(message, WebSocketMessageType.Text, true, cancellationToken);
         }
     }
 
@@ -470,14 +478,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _aircraft = path;
         Publish(new SimEvent.AircraftChanged(path));
     }
-
-    private static SimValue ToSimValue(JsonElement value) => value.ValueKind switch
-    {
-        JsonValueKind.String => new SimValue.String(
-            Encoding.UTF8.GetString(Convert.FromBase64String(value.GetString()!))),
-        JsonValueKind.Number => new SimValue.Number(value.GetDouble()),
-        _ => throw new ArgumentOutOfRangeException(nameof(value), value.ValueKind.ToString())
-    };
 
     /// <summary>
     /// Waits for the X-Plane simulator initialization to complete by polling the data reference count.

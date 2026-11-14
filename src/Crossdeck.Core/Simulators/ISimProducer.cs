@@ -4,9 +4,9 @@ namespace Crossdeck.Core.Simulators;
 
 public interface ISimProducer : IAsyncDisposable
 {
-    event EventHandler<SimReady>? Ready;
-    
     IAsyncEnumerable<SimEvent> Events { get; }
+    
+    event EventHandler<SimReady>? Ready;
     
     Task SetSubscriptionsAsync(IReadOnlySet<SimRef> subscriptions, CancellationToken cancellationToken);
 

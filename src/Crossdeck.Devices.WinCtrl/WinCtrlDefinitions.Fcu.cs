@@ -65,21 +65,11 @@ public static partial class WinCtrlDefinitions
         Slots.Efis(25), Slots.Efis(26, true), Slots.Efis(27), Slots.Efis(28)
     ]);
 
-    private static IReadOnlyDictionary<string, SegmentWindow> EfisWindows(string panel) =>
-        new Dictionary<string, SegmentWindow>
-        {
-            [$"{panel}.baro"] = EfisBaro,
-        };
-
     private static readonly IReadOnlyDictionary<string, BitAddr[]> EfisLabels = new Dictionary<string, BitAddr[]>
     {
         ["qnh"] = [new BitAddr(4, 0x02)],
         ["qfe"] = [new BitAddr(4, 0x01)],
     };
-
-    private static SegmentPanel EfisPanel(string name, ushort target) => new(
-        name, target, 5, EfisWindows(name), EfisLabels,
-        new SegmentFraming(PayloadLength: 9, WriteId: 0x001DFFFF, CommitId: 0x001D0C4C, CommitInOwnPacket: true));
 
     private static readonly SegmentPanel EfisLPanel = EfisPanel("efisL", EfisLTarget);
     private static readonly SegmentPanel EfisRPanel = EfisPanel("efisR", EfisRTarget);
@@ -112,6 +102,34 @@ public static partial class WinCtrlDefinitions
         Display("vs", "V/S", FcuTarget),
     ];
 
+    private static readonly WinCtrlDefinition Fcu = new(
+        "fcu", FcuTarget, new HashSet<ushort> { 0xBB10, 0xBC1D, 0xBC1E, 0xBA01 },
+        [.. FcuLights, .. EfisLights("efisL", EfisLTarget), .. EfisLights("efisR", EfisRTarget)],
+        WinCtrlKind.Segment, EmptyRoles,
+        Segment: new SegmentLayout([FcuPanel, EfisLPanel, EfisRPanel]),
+        Displays: [.. FcuDisplays, .. EfisDisplays("efisL", EfisLTarget), .. EfisDisplays("efisR", EfisRTarget)]);
+
+    private static readonly IReadOnlyDictionary<ushort, string[]> FcuPanelsByPid = new Dictionary<ushort, string[]>
+    {
+        [0xBB10] = ["fcu"],
+        [0xBC1D] = ["fcu", "efisL"],
+        [0xBC1E] = ["fcu", "efisR"],
+        [0xBA01] = ["fcu", "efisL", "efisR"],
+    };
+
+    internal static IReadOnlySet<string>? FcuPanelNames(ushort pid) =>
+        FcuPanelsByPid.TryGetValue(pid, out var names) ? names.ToHashSet() : null;
+
+    private static IReadOnlyDictionary<string, SegmentWindow> EfisWindows(string panel) =>
+        new Dictionary<string, SegmentWindow>
+        {
+            [$"{panel}.baro"] = EfisBaro,
+        };
+
+    private static SegmentPanel EfisPanel(string name, ushort target) => new(
+        name, target, 5, EfisWindows(name), EfisLabels,
+        new SegmentFraming(PayloadLength: 9, WriteId: 0x001DFFFF, CommitId: 0x001D0C4C, CommitInOwnPacket: true));
+
     private static WinCtrlDisplay[] EfisDisplays(string panel, ushort target) =>
     [
         Display($"{panel}.baro", "Baro", target),
@@ -130,22 +148,4 @@ public static partial class WinCtrlDefinitions
         Led($"{panel}.ndb", "NDB", target, 0x08),
         Led($"{panel}.arpt", "ARPT", target, 0x09),
     ];
-
-    private static readonly WinCtrlDefinition Fcu = new(
-        "fcu", FcuTarget, new HashSet<ushort> { 0xBB10, 0xBC1D, 0xBC1E, 0xBA01 },
-        [.. FcuLights, .. EfisLights("efisL", EfisLTarget), .. EfisLights("efisR", EfisRTarget)],
-        WinCtrlKind.Segment, EmptyRoles,
-        Segment: new SegmentLayout([FcuPanel, EfisLPanel, EfisRPanel]),
-        Displays: [.. FcuDisplays, .. EfisDisplays("efisL", EfisLTarget), .. EfisDisplays("efisR", EfisRTarget)]);
-
-    private static readonly IReadOnlyDictionary<ushort, string[]> FcuPanelsByPid = new Dictionary<ushort, string[]>
-    {
-        [0xBB10] = ["fcu"],
-        [0xBC1D] = ["fcu", "efisL"],
-        [0xBC1E] = ["fcu", "efisR"],
-        [0xBA01] = ["fcu", "efisL", "efisR"],
-    };
-
-    internal static IReadOnlySet<string>? FcuPanelNames(ushort pid) =>
-        FcuPanelsByPid.TryGetValue(pid, out var names) ? names.ToHashSet() : null;
 }

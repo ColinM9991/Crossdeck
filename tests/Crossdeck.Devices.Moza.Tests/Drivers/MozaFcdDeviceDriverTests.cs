@@ -21,7 +21,6 @@ public sealed class MozaFcdDeviceDriverTests
     [Theory, AutoNSubstituteData]
     public void Identity_Always_ReturnsUnderlyingDriverIdentity(
         [Frozen] DeviceIdentity identity,
-        [Frozen] HidDeviceDriver hidDeviceDriver,
         MozaFcdDeviceDriver sut)
     {
         // Act
@@ -35,7 +34,6 @@ public sealed class MozaFcdDeviceDriverTests
     public void Controls_Always_ReturnsUnderlyingDriverControls(
         IReadOnlyList<DeviceControl> controls,
         [Frozen] IHidReportDecoder decoder,
-        [Frozen] HidDeviceDriver hidDeviceDriver,
         MozaFcdDeviceDriver sut)
     {
         // Arrange

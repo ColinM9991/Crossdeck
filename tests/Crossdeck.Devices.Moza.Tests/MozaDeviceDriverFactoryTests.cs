@@ -36,7 +36,6 @@ public sealed class MozaDeviceDriverFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void Priority_Always_Returns101(
-        [Frozen] IHidTransportFactory hidTransportFactory,
         MozaDeviceDriverFactory sut)
     {
         // Act
@@ -48,7 +47,6 @@ public sealed class MozaDeviceDriverFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void CanCreate_ReturnsTrue_WhenDeviceIsMa3FcdDisplay(
-        [Frozen] IHidTransportFactory hidTransportFactory,
         MozaDeviceDriverFactory sut)
     {
         // Arrange
@@ -63,7 +61,6 @@ public sealed class MozaDeviceDriverFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void CanCreate_ReturnsTrue_WhenDeviceIsMb7FcdDisplay(
-        [Frozen] IHidTransportFactory hidTransportFactory,
         MozaDeviceDriverFactory sut)
     {
         // Arrange
@@ -78,7 +75,6 @@ public sealed class MozaDeviceDriverFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void CanCreate_ReturnsFalse_WhenVendorIdIsNotMoza(
-        [Frozen] IHidTransportFactory hidTransportFactory,
         MozaDeviceDriverFactory sut)
     {
         // Arrange
@@ -93,7 +89,6 @@ public sealed class MozaDeviceDriverFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void CanCreate_ReturnsFalse_WhenProductIdIsNotAnFcdDisplay(
-        [Frozen] IHidTransportFactory hidTransportFactory,
         MozaDeviceDriverFactory sut)
     {
         // Arrange

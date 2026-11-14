@@ -4,6 +4,8 @@ namespace Crossdeck.Devices.Moza.Tests.Protocol;
 
 public sealed class SerialLinkDecoderTests
 {
+    public static TheoryData<int> SplitPoints => new() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
     [Theory, AutoNSubstituteData]
     public void DecodeFrame_ReturnsFrame_WhenFrameIsComplete(
         SerialLinkDecoder decoder)
@@ -19,8 +21,6 @@ public sealed class SerialLinkDecoderTests
         // Assert
         Assert.Single(frames);
     }
-
-    public static TheoryData<int> SplitPoints => new() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
     [Theory]
     [MemberData(nameof(SplitPoints))]

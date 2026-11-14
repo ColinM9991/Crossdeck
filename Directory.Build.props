@@ -7,5 +7,11 @@
         <!-- Central Package Management, versions defined in Directory.Packages.props -->
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
         <CentralPackageManagementEnabled>true</CentralPackageManagementEnabled>
+        <!-- SA0001 (XML comment analysis disabled) cannot be silenced through .editorconfig; see the StyleCop.Configuration docs -->
+        <NoWarn>$(NoWarn);SA0001</NoWarn>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
+    </ItemGroup>
 </Project>
