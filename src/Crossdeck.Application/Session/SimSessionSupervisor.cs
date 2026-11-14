@@ -11,7 +11,7 @@ public sealed class SimSessionSupervisor : ISimSessionSupervisor
     private readonly Dictionary<Simulator, ISimProducerFactory> _factories;
     private volatile ISimProducer? _current;
     private CancellationTokenSource? _session;
-    
+
     public SimSessionSupervisor(
         IEnumerable<ISimDetector> detectors,
         IEnumerable<ISimProducerFactory> factories)
@@ -19,13 +19,13 @@ public sealed class SimSessionSupervisor : ISimSessionSupervisor
         _detectors = [.. detectors];
         _factories = factories.ToDictionary(f => f.Simulator);
     }
-    
-    public ISimProducer? Current => _current;
-    
-    public event EventHandler<ActiveSimChanging>? Changing;
 
-    public event EventHandler<ActiveSimChanged>? Changed;
-    
+    public ISimProducer? Current => _current;
+
+    public event EventHandler<ActiveSimChangingEventArgs>? Changing;
+
+    public event EventHandler<ActiveSimChangedEventArgs>? Changed;
+
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var delay = TimeSpan.FromSeconds(5);
@@ -73,12 +73,12 @@ public sealed class SimSessionSupervisor : ISimSessionSupervisor
 
         return null;
     }
-    
+
     private void SetCurrent(ISimProducer? next)
     {
         var previous = Current;
-        Changing?.Invoke(this, new ActiveSimChanging(previous, next));
+        Changing?.Invoke(this, new ActiveSimChangingEventArgs(previous, next));
         _current = next;
-        Changed?.Invoke(this, new ActiveSimChanged(_current));
+        Changed?.Invoke(this, new ActiveSimChangedEventArgs(_current));
     }
 }

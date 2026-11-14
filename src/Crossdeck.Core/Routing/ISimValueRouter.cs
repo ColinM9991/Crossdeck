@@ -1,8 +1,10 @@
-﻿namespace Crossdeck.Core.Routing;
+﻿using Crossdeck.Core.Mapping;
+
+namespace Crossdeck.Core.Routing;
 
 public interface ISimValueRouter : IRunnable
 {
-    ISimValueCache Cache { get; }
-
     event EventHandler<string> AircraftChanged;
+
+    void SetBindings(IReadOnlyList<OutputMapping> bindings);
 }

@@ -73,7 +73,7 @@ public sealed class InputDispatcher :
         }
     }
 
-    private void ActiveSimOnChanging(object? sender, ActiveSimChanging e)
+    private void ActiveSimOnChanging(object? sender, ActiveSimChangingEventArgs e)
     {
         if (e.Current is { } outgoing)
         {
@@ -83,7 +83,7 @@ public sealed class InputDispatcher :
         _isSimReady = false;
     }
 
-    private void ActiveSimOnChanged(object? sender, ActiveSimChanged e)
+    private void ActiveSimOnChanged(object? sender, ActiveSimChangedEventArgs e)
     {
         if (e.Current is { } incoming)
         {

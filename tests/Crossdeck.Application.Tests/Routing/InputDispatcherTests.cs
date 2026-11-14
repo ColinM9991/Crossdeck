@@ -53,7 +53,7 @@ public sealed class InputDispatcherTests
                 return new CommandResult.Success();
             });
 
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChanged>>(activeSim, new ActiveSimChanged(producer));
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
 
         sut.Post(inputEvent);
@@ -84,7 +84,7 @@ public sealed class InputDispatcherTests
                 return new CommandResult.Success();
             });
 
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChanged>>(activeSim, new ActiveSimChanged(producer));
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
 
         sut.Post(inputEvent);
@@ -113,7 +113,7 @@ public sealed class InputDispatcherTests
             return producer;
         });
 
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChanged>>(activeSim, new ActiveSimChanged(producer));
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
 
         sut.Post(inputEvent);

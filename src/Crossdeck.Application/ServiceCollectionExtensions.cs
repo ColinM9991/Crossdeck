@@ -24,7 +24,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IInputSink>(sp => sp.GetRequiredService<InputDispatcher>());
         services.AddSingleton<IInputDispatcher>(sp => sp.GetRequiredService<InputDispatcher>());
         services.AddSingleton<IInputMonitor>(sp => sp.GetRequiredService<InputDispatcher>());
-        
+
+        services.AddSingleton<SimValueRouter>();
+        services.AddSingleton<ISimValueRouter>(sp => sp.GetRequiredService<SimValueRouter>());
+
         return services;
     }
 }

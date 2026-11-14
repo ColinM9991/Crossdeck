@@ -2,7 +2,7 @@
 
 namespace Crossdeck.Devices.Moza;
 
-internal record SessionEvent;
+internal closed record SessionEvent;
 
 internal sealed record ScreenChangedEvent(TextScreen Screen) : SessionEvent;
 

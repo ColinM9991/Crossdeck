@@ -2,6 +2,7 @@
 using Crossdeck.Application.Devices;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Session;
+using Crossdeck.Core.Routing;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Moza;
 using Crossdeck.Devices.Serial;
@@ -25,12 +26,13 @@ public static class ServiceCollectionExtensions
             .AddWinCtrlDevices()
             .AddMozaServices()
             .AddXPlane();
-        
+
         #if WINDOWS
         services.AddMsfs();
         #endif
 
         services.AddHostedService<SupervisorService<InputDispatcher>>();
+        services.AddHostedService<SupervisorService<SimValueRouter>>();
         services.AddHostedService<SupervisorService<DeviceRegistry>>();
         services.AddHostedService<SupervisorService<SimSessionSupervisor>>();
 

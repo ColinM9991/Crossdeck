@@ -67,7 +67,12 @@ public sealed class DeviceRegistry : IDeviceRegistry
     }
 
     public bool TryGet(DeviceIdentity identity, out IDeviceDriver? driver)
-        => _snapshot.TryGetValue(identity, out driver);
+    {
+        driver = null;
+
+        return _snapshot is { } s
+               && s.TryGetValue(identity, out driver);
+    }
 
     private async Task StartAsync(DeviceDescriptor descriptor, CancellationToken cancellationToken)
     {
@@ -98,7 +103,6 @@ public sealed class DeviceRegistry : IDeviceRegistry
 
         _snapshot = _snapshot.Remove(identity);
         DriverRemoved?.Invoke(this, new DriverRemovedEventArgs(runningDriver.Driver.Identity));
-
 
         await runningDriver.CancellationTokenSource.CancelAsync();
         try

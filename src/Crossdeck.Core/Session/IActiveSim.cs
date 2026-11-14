@@ -7,7 +7,7 @@ public interface IActiveSim
 {
     ISimProducer? Current { get; }
 
-    event EventHandler<ActiveSimChanging> Changing;
+    event EventHandler<ActiveSimChangingEventArgs> Changing;
 
-    event EventHandler<ActiveSimChanged> Changed;
+    event EventHandler<ActiveSimChangedEventArgs> Changed;
 }
