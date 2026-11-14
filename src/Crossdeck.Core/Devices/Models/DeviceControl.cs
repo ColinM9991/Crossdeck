@@ -1,6 +1,6 @@
 ﻿namespace Crossdeck.Core.Devices.Models;
 
-public abstract record DeviceControl(InputId Id, string Name);
+public closed record DeviceControl(InputId Id, string Name);
 
 public sealed record ButtonControl(InputId Id, uint ButtonId, string Name) : DeviceControl(Id, Name);
 

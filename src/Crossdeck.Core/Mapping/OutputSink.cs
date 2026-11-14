@@ -2,7 +2,7 @@
 
 namespace Crossdeck.Core.Mapping;
 
-public record OutputSink
+public closed record OutputSink
 {
     public sealed record Indicator(DeviceIdentity Device, OutputId Output) : OutputSink;
 

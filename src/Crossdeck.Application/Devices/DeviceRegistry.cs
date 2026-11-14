@@ -47,11 +47,13 @@ public sealed class DeviceRegistry : IDeviceRegistry
             {
                 try
                 {
-                    switch (change)
+                    var task = change switch
                     {
-                        case DeviceChange.Arrived a: await StartAsync(a.Descriptor, cancellationToken); break;
-                        case DeviceChange.Removed r: await StopAsync(r.Identity); break;
-                    }
+                        DeviceChange.Arrived a => StartAsync(a.Descriptor, cancellationToken),
+                        DeviceChange.Removed r => StopAsync(r.Identity)
+                    };
+
+                    await task;
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -145,7 +147,7 @@ public sealed class DeviceRegistry : IDeviceRegistry
     private void WatcherOnDeviceArrived(object? sender, DeviceArrivedEventArgs e)
         => _deviceChanges.Writer.TryWrite(new DeviceChange.Arrived(e.Descriptor));
 
-    internal abstract record DeviceChange
+    internal closed record DeviceChange
     {
         public sealed record Arrived(DeviceDescriptor Descriptor) : DeviceChange;
 

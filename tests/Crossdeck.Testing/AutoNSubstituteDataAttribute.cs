@@ -1,6 +1,5 @@
 using AutoFixture;
 using AutoFixture.AutoNSubstitute;
-using AutoFixture.Kernel;
 using AutoFixture.Xunit2;
 
 namespace Crossdeck.Testing;
@@ -10,7 +9,8 @@ public sealed class AutoNSubstituteDataAttribute() : AutoDataAttribute(CreateFix
     private static IFixture CreateFixture()
     {
         var fixture = new Fixture { OmitAutoProperties = true }
-            .Customize(new AutoNSubstituteCustomization { ConfigureMembers = true });
+            .Customize(new AutoNSubstituteCustomization { ConfigureMembers = true })
+            .Customize(new ReportDescriptorCustomization());
 
         fixture.Behaviors
             .OfType<ThrowingRecursionBehavior>()

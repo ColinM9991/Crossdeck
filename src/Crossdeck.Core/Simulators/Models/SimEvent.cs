@@ -1,6 +1,6 @@
 ﻿namespace Crossdeck.Core.Simulators.Models;
 
-public abstract record SimEvent
+public closed record SimEvent
 {
     public sealed record AircraftChanged(string? AircraftId) : SimEvent;
 
@@ -11,14 +11,14 @@ public abstract record SimEvent
 
 public sealed record SimRef(string Key);
 
-public abstract record SimValue
+public closed record SimValue
 {
     public sealed record String(string Value) : SimValue;
     
     public sealed record Number(double Value) : SimValue;
 }
 
-public abstract record SimCommand
+public closed record SimCommand
 {
     public sealed record Trigger(SimRef Action) : SimCommand;
 
@@ -29,7 +29,7 @@ public abstract record SimCommand
     public sealed record Set(SimRef Target, SimValue Value) : SimCommand;
 }
 
-public abstract record SimStatus
+public closed record SimStatus
 {
     public sealed record Connected : SimStatus;
 
@@ -40,7 +40,7 @@ public abstract record SimStatus
     public sealed record Ready : SimStatus;
 }
 
-public abstract record CommandResult
+public closed record CommandResult
 {
     public sealed record Success : CommandResult;
 

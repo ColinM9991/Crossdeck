@@ -10,19 +10,6 @@ namespace Crossdeck.Devices.Moza.Tests;
 
 public sealed class MozaDeviceDriverFactoryTests
 {
-    private static readonly byte[] FcdReportDescriptor =
-    [
-        0x05, 0x0D,         // Usage Page (Buttons)
-        0x09, 0x01,         // Usage (Button 1)
-        0x15, 0x00,         // Logical Minimum (0)
-        0x25, 0x01,         // Logical Maximum (1)
-        0x19, 0x01,         // Physical Minimum (1)
-        0x2A, 0x01, 0x00,   // Physical Maximum (1)
-        0x75, 0x01,         // Report Size (1)
-        0x95, 0x01,         // Report Count (1)
-        0x81, 0x02,         // Input (Data, Variable, Absolute)
-    ];
-
     [Fact]
     public void Constructors_VerifyGuardClauses()
     {
@@ -109,7 +96,7 @@ public sealed class MozaDeviceDriverFactoryTests
         MozaDeviceDriverFactory sut)
     {
         // Arrange
-        var connection = new HidConnection(transport, new ReportDescriptor(FcdReportDescriptor));
+        var connection = new HidConnection(transport, new ReportDescriptor(TestReportDescriptor.Fcd));
         hidTransportFactory.CreateAsync(descriptor.Path).Returns(connection);
 
         // Act
