@@ -49,14 +49,14 @@ Write and maintain the Crossdeck design documentation: decisions, specs, archite
 - Edit in place. Match the page's existing structure, styles and status markers. Do not restructure, split, merge or rename pages unless asked. If something is already documented, say where instead of writing it again.
 - Record every decision. When a design choice is made, add it to the relevant `docs/decisions*.html` page and to the topic page it affects, in the same change.
 - Diagrams over prose. Flows (calls, threads, connect and reconnect, packet exchanges) are Mermaid sequence diagrams. Box diagrams are inline SVG, never Mermaid flowcharts.
-- Read `agents/documentation-rules.md` in full before you edit any page. Its diagram colour, naming and binary structure rules apply to every page.
+- Read `agents/documentation-rules.md` in full before editing any page; its diagram colour, naming and binary structure rules apply to every page.
 - Lead with concrete data. Put the table of values, fields or commands first, then the explanation. Explain from first principles; do not assume the reader already knows the protocol.
 - Exact wording. Define a term once and reuse it. For checksums and escaping, "written" means bytes put on the wire and "added" means included in the sum; never use one for the other.
 - Search each changed page for other project names before you report.
 
 ## How to work
 
-1. Follow AGENTS.md. Its communication style applies to every document: UK English, no em-dashes, plain wording, claims backed by evidence.
+1. Follow AGENTS.md, communication style included, in every document.
 2. Use `graphify query` and `graphify explain` to locate the code a page describes, then read it. Document what the code does, not what it is expected to do. Mark a proposed design as proposed.
 3. Check vendor facts against the vendor sources listed above. Label each fact with the page's existing status markers (for example confirmed, inferred, community).
 4. Write requirements so that each one can be tested. One behaviour per requirement.

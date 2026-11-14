@@ -71,5 +71,587 @@
       "tokens": 10000
     },
     "buffer": 16384
-  }
+  },
+  "permissions": [
+    {
+      "action": "skill",
+      "resource": "agentic-workflows",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "author-component",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "authoring-github-workflows",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "collect-user-input",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "configure-auth",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "convert-blazor-server-to-webapp",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "coordinate-components",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "create-blazor-project",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "create-custom-agent",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "create-datadriven-aspnetcore",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "create-skill",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "create-skill-test",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "dotnet-maui-doctor",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "dotnet-webapi",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "exp-mock-usage-analysis",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "exp-test-maintainability",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "fetch-and-send-data",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "improve-skill-quality",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-app-lifecycle",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-collectionview",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-data-binding",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-dependency-injection",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-safe-area",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-shell-navigation",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "maui-theming",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-mstest-v1v2-to-v3",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-mstest-v3-to-v4",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-nunit-to-mstest",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-vstest-to-mtp",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-xunit-to-mstest",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-xunit-to-xunit-v3",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "no-eval-skill",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "optimizing-ef-core-queries",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "plan-ui-change",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "process-api-net11",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "sample-skill",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "support-prerendering",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "system-text-json-net11",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "technology-selection",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "template-authoring",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "template-comparison",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "template-discovery",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "template-instantiation",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "template-smart-defaults",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "template-validation",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "use-igniteui-blazor",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "use-js-interop",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "winforms-expert",
+      "effect": "deny"
+    },
+    {
+      "action": "skill",
+      "resource": "analyzing-dotnet-performance",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "android-tombstone-symbolication",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "apple-crash-symbolication",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "assertion-quality",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "binlog-failure-analysis",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "binlog-generation",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "build-parallelism",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "build-perf-baseline",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "build-perf-diagnostics",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "check-bin-obj-clash",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "clr-activation-debugging",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "code-testing",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "code-testing-agent",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "code-testing-extensions",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "convert-to-cpm",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "copy-to-output-directory",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "coverage-analysis",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "crap-score",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "csharp-expert",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "csharp-refactoring",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "csharp-scripts",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "detect-static-dependencies",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "directory-build-organization",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "dotnet-aot-compat",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "dotnet-breaking-changes",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "dotnet-pinvoke",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "dotnet-trace-collect",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "dump-collect",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "eliminate-redundant-restores",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "eval-performance",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "extension-points",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "filter-syntax",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "find-repeated-work-within-one-build",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "find-untested-sources",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "generate-testability-wrappers",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "grade-tests",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "including-generated-files",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "incremental-build",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "item-management",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "microbenchmarking",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-dotnet10-to-dotnet11",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-dotnet8-to-dotnet9",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-dotnet9-to-dotnet10",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-nullable-references",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "migrate-static-to-wrapper",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "msbuild",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "msbuild-antipatterns",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "msbuild-modernization",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "mtp-hot-reload",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "nuget-trusted-publishing",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "platform-detection",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "property-patterns",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "resolve-project-references",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "run-tests",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "scaffold-dotnet-test-project",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "setup-local-sdk",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "target-authoring",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "test-analysis-extensions",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "test-anti-patterns",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "test-gap-analysis",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "test-smell-detection",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "test-tagging",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "test-value-evidence",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "testability-obstacle",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "thread-abort-migration",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "troubleshoot-binlog-mcp",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "vectorization",
+      "effect": "allow"
+    },
+    {
+      "action": "skill",
+      "resource": "writing-mstest-tests",
+      "effect": "allow"
+    }
+  ]
 }

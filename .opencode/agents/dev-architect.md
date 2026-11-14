@@ -50,8 +50,7 @@ Own the path from a design question to working code. Scope the work into clearly
 
 - Implement the phase you are working in, in the order the plan lists, matching the conventions of the code you touch.
 - Run `dotnet build` and `dotnet test` on the affected projects before reporting a phase done.
-- Read `agents/unit-testing.md` in full before you write or change a unit test. Its rules are mandatory. Do not read it for a task that touches no tests.
-- Run `graphify update .` after modifying code.
+- Read `agents/unit-testing.md` in full before writing or changing a test; skip it for a task that touches no tests.
 
 ## Diagrams in plan documents
 
@@ -74,10 +73,9 @@ Every Mermaid block in a document you write or change must parse before you repo
 
 ## How to work
 
-1. Follow AGENTS.md in full. Its communication style is mandatory: UK English, no em-dashes, plain wording, every claim cited to a file, line or page.
-2. Locate code with `graphify query "<question>"` before any grep or file read. Read only the files the graph points to.
-3. Read the plan document, the `docs/html` pages it cites, and the code it describes before changing any of them.
-4. One topic per task. If a request is not clearly part of the current phase, ask before acting.
+1. Follow AGENTS.md in full, communication style included.
+2. Read the plan document, the `docs/html` pages it cites, and the code it describes before changing any of them.
+3. One topic per task. If a request is not clearly part of the current phase, ask before acting.
 
 ## Boundaries
 

@@ -61,13 +61,11 @@ Answer questions about the repository as it is: where things are, how they conne
 ## How to work
 
 1. Follow AGENTS.md, including its communication style.
-2. Run `graphify query "<question>"` before any grep, search or file read. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for a single concept.
-3. The graph misses event wiring done with `+=`. For any "who subscribes to" or "who raises" question, also search for `+=` and `-=` on the event name.
-4. Use `graphify-out/wiki/index.md` for broad navigation when it exists. Read `graphify-out/GRAPH_REPORT.md` only for a whole-architecture question.
-5. Read source files only for the lines the graph or an earlier read located. Read excerpts, not whole files, to stay within the 144K context.
-6. Check for conditional compilation (`#if`) before you say code is missing or unused. MSFS code is Windows only.
-7. Treat `docs/files/Contracts.cs` and `docs/files/interfaces.md` as design sketches. The code under `src/` is the current state.
-8. If the graph looks stale against the files you read, say so in the report.
+2. The graph misses event wiring done with `+=`. For any "who subscribes to" or "who raises" question, also search for `+=` and `-=` on the event name.
+3. Read excerpts, not whole files, to stay within the 144K context.
+4. Check for conditional compilation (`#if`) before you say code is missing or unused. MSFS code is Windows only.
+5. Treat `docs/files/Contracts.cs` and `docs/files/interfaces.md` as design sketches. The code under `src/` is the current state.
+6. If the graph looks stale against the files you read, say so in the report.
 
 ## Boundaries
 

@@ -32,3 +32,15 @@ Applies to all written communication.
 ## Markdown
 
 - The markdown rules are in `agents/markdown.md`. Read that file in full before you write or edit a markdown document, and follow it exactly. Do not read it for any other task.
+
+## .NET skills (dotnet/skills)
+
+Microsoft's .NET agent skills are vendored as a git submodule at `.opencode/skills/dotnet-skills` (dotnet/skills, branch `main`). The seven wired-in plugins are `dotnet`, `dotnet-advanced`, `dotnet-msbuild`, `dotnet-diag`, `dotnet-test`, `dotnet-nuget` and `dotnet-upgrade`; the `permissions` array in `.opencode/opencode.json` allows only their skills, so the rest of the submodule is invisible to the model.
+
+- Load a skill with the `skill` tool only when the current activity matches, at most one or two per task.
+- The full list, grouped by activity, is in `agents/dotnet-skills.md`. Read it only when picking a skill for a .NET task.
+- Updating: `git submodule update --remote --recurse-submodules .opencode/skills/dotnet-skills`, then `pwsh ./sync-dotnet-skills.ps1` to regenerate the `permissions` rules and `agents/dotnet-skills.md`.
+
+## Git
+
+- Do not commit or push unless the user asks. Leave the changes in the working tree, staged, and report which files changed.

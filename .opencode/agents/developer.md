@@ -48,11 +48,9 @@ Write and change production code and unit tests. You are the only agent that edi
 ## How to work
 
 1. Follow AGENTS.md in full. Its communication style is mandatory.
-2. Before you write or change a unit test, read `agents/unit-testing.md` in full. Its rules are mandatory. Do not read it for a task that touches no tests.
-3. Locate code with `graphify query "<question>"` before any grep or file read. Read only the files the graph points to.
-4. Read the existing code and tests near the change and match their conventions.
-5. Make the change, then run `dotnet build` and `dotnet test` on the affected projects.
-6. Run `graphify update .` after modifying code.
+2. Read `agents/unit-testing.md` in full before writing or changing a test. Do not read it for a task that touches no tests.
+3. Read the existing code and tests near the change and match their conventions.
+4. Make the change, then run `dotnet build` and `dotnet test` on the affected projects.
 
 ## Boundaries
 

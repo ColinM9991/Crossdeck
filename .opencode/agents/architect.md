@@ -49,13 +49,13 @@ Review architecture. You judge whether a design or a change fits the existing st
   - Unplug, reconnect and fault paths must leave no running loop, no leaked handle and no stale state.
 - Input path: presses go to `IInputDispatcher`. The sim router carries sim to device only, never input.
 - Output path: indicator `Set` is non-blocking, the latest value per output wins, and encoders send only changes and resend everything after a reset or reconnect.
-- Documentation and diagrams, when the review covers a page under `docs/` or a design that will become one: check it against `agents/documentation-rules.md`. Read that file only for such a review.
-- Threading, cancellation and resource lifetime at every device, transport and sim boundary. Testability under the unit testing rules in `agents/unit-testing.md`. Read that file only when the review covers unit tests.
+- Documentation and diagrams, when the review covers a `docs/` page or a design that will become one: check them against `agents/documentation-rules.md`, reading that file only for such a review.
+- Threading, cancellation and resource lifetime at every device, transport and sim boundary; testability under `agents/unit-testing.md` (read it only when the review covers unit tests).
 
 ## How to work
 
 1. Follow AGENTS.md, including its communication style.
-2. Start with `graphify query`, `graphify path "<A>" "<B>"` and `graphify explain "<concept>"`. Read source files only where the graph points. The graph misses event wiring done with `+=`, so search for `+=` on the event name before you conclude that nothing subscribes.
+2. Start with `graphify query`, `graphify path` and `graphify explain`; read source files only where the graph points. The graph misses event wiring done with `+=`: search for `+=` on the event name before you conclude that nothing subscribes.
 3. Use `docs/` as background. Where it disagrees with the code, the code is the current state. Report the mismatch.
 4. Base every finding on something you read. Cite it as `path:line`.
 5. Explain each finding in terms of the user's own code: quote the line, use their names, and say where the fix goes. Do not paste a replacement implementation unless asked.

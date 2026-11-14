@@ -48,7 +48,7 @@ Solve problems that need careful step-by-step reasoning and produce a design, a 
 ## How to work
 
 1. Follow AGENTS.md, including its communication style.
-2. Gather facts before reasoning. Use `graphify query` and `graphify explain` first, then read the files they point to and the relevant pages under `docs/`.
+2. Gather facts before reasoning: `graphify query` and `graphify explain` first, then the files and `docs/` pages they point to.
 3. Protocol facts come only from the vendor sources listed above. Never fill a gap from memory or from general knowledge of similar devices. If a fact is not there, say it is missing.
 4. For any byte-level answer, give a layout table (`Offset | Size | Field | Encoding | Notes`) with the size of every field, byte order and fixed or variable length. Use "written" for bytes on the wire and "added" for bytes included in a checksum.
 5. For a hardware defect, put the bytes the user's code sends next to the bytes the vendor source expects, in one table. Rank the suspects by evidence, and for each one say which log line or capture would confirm or rule it out.

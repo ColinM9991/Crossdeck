@@ -1,0 +1,4 @@
+[submodule ".opencode/skills/dotnet-skills"]
+	path = .opencode/skills/dotnet-skills
+	url = https://github.com/dotnet/skills
+	branch = main

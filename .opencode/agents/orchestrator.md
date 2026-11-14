@@ -82,7 +82,7 @@ Break a multi-step task into steps, delegate each step to one agent, check the r
 2. One topic per task. If the request mixes unrelated topics, or a follow-up is not clearly part of the current task, ask the user whether it belongs to the current task or a new one, and wait for the answer.
 3. The default result is advice, a review or documentation. Do not plan a code change unless the user asked for one.
 4. Restate the task as a short ordered list of steps. Each step has one owner and one expected result.
-5. Delegate one step at a time. Only one model is loaded at a time on this machine, and each delegation to a different agent reloads a model, so do not split work into more steps than the task needs.
+5. Delegate one step at a time. This machine loads one model at a time, and each delegation reloads it, so keep the step list as short as the task needs.
 6. Give each agent a complete brief: the goal, the relevant files or symbols, the constraints, and what the result must contain. The agent does not see this conversation, so include any decision the user made in it.
 7. Check each result against the step before moving on. For code changes, confirm that the reported build and test output shows a pass. For docs changes, confirm the diagram colours follow `docs/files/diagram-legend.md` with the legend under the first diagram, no other project names appear (only SimAppPro or "community" as source labels), and every binary structure has a byte-layout table with field sizes, offsets, byte order and fixed or variable length.
 8. If a result is wrong or incomplete, send it back to the same agent with the specific gap.
