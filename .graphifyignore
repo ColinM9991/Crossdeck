@@ -1,0 +1,3 @@
+# graphify scan excludes (gitignore-style, last match wins)
+# The dotnet/skills git submodule is vendored tooling, not project code.
+.opencode/skills/dotnet-skills/
