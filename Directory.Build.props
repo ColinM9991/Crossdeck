@@ -1,7 +1,7 @@
 <Project>
     <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
     <PropertyGroup>
-        <CrossdeckNetVersion>10.0</CrossdeckNetVersion>
+        <CrossdeckNetVersion>net10.0</CrossdeckNetVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <!-- Central Package Management, versions defined in Directory.Packages.props -->

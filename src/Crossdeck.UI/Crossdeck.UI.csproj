@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net$(CrossdeckNetVersion);net$(CrossdeckNetVersion)-windows</TargetFrameworks>
+    <TargetFrameworks>$(CrossdeckNetVersion);$(CrossdeckNetVersion)-windows</TargetFrameworks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 

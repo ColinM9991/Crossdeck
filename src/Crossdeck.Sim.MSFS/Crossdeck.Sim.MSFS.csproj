@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net$(CrossdeckNetVersion)-windows</TargetFramework>
+        <TargetFramework>$(CrossdeckNetVersion)-windows</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

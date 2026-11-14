@@ -28,3 +28,7 @@ Applies to all written communication.
 ## Unit testing
 
 - The unit testing rules are in `agents/unit-testing.md`. Read that file in full before you write, change or review unit tests, and follow it exactly. Do not read it for any other task.
+
+## Markdown
+
+- The markdown rules are in `agents/markdown.md`. Read that file in full before you write or edit a markdown document, and follow it exactly. Do not read it for any other task.
