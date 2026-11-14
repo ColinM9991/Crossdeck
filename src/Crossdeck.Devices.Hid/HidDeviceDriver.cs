@@ -56,7 +56,7 @@ public sealed class HidDeviceDriver : IDeviceDriver
                     var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
                     var inputEvent = new DeviceInputEvent(
                         Identity,
-                        change.DeviceControl.Id,
+                        change.DeviceControl,
                         inputEventKind,
                         change.Value,
                         Stopwatch.GetTimestamp());
@@ -72,7 +72,7 @@ public sealed class HidDeviceDriver : IDeviceDriver
         if (_lastReports.TryGetValue(report[0], out var last) && report.SequenceEqual(last))
             return true;
 
-        _lastReports[report[0]] = report.ToArray();
+        _lastReports[report[0]] = [.. report];
         return false;
     }
 

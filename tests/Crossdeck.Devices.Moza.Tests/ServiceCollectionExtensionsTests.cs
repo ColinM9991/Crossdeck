@@ -1,44 +1,32 @@
 using Crossdeck.Core.Devices;
-using Crossdeck.Devices.Hid;
-using Crossdeck.Devices.Serial;
-using Crossdeck.Devices.Serial.Pairing;
 
 namespace Crossdeck.Devices.Moza.Tests;
 
 public sealed class ServiceCollectionExtensionsTests
 {
-    [Fact]
-    public void AddMozaServices_Always_RegistersMozaDeviceDriverFactoryAsSingleton()
+    public static TheoryData<Type, ServiceLifetime, object?> ExpectedRegistrations => new()
+    {
+        { typeof(IDeviceDriverFactory), ServiceLifetime.Singleton, typeof(MozaDeviceDriverFactory) },
+        { typeof(TimeProvider), ServiceLifetime.Singleton, TimeProvider.System },
+    };
+
+    [Theory]
+    [MemberData(nameof(ExpectedRegistrations))]
+    public void AddMozaServices_Always_RegistersExpectedServiceAsSingleton(
+        Type serviceType,
+        ServiceLifetime lifetime,
+        object? expectedImplementation)
     {
         // Arrange
-        var provider = CreateServiceProvider();
+        var services = new ServiceCollection();
 
         // Act
-        var first = provider.GetRequiredService<IDeviceDriverFactory>();
-        var second = provider.GetRequiredService<IDeviceDriverFactory>();
+        services.AddMozaServices();
 
         // Assert
-        Assert.IsType<MozaDeviceDriverFactory>(first);
-        Assert.Same(first, second);
+        var descriptor = Assert.Single(services, d => d.ServiceType == serviceType);
+        var actualImplementation = descriptor.ImplementationType ?? descriptor.ImplementationInstance;
+        Assert.Equal(lifetime, descriptor.Lifetime);
+        Assert.Equal(expectedImplementation, actualImplementation);
     }
-
-    [Fact]
-    public void AddMozaServices_Always_RegistersSystemTimeProvider()
-    {
-        // Arrange
-        var provider = CreateServiceProvider();
-
-        // Act
-        var result = provider.GetRequiredService<TimeProvider>();
-
-        // Assert
-        Assert.Same(TimeProvider.System, result);
-    }
-
-    private static ServiceProvider CreateServiceProvider() => new ServiceCollection()
-        .AddSingleton(Substitute.For<IHidTransportFactory>())
-        .AddSingleton(Substitute.For<ISerialTransportFactory>())
-        .AddSingleton(Substitute.For<ISerialPortLocator>())
-        .AddMozaServices()
-        .BuildServiceProvider();
 }

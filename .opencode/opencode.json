@@ -45,6 +45,24 @@
           }
         }
       }
+    },
+    "ninfer": {
+      "name": "NInfer (Local)",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:8080/v1",
+        "headerTimeout": 600000,
+        "chunkTimeout": 600000
+      },
+      "models": {
+        "qwen3.8-27b-nvfp4full": {
+          "name": "Qwen 3.8 27B NVFP4Full - Development",
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        }
+      }
     }
   },
   "compaction": {

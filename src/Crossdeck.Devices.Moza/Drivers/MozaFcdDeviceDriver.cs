@@ -11,8 +11,6 @@ public sealed class MozaFcdDeviceDriver : IDeviceDriver, ITextDisplayOutput
     private readonly HidDeviceDriver _hidDeviceDriver;
     private readonly FcdSession _fcdSession;
 
-    private Dictionary<InputId, int>? _buttonNumbers;
-
     public MozaFcdDeviceDriver(
         HidDeviceDriver hidDeviceDriver,
         FcdSession fcdSession)
@@ -34,25 +32,11 @@ public sealed class MozaFcdDeviceDriver : IDeviceDriver, ITextDisplayOutput
     {
         InputReceived?.Invoke(this, e);
 
-        if (e.Kind is not (InputEventKind.Pressed or InputEventKind.Released))
+        if (e.Control is not ButtonControl button ||
+            e.Kind is not (InputEventKind.Pressed or InputEventKind.Released))
             return;
 
-        _buttonNumbers ??= BuildButtonNumbers();
-        if (_buttonNumbers.TryGetValue(e.Input, out var button))
-            _fcdSession.PostButton(button, e.Kind == InputEventKind.Pressed);
-    }
-
-    private Dictionary<InputId, int> BuildButtonNumbers()
-    {
-        var numbers = new Dictionary<InputId, int>();
-        var next = 0;
-        foreach (var control in Controls)
-        {
-            if (control is ButtonControl button && numbers.TryAdd(button.Id, next))
-                next++;
-        }
-
-        return numbers;
+        _fcdSession.PostButton((int)button.ButtonId, e.Kind is InputEventKind.Pressed);
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)

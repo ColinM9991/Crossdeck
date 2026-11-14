@@ -11,8 +11,8 @@ public enum InputEventKind
 }
 
 public sealed record DeviceInputEvent(
-    DeviceIdentity Device,
-    InputId Input,
+    DeviceIdentity Identity,
+    DeviceControl Control,
     InputEventKind Kind,
     double? Value,
     long Timestamp);

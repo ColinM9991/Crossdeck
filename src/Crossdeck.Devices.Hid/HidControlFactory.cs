@@ -36,7 +36,7 @@ internal sealed class HidControlFactory
     private ButtonControl CreateButton(uint id)
     {
         var (inputId, n) = Next(InputKind.Button, id.ToString());
-        return new ButtonControl(inputId, n == 1 ? $"Button {id}" : $"Button {id} ({n})");
+        return new ButtonControl(inputId, id, n == 1 ? $"Button {id}" : $"Button {id} ({n})");
     }
 
     private HatControl CreateHat(DataItem item)
