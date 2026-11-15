@@ -65,6 +65,7 @@ public sealed class SimValueRouterTests
         var aircraftChanged = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         sut.AircraftChanged += (_, aircraft) => aircraftChanged.TrySetResult(aircraft);
 
+        activeSim.Current.Returns(producer);
         activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
 

@@ -3,7 +3,10 @@ using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Hid.Models;
 using Crossdeck.Devices.Moza.Drivers;
+using Crossdeck.Devices.Serial;
+using Crossdeck.Devices.Serial.Pairing;
 using HidSharp.Reports;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Moza.Tests;
 
@@ -92,11 +95,19 @@ public sealed class MozaDeviceDriverFactoryTests
         DeviceDescriptor descriptor,
         [Frozen] IHidTransportFactory hidTransportFactory,
         [Frozen] IHidTransport transport,
+        [Frozen] ISerialPortLocator serialPortLocator,
+        [Frozen] ISerialTransportFactory serialTransportFactory,
+        [Frozen] ILoggerFactory loggerFactory,
+        string portName,
         MozaDeviceDriverFactory sut)
     {
         // Arrange
         var connection = new HidConnection(transport, new ReportDescriptor(TestReportDescriptor.Fcd));
         hidTransportFactory.CreateAsync(descriptor.Path).Returns(connection);
+
+        serialPortLocator.FindSiblingPort(descriptor).Returns(portName);
+        serialTransportFactory.Create(Arg.Any<SerialSettings>()).Returns(Substitute.For<ISerialTransport>());
+        loggerFactory.CreateLogger<FcdSession>().Returns(Substitute.For<ILogger<FcdSession>>());
 
         // Act
         var result = await sut.CreateAsync(descriptor, CancellationToken.None);

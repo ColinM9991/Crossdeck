@@ -9,7 +9,7 @@ public sealed class AutoNSubstituteDataAttribute() : AutoDataAttribute(CreateFix
     private static IFixture CreateFixture()
     {
         var fixture = new Fixture { OmitAutoProperties = true }
-            .Customize(new AutoNSubstituteCustomization { ConfigureMembers = true })
+            .Customize(new AutoNSubstituteCustomization { ConfigureMembers = false })
             .Customize(new ReportDescriptorCustomization());
 
         fixture.Behaviors

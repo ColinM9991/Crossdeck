@@ -101,6 +101,40 @@ assertion.Verify(typeof(Sut).GetConstructors());
 package; `AutoNSubstituteDataAttribute` and `ReportDescriptorCustomization` are
 in `Crossdeck.Testing`.
 
+## Unarranged members return null (`ConfigureMembers = false`)
+
+The shared fixture (`AutoNSubstituteDataAttribute` in `Crossdeck.Testing`)
+builds its customization with `ConfigureMembers = false`, so an unarranged
+member on a substitute returns `null` for reference types and `default` for
+value types. NSubstitute's built-in auto values still apply to async
+members: an unarranged `Task`/`Task<T>`/`ValueTask` member returns a
+completed task, so an unarranged async method never hangs (an unarranged
+`IAsyncEnumerable<T>` member returns `null` and fails fast when the SUT
+iterates it, rather than producing an endless auto stream).
+
+This is deliberate. Under the package default (`ConfigureMembers = true`) an
+unarranged reference member auto-returns a non-null auto-generated proxy: an
+unarranged `IActiveSim` auto-returned a phantom `ISimProducer` from
+`Current`, `SimValueRouter.RunAsync` branched on `Current is not null`,
+started an event loop for the phantom, whose auto-substituted
+`GetEventsAsync` never completes, and the test hung (a stuck `testhost`
+then locked the build output). The null default turns the same mistake into
+a fast failure: a plainly wrong code path or an immediate NRE instead of a
+hang.
+
+Rules:
+
+- Arrange explicitly any member the SUT reads when it branches on the value
+  or iterates a stream from it. `activeSim.Current.Returns(producer);` when
+  the scenario has an active simulator;
+  `activeSim.Current.Returns((ISimProducer?)null);` when it has none. Cast
+  the null to the member's nullable type so the `Returns` overload resolves.
+- A member the SUT only calls fire-and-forget (a `void` or `Task` whose
+  result is never read) is safe to leave unarranged: the substitute yields
+  a completed task and a default value.
+- Precedents: `SimValueRouterTests` (both directions),
+  `InputDispatcherTests` (all four run-loop tests arrange `activeSim.Current`).
+
 ## Verifying
 
 - `await sub.Received(1).Method(...)` asserts a call count;

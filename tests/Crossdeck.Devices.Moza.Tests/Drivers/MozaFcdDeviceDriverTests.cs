@@ -2,6 +2,7 @@ using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Hid.Models;
 using Crossdeck.Devices.Moza.Drivers;
+using Crossdeck.Devices.Serial;
 
 namespace Crossdeck.Devices.Moza.Tests.Drivers;
 
@@ -51,6 +52,7 @@ public sealed class MozaFcdDeviceDriverTests
         ButtonControl button,
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
+        [Frozen] ISerialTransport serialTransport,
         MozaFcdDeviceDriver sut)
     {
         // Arrange
@@ -62,6 +64,13 @@ public sealed class MozaFcdDeviceDriverTests
             {
                 await cts.CancelAsync();
                 return 8;
+            });
+
+        serialTransport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var token = call.ArgAt<CancellationToken>(1);
+                return Task.Delay(Timeout.Infinite, token).ContinueWith(_ => 0, TaskScheduler.Default);
             });
 
         decoder.When(d => d.Decode(Arg.Any<byte[]>(), Arg.Any<List<HidInputChange>>()))
@@ -80,6 +89,7 @@ public sealed class MozaFcdDeviceDriverTests
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenUnderlyingDriverCompletes_CancelsLinkedCancellationToken(
         [Frozen] IHidTransport transport,
+        [Frozen] ISerialTransport serialTransport,
         MozaFcdDeviceDriver sut)
     {
         // Arrange
@@ -90,6 +100,13 @@ public sealed class MozaFcdDeviceDriverTests
             {
                 capturedToken = callInfo.ArgAt<CancellationToken>(1);
                 return 0;
+            });
+
+        serialTransport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var token = call.ArgAt<CancellationToken>(1);
+                return Task.Delay(Timeout.Infinite, token).ContinueWith(_ => 0, TaskScheduler.Default);
             });
 
         // Act
