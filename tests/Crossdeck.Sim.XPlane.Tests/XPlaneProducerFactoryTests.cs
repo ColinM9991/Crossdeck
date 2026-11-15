@@ -17,7 +17,7 @@ public sealed class XPlaneProducerFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void Create_Always_ReturnsXPlaneApiSimProducer(
-        IHttpClientFactory httpClientFactory,
+        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
         int port)
@@ -25,7 +25,7 @@ public sealed class XPlaneProducerFactoryTests
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneProducerFactory(httpClientFactory, options);
+        var sut = new XPlaneProducerFactory(api, options);
 
         // Act
         var result = sut.Create();

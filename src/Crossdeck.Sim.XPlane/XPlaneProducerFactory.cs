@@ -6,10 +6,10 @@ using Crossdeck.Sim.XPlane.Models;
 namespace Crossdeck.Sim.XPlane;
 
 public sealed class XPlaneProducerFactory(
-    IHttpClientFactory httpClientFactory,
+    IXPlaneApiService api,
     XPlaneOptions options): ISimProducerFactory
 {
     public Simulator Simulator => Simulator.XPlane;
 
-    public ISimProducer Create() => new XPlaneApiSimProducer(httpClientFactory, options);
+    public ISimProducer Create() => new XPlaneApiSimProducer(api, options);
 }

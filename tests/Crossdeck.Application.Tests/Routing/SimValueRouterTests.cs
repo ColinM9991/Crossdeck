@@ -29,6 +29,8 @@ public sealed class SimValueRouterTests
         [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
+        activeSim.Current.Returns((ISimProducer?)null);
+
         using var cts = new CancellationTokenSource();
         var sut = new SimValueRouter(activeSim, deviceRegistry, logger);
 

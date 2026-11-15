@@ -15,7 +15,7 @@ public sealed class XPlaneApiSimDetectorTests
         {
             Content = JsonContent.Create(new Capabilities()),
         });
-        httpClientFactory.CreateClient("xplane").Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+        httpClientFactory.CreateClient(XPlaneConstants.HttpClientName).Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
         var sut = new XPlaneApiSimDetector(httpClientFactory);
 
         // Act
@@ -34,7 +34,7 @@ public sealed class XPlaneApiSimDetectorTests
         {
             Content = JsonContent.Create<Capabilities?>(null),
         });
-        httpClientFactory.CreateClient("xplane").Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+        httpClientFactory.CreateClient(XPlaneConstants.HttpClientName).Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
         var sut = new XPlaneApiSimDetector(httpClientFactory);
 
         // Act
@@ -50,7 +50,7 @@ public sealed class XPlaneApiSimDetectorTests
     {
         // Arrange
         var handler = new FakeHttpMessageHandler(_ => throw new HttpRequestException("unreachable"));
-        httpClientFactory.CreateClient("xplane").Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+        httpClientFactory.CreateClient(XPlaneConstants.HttpClientName).Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
         var sut = new XPlaneApiSimDetector(httpClientFactory);
 
         // Act
@@ -71,7 +71,7 @@ public sealed class XPlaneApiSimDetectorTests
         {
             Content = JsonContent.Create(new Capabilities()),
         });
-        httpClientFactory.CreateClient("xplane").Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+        httpClientFactory.CreateClient(XPlaneConstants.HttpClientName).Returns(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
         var sut = new XPlaneApiSimDetector(httpClientFactory);
 
         // Act / Assert

@@ -19,11 +19,13 @@ public static class ServiceCollectionExtensions
             Port = 8086
         });
 
-        services.AddHttpClient("xplane", opts =>
+        services.AddHttpClient(XPlaneConstants.HttpClientName, opts =>
         {
             opts.BaseAddress = new Uri("http://localhost:8086/api/v3/");
         });
-        
+
+        services.AddHttpClient<IXPlaneApiService, XPlaneApiService>(XPlaneConstants.HttpClientName);
+
         return services;
     }
 }

@@ -64,12 +64,10 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
         if (_activeSim.Current is not null)
             _commands.Writer.TryWrite(new RouterCommand.SimChanged(_activeSim.Current));
 
-        await foreach (var command in _commands.Reader.ReadAllAsync(linkedCts.Token))
+        await foreach (var command in _commands.Reader.ReadAllAsync(cancellationToken))
         {
             switch (command)
             {
@@ -80,7 +78,6 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
                     HandleSimulatorChanged(p, cancellationToken);
                     break;
                 case RouterCommand.SimReady:
-                    HandleSimulatorReady();
                     break;
             }
         }
@@ -88,20 +85,19 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
     public bool TryGet(SimRef reference, out SimValue? value) => throw new NotImplementedException();
 
-    public IReadOnlyDictionary<SimRef, (SimValue Value, long UpdatedAt)> GetSnapshot() => throw new NotImplementedException();
-
-    private void HandleSimulatorReady()
-    {
-        _logger.LogInformation("Simulator ready");
-        _simulatorEventsTask = RunSimEventLoopAsync(_currentProducer!, _simulatorEventsCancellationToken!.Token);
-    }
+    public IReadOnlyDictionary<SimRef, (SimValue Value, long UpdatedAt)> GetSnapshot() =>
+        throw new NotImplementedException();
 
     private void HandleSimulatorChanged(RouterCommand.SimChanged p, CancellationToken cancellationToken)
     {
+        if (ReferenceEquals(p.Producer, _currentProducer))
+            return;
+
         _logger.LogInformation("Simulator changed");
         _currentProducer = p.Producer;
         _currentProducer.Ready += CurrentProducerOnReady;
         _simulatorEventsCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _simulatorEventsTask = RunSimEventLoopAsync(_currentProducer!, _simulatorEventsCancellationToken!.Token);
     }
 
     private async Task HandleSimulatorChanging()
@@ -142,7 +138,9 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         }
     }
 
-    private void DeviceRegistryOnDriverAdded(object? sender, DriverAddedEventArgs e) {}
+    private void DeviceRegistryOnDriverAdded(object? sender, DriverAddedEventArgs e)
+    {
+    }
 
     private void ActiveSimOnChanged(object? sender, ActiveSimChangedEventArgs e)
     {
@@ -152,31 +150,32 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         _commands.Writer.TryWrite(new RouterCommand.SimChanged(e.Current));
     }
 
-    private void CurrentProducerOnReady(object? sender, SimReady e) => _commands.Writer.TryWrite(RouterCommand.SimReady.Instance.Value);
+    private void CurrentProducerOnReady(object? sender, SimReady e) =>
+        _commands.Writer.TryWrite(RouterCommand.SimReady.Instance.Value);
 
-    private void ActiveSimOnChanging(object? sender, ActiveSimChangingEventArgs e) => _commands.Writer.TryWrite(RouterCommand.SimChanging.Instance.Value);
+    private void ActiveSimOnChanging(object? sender, ActiveSimChangingEventArgs e) =>
+        _commands.Writer.TryWrite(RouterCommand.SimChanging.Instance.Value);
 
     internal closed record RouterCommand
     {
         internal sealed record SimChanging : RouterCommand
         {
+            public static readonly Lazy<SimChanging> Instance = new(() => new());
+
             private SimChanging()
             {
-
             }
-
-            public static Lazy<SimChanging> Instance => new(() => new());
         }
 
         internal sealed record SimChanged(ISimProducer Producer) : RouterCommand;
 
         internal sealed record SimReady : RouterCommand
         {
+            public static readonly Lazy<SimReady> Instance = new(() => new());
+
             private SimReady()
             {
             }
-
-            public static Lazy<SimReady> Instance => new(() => new());
         }
     }
 }

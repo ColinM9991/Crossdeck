@@ -8,7 +8,7 @@ using System.Threading.Channels;
 using Crossdeck.Core;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
-using Crossdeck.Sim.XPlane.Api;
+using Crossdeck.Sim.XPlane.Messages;
 using Crossdeck.Sim.XPlane.Models;
 
 namespace Crossdeck.Sim.XPlane;
@@ -17,11 +17,11 @@ namespace Crossdeck.Sim.XPlane;
 /// Implements <see cref="ISimProducer"/> using the X-Plane API.
 /// </summary>
 /// <remarks>
-/// Connects via the X-Plane WebSocket API.
+/// Connects via the X-Plane WebSocket API and uses <see cref="IXPlaneApiService"/> for HTTP operations.
 /// </remarks>
 public sealed class XPlaneApiSimProducer : ISimProducer
 {
-    private static readonly SimRef AircraftRef = new("sim/aircraft/view/acf_relative_path");
+    private static readonly SimRef AircraftRef = new(XPlaneConstants.AircraftRefKey);
 
     /// <summary>
     /// Internal channel for managing and distributing simulation events.
@@ -40,7 +40,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// </summary>
     private readonly Signal _subscriptionsChangedSignal = new();
 
-    private readonly HttpClient _httpClient;
+    private readonly IXPlaneApiService _api;
     private readonly string _host;
     private readonly int _port;
 
@@ -64,16 +64,16 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// It manages event consumption and facilitates communication with the simulator.
     /// </remarks>
     public XPlaneApiSimProducer(
-        IHttpClientFactory httpClientFactory,
+        IXPlaneApiService api,
         XPlaneOptions options)
     {
-        _httpClient = httpClientFactory.CreateClient("xplane") ??
-                      throw new ArgumentNullException(nameof(httpClientFactory));
+        _api = api ??
+               throw new ArgumentNullException(nameof(api));
         _host = options.Host ?? throw new ArgumentNullException(nameof(options.Host));
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
     }
 
-    private Uri WsUri => new($"ws://{_host}:{_port}/api/v3");
+    private Uri WsUri => new($"ws://{_host}:{_port}{XPlaneConstants.WebSocketPath}");
 
     public event EventHandler<SimReady>? Ready;
 
@@ -136,6 +136,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// Updates the active set of subscriptions for simulation events.
     /// </summary>
     /// <param name="subscriptions">The collection of <see cref="SimRef"/> representing the desired simulation data subscriptions.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation of updating the subscriptions.</returns>
     /// <remarks>
     /// The method updates the simulator with the specified set of subscriptions
@@ -247,14 +248,19 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         int? duration,
         CancellationToken cancellationToken)
     {
-        var commandId = await ResolveResourceAsync(action.Key, "commands", session.CommandCache, cancellationToken);
+        var commandId = await ResolveCommandIdAsync(action.Key, session.CommandCache, cancellationToken);
         if (commandId is null) return new CommandResult.Failure();
 
-        object? command = duration is { } d
-            ? new { id = commandId.Value, is_active = isActive, duration = d }
-            : new { id = commandId.Value, is_active = isActive, };
+        var command = new CommandSetIsActive
+        {
+            Id = commandId.Value,
+            IsActive = isActive,
+            Duration = duration
+        };
 
-        await EnqueueAsync(session, "command_set_is_active", new { commands = new[] { command } });
+        await EnqueueAsync(session, XPlaneConstants.CommandSetIsActive,
+            new CommandSetIsActiveParams { Commands = [command] },
+            cancellationToken);
 
         return new CommandResult.Success();
     }
@@ -265,18 +271,19 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         SimValue simValue,
         CancellationToken cancellationToken)
     {
-        var datarefId = await ResolveResourceAsync(simRef.Key, "datarefs", session.DataRefCache, cancellationToken);
+        var datarefId = await ResolveDataRefIdAsync(simRef.Key, session.DataRefCache, cancellationToken);
         if (datarefId is null) return new CommandResult.Failure();
 
-        object value = simValue switch
+        object? value = simValue switch
         {
             SimValue.Number number => number.Value,
             SimValue.String str => Convert.ToBase64String(Encoding.UTF8.GetBytes(str.Value)),
-            _ => throw new ArgumentOutOfRangeException(nameof(simValue), simValue, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(simValue), simValue, null)
         };
 
-        await EnqueueAsync(session, "dataref_set_values ",
-            new { datarefs = new[] { new { newid = datarefId.Value, value } } });
+        await EnqueueAsync(session, XPlaneConstants.DatarefSetValues,
+            new DatarefSetValueParams { Datarefs = [new DatarefSetValue { Id = datarefId.Value, Value = value }] },
+            cancellationToken);
 
         return new CommandResult.Success();
     }
@@ -372,7 +379,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
             foreach (var add in toAddKeys)
             {
-                var id = await ResolveResourceAsync(add.Key, "datarefs", session.DataRefCache, cancellationToken);
+                var id = await ResolveDataRefIdAsync(add.Key, session.DataRefCache, cancellationToken);
                 if (id is null)
                 {
                     continue;
@@ -393,14 +400,22 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
             if (toAddIds.Count > 0)
             {
-                await EnqueueAsync(session, "dataref_subscribe_values",
-                    new { datarefs = toAddIds.Select(x => new { id = x }) });
+                await EnqueueAsync(session, XPlaneConstants.DatarefSubscribeValues,
+                    new DatarefSubscriptionParams
+                    {
+                        Datarefs = toAddIds.Select(x => new DatarefSubscription { Id = x })
+                    },
+                    cancellationToken);
             }
 
             if (toRemoveIds.Count <= 0) continue;
             {
-                await EnqueueAsync(session, "dataref_unsubscribe_values",
-                    new { datarefs = toRemoveIds.Select(x => new { id = x }) });
+                await EnqueueAsync(session, XPlaneConstants.DatarefUnsubscribeValues,
+                    new DatarefSubscriptionParams
+                    {
+                        Datarefs = toRemoveIds.Select(x => new DatarefSubscription { Id = x })
+                    },
+                    cancellationToken);
                 foreach (var id in toRemoveIds)
                 {
                     session.IdToRef.TryRemove(id, out var _);
@@ -409,18 +424,21 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
-    private async Task EnqueueAsync(SessionState session, string type, object @params)
+    private Task EnqueueAsync(SessionState session, string type, object? parameters, CancellationToken cancellationToken)
     {
-        var request = new
-            { req_id = Interlocked.Increment(ref _requestId), type, @params };
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(request);
+        var message = new ClientMessage
+        {
+            ReqId = Interlocked.Increment(ref _requestId),
+            Type = type,
+            Params = parameters
+        };
 
-        await session.Outgoing.Writer.WriteAsync(bytes);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(message);
+        return session.Outgoing.Writer.WriteAsync(bytes, cancellationToken).AsTask();
     }
 
-    private async Task<long?> ResolveResourceAsync(
+    private async Task<long?> ResolveDataRefIdAsync(
         string key,
-        string kind,
         ConcurrentDictionary<string, long> cache,
         CancellationToken cancellationToken)
     {
@@ -429,19 +447,36 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             return cachedId;
         }
 
-        var url = $"{kind}?filter[name]={key}";
-        JsonElement httpResult = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
-
-        var data = httpResult.GetProperty("data");
-        if (data.GetArrayLength() == 0)
+        var response = await _api.GetDatarefsAsync(key, null, null, null, cancellationToken);
+        var dataref = response?.Data.FirstOrDefault();
+        if (dataref is null)
         {
             return null;
         }
 
-        var id = data[0].GetProperty("id").GetInt64();
-        cache.TryAdd(key, id);
+        cache.TryAdd(key, dataref.Id);
+        return dataref.Id;
+    }
 
-        return id;
+    private async Task<long?> ResolveCommandIdAsync(
+        string key,
+        ConcurrentDictionary<string, long> cache,
+        CancellationToken cancellationToken)
+    {
+        if (cache.TryGetValue(key, out var cachedId))
+        {
+            return cachedId;
+        }
+
+        var response = await _api.GetCommandsAsync(key, null, null, null, cancellationToken);
+        var command = response?.Data.FirstOrDefault();
+        if (command is null)
+        {
+            return null;
+        }
+
+        cache.TryAdd(key, command.Id);
+        return command.Id;
     }
 
     private void Dispatch(ReadOnlyMemory<byte> data, SessionState session)
@@ -452,7 +487,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
         switch (type)
         {
-            case "dataref_update_values":
+            case XPlaneConstants.DatarefUpdateValues:
                 foreach (var entry in root.GetProperty("data").EnumerateObject())
                 {
                     if (!long.TryParse(entry.Name, out var id) ||
@@ -472,7 +507,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                 }
 
                 break;
-            case "result":
+            case XPlaneConstants.ResultMessage:
             {
                 // Handle errors
                 break;
@@ -510,8 +545,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         {
             try
             {
-                var countResponse =
-                    await _httpClient.GetFromJsonAsync<CountResponse>("datarefs/count", cancellationToken);
+                var countResponse = await _api.GetDatarefCountAsync(cancellationToken);
 
                 if (countResponse is { Data: > 0 })
                 {

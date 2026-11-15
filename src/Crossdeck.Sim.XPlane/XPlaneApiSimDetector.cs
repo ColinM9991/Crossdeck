@@ -15,11 +15,11 @@ public class XPlaneApiSimDetector(IHttpClientFactory httpClientFactory) : ISimDe
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(2));
         
-        var client = httpClientFactory.CreateClient("xplane");
+        var client = httpClientFactory.CreateClient(XPlaneConstants.HttpClientName);
         try
         {
             var capabilities = await client
-                .GetFromJsonAsync<Capabilities?>("/api/capabilities", timeout.Token);
+                .GetFromJsonAsync<Capabilities?>(XPlaneConstants.CapabilitiesPath, timeout.Token);
 
             return capabilities is null ? null : new SimDetection(Simulator.XPlane);
         }

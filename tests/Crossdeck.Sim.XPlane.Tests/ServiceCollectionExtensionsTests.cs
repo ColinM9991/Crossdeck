@@ -72,9 +72,24 @@ public sealed class ServiceCollectionExtensionsTests
         var provider = new ServiceCollection().AddXPlane().BuildServiceProvider();
 
         // Act
-        var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("xplane");
+        var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient(XPlaneConstants.HttpClientName);
 
         // Assert
         Assert.Equal(new Uri("http://localhost:8086/api/v3/"), client.BaseAddress);
+    }
+
+    [Fact]
+    public void AddXPlane_Always_RegistersApiServiceAsTransientTypedHttpClient()
+    {
+        // Arrange
+        var provider = new ServiceCollection().AddXPlane().BuildServiceProvider();
+
+        // Act
+        var first = provider.GetRequiredService<IXPlaneApiService>();
+        var second = provider.GetRequiredService<IXPlaneApiService>();
+
+        // Assert
+        Assert.IsType<XPlaneApiService>(first);
+        Assert.NotSame(first, second);
     }
 }

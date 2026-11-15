@@ -61,7 +61,11 @@ Microsoft's .NET agent skills are vendored as a git submodule at `.opencode/skil
 - `STATE.md` at the repo root is the single working-state file. It is gitignored and transient: a tally of progress for the agent, not documentation. Never commit it.
 - One file, reused for every activity: when a new activity starts, replace its contents with that activity's state rather than accumulating stale activities.
 - Contents: objective; a checklist of the work items in scope (each type, file or scope, with its status); progress through each stage; hazards and known defects; the next move.
-- Update it after each task or stage completes. Keep it current during the activity, not just at the end.
+- Update timings, in order:
+  - When the activity starts: write the objective, then fill in the work-item checklist as the plan solidifies.
+  - When the picture is understood and a plan is proposed: record the plan as the work-item checklist with statuses, plus any design notes or hazards discovered.
+  - After each stage of the plan completes: mark that stage's work items and refresh hazards and the next move.
+- Keep it current during the activity, not just at the end; a stale `STATE.md` after a completed stage is a defect.
 - On session start, or after any compaction, read `STATE.md` first to pick up the tally of progress, and say in the conversation that it is the source of truth so the compaction checkpoint references it.
 
 ## Git
