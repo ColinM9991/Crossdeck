@@ -14,7 +14,7 @@ public sealed class WinCtrlCduDeviceDriver :
         HidDeviceDriver driver,
         WinCtrlOutputWriter writer,
         CduFrameSource source)
-        : base(driver, writer)
+        : base(driver ?? throw new ArgumentNullException(nameof(driver)), writer)
     {
         _source = source ?? throw new ArgumentNullException(nameof(source));
     }

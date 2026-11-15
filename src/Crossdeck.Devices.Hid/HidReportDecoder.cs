@@ -13,10 +13,10 @@ public sealed class HidReportDecoder : IHidReportDecoder
     public HidReportDecoder(
         ReportDescriptor reportDescriptor)
     {
+        _reportDescriptor = reportDescriptor ?? throw new ArgumentNullException(nameof(reportDescriptor));
+
         var controls = new List<DeviceControl>();
         var factory = new HidControlFactory();
-
-        _reportDescriptor = reportDescriptor;
         _inputParsers = [.. _reportDescriptor.DeviceItems.Select(x => CreateDeviceInputParser(x, controls, factory))];
 
         Controls = controls;

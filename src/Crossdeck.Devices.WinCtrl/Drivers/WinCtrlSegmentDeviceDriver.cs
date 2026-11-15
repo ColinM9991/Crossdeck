@@ -11,9 +11,11 @@ public sealed class WinCtrlSegmentDeviceDriver(
     SegmentFrameSource source)
     : WinCtrlDeviceDriverBase(hid, writer), ISegmentDisplayOutput
 {
+    private readonly SegmentFrameSource _source = source ?? throw new ArgumentNullException(nameof(source));
+
     public void SetText(OutputId id, string text)
     {
-        source.SetText(id, text);
+        _source.SetText(id, text);
         Writer.MarkDirty();
     }
 
@@ -21,7 +23,7 @@ public sealed class WinCtrlSegmentDeviceDriver(
     {
         if (id.Kind == OutputKind.Flag)
         {
-            source.SetFlag(id.Name, value != 0);
+            _source.SetFlag(id.Name, value != 0);
             Writer.MarkDirty();
         }
         else

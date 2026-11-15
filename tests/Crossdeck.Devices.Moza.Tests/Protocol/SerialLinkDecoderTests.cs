@@ -87,13 +87,16 @@ public sealed class SerialLinkDecoderTests
     [Fact]
     public void Decode_ReturnsFrame_WhenChecksumIsEscaped()
     {
+        // Arrange
         var decoder = new SerialLinkDecoder();
         var frames = new List<SerialLinkFrame>();
 
         var input = new byte[] { 0x7E, 0x01, 0x43, 0x12, 0x9D, 0x7E, 0x7E };
 
+        // Act
         decoder.Decode(input, frames);
 
+        // Assert
         var frame = Assert.Single(frames);
         Assert.Equal(new byte[] { 0x9D }, frame.Payload);
     }
@@ -101,6 +104,7 @@ public sealed class SerialLinkDecoderTests
     [Fact]
     public void Decode_ReturnsNextFrame_WhenPreviousFrameIsTruncated()
     {
+        // Arrange
         var decoder = new SerialLinkDecoder();
         var frames = new List<SerialLinkFrame>();
 
@@ -110,8 +114,10 @@ public sealed class SerialLinkDecoderTests
             0x7E, 0x01, 0x43, 0x12, 0x00, 0xE1, // good frame
         };
 
+        // Act
         decoder.Decode(input, frames);
 
+        // Assert
         var frame = Assert.Single(frames);
         Assert.Equal(0x43, frame.Command);
         Assert.Equal(new byte[] { 0x00 }, frame.Payload);
@@ -120,6 +126,7 @@ public sealed class SerialLinkDecoderTests
     [Fact]
     public void Decode_ReturnsNextFrame_WhenPreviousChecksumIsWrong()
     {
+        // Arrange
         var decoder = new SerialLinkDecoder();
         var frames = new List<SerialLinkFrame>();
 
@@ -129,8 +136,10 @@ public sealed class SerialLinkDecoderTests
             0x7E, 0x00, 0x80, 0x21, 0x2C, // good frame, same read
         };
 
+        // Act
         decoder.Decode(input, frames);
 
+        // Assert
         var frame = Assert.Single(frames);
         Assert.Equal(0x80, frame.Command);
         Assert.Equal(0x21, frame.Pair);
@@ -139,6 +148,7 @@ public sealed class SerialLinkDecoderTests
     [Fact]
     public void Decode_SkipsFrame_WhenLengthIsOver64()
     {
+        // Arrange
         var decoder = new SerialLinkDecoder();
         var frames = new List<SerialLinkFrame>();
 
@@ -148,8 +158,10 @@ public sealed class SerialLinkDecoderTests
             0x7E, 0x00, 0x80, 0x21, 0x2C, // good frame
         ];
 
+        // Act
         decoder.Decode(input, frames); // must not throw
 
+        // Assert
         var frame = Assert.Single(frames);
         Assert.Equal(0x80, frame.Command);
     }

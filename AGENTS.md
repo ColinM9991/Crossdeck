@@ -50,6 +50,12 @@ Microsoft's .NET agent skills are vendored as a git submodule at `.opencode/skil
 - The full list, grouped by activity, is in `agents/dotnet-skills.md`. Read it only when picking a skill for a .NET task.
 - Updating: `git submodule update --remote --recurse-submodules .opencode/skills/dotnet-skills`, then `pwsh ./sync-dotnet-skills.ps1` to regenerate the `permissions` rules and `agents/dotnet-skills.md`.
 
+## Build and test
+
+- `dotnet build` and `dotnet test` take a single project or solution argument per invocation (MSB1008 otherwise). Run the command once per project.
+- A hung `dotnet test` (a test that never completes) leaves a `testhost` process holding the test assembly, which blocks later builds with MSB3027. Find the stuck chain with `Get-CimInstance Win32_Process` (match `CommandLine` on `testhost` or the test assembly name) and stop it child-first before rebuilding. In pwsh, do not use `$pid` as a loop variable; it is reserved.
+- `dotnet test --no-build` runs whatever is in `bin`. If you edited that project's sources since its last build, build it first or you are verifying a stale binary.
+
 ## Git
 
 - Do not commit or push unless the user asks. Leave the changes in the working tree, staged, and report which files changed.

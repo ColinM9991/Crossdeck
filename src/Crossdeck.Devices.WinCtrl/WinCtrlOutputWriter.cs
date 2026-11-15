@@ -13,6 +13,9 @@ public sealed class WinCtrlOutputWriter(
     IHidReportEncoder ledEncoder,
     IWinCtrlFrameSource frames) : IDeviceOutputWriter
 {
+    private readonly IHidTransport _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+    private readonly IHidReportEncoder _ledEncoder = ledEncoder ?? throw new ArgumentNullException(nameof(ledEncoder));
+    private readonly IWinCtrlFrameSource _frames = frames ?? throw new ArgumentNullException(nameof(frames));
     private readonly ConcurrentDictionary<OutputId, int> _state = new();
     private readonly Signal _dirty = new();
     private long _lastFrame;
@@ -28,7 +31,7 @@ public sealed class WinCtrlOutputWriter(
     public async Task RunAsync(CancellationToken ct)
     {
         await SendLedsAsync(ct);
-        await WriteAllAsync(frames.EncodeInit(), ct);
+        await WriteAllAsync(_frames.EncodeInit(), ct);
         await _dirty.SetAsync(ct);
 
         await foreach (var _ in _dirty.WaitAsync(ct))
@@ -38,19 +41,19 @@ public sealed class WinCtrlOutputWriter(
             var wait = TimeSpan.FromMilliseconds(66) - Stopwatch.GetElapsedTime(_lastFrame);
             if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
 
-            if (frames.TakeFrame() is not { } reports) continue;
-            
+            if (_frames.TakeFrame() is not { } reports) continue;
+
             await WriteAllAsync(reports, ct);
             _lastFrame = Stopwatch.GetTimestamp();
         }
     }
 
     private Task SendLedsAsync(CancellationToken ct) =>
-        WriteAllAsync(ledEncoder.Encode(_state.ToDictionary()).Select(r => r.Data), ct);
+        WriteAllAsync(_ledEncoder.Encode(_state.ToDictionary()).Select(r => r.Data), ct);
 
     private async Task WriteAllAsync(IEnumerable<byte[]> reports, CancellationToken ct)
     {
         foreach (var report in reports)
-            await transport.WriteAsync(report, ct);
+            await _transport.WriteAsync(report, ct);
     }
 }

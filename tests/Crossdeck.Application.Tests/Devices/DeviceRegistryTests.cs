@@ -30,6 +30,7 @@ public sealed class DeviceRegistryTests
                 await cts.CancelAsync();
                 return (IDeviceDriver?)driver;
             });
+
         driver.RunAsync(Arg.Any<CancellationToken>())
             .Returns(ci => Task.Delay(Timeout.Infinite, ci.Arg<CancellationToken>()));
 
@@ -39,9 +40,8 @@ public sealed class DeviceRegistryTests
         var task = sut.RunAsync(cts.Token);
         watcher.DeviceArrived += Raise.Event<EventHandler<DeviceArrivedEventArgs>>(watcher, new DeviceArrivedEventArgs(descriptor));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await matchingFactory.Received(1).CreateAsync(descriptor, Arg.Any<CancellationToken>());
         await nonMatchingFactory.DidNotReceive().CreateAsync(Arg.Any<DeviceDescriptor>(), Arg.Any<CancellationToken>());
     }
@@ -58,6 +58,7 @@ public sealed class DeviceRegistryTests
 
         watcher.RunAsync(Arg.Any<CancellationToken>())
             .Returns(ci => Task.Delay(Timeout.Infinite, ci.Arg<CancellationToken>()));
+
         factory.CanCreate(descriptor).Returns(callInfo =>
         {
             cts.Cancel();
@@ -70,9 +71,8 @@ public sealed class DeviceRegistryTests
         var task = sut.RunAsync(cts.Token);
         watcher.DeviceArrived += Raise.Event<EventHandler<DeviceArrivedEventArgs>>(watcher, new DeviceArrivedEventArgs(descriptor));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await factory.DidNotReceive().CreateAsync(Arg.Any<DeviceDescriptor>(), Arg.Any<CancellationToken>());
     }
 
@@ -93,8 +93,6 @@ public sealed class DeviceRegistryTests
             .Returns(ci => Task.Delay(Timeout.Infinite, ci.Arg<CancellationToken>()));
 
         driver.Identity.Returns(identity);
-        factory.CanCreate(descriptor).Returns(true);
-        factory.CreateAsync(descriptor, Arg.Any<CancellationToken>()).Returns(driver);
         driver.RunAsync(Arg.Any<CancellationToken>())
             .Returns(ci => Task.Delay(Timeout.Infinite, ci.Arg<CancellationToken>()));
         driver.DisposeAsync().Returns(_ =>
@@ -103,6 +101,9 @@ public sealed class DeviceRegistryTests
             return ValueTask.CompletedTask;
         });
 
+        factory.CanCreate(descriptor).Returns(true);
+        factory.CreateAsync(descriptor, Arg.Any<CancellationToken>()).Returns(driver);
+
         var sut = new DeviceRegistry([watcher], [factory], inputSink);
 
         // Act
@@ -110,9 +111,8 @@ public sealed class DeviceRegistryTests
         watcher.DeviceArrived += Raise.Event<EventHandler<DeviceArrivedEventArgs>>(watcher, new DeviceArrivedEventArgs(descriptor));
         watcher.DeviceRemoved += Raise.Event<EventHandler<DeviceRemovedEventArgs>>(watcher, new DeviceRemovedEventArgs(identity));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await driver.Received(1).DisposeAsync();
     }
 }

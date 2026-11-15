@@ -10,8 +10,8 @@ public abstract class WinCtrlDeviceDriverBase : IDeviceDriver, IIndicatorOutput
 
     protected WinCtrlDeviceDriverBase(HidDeviceDriver hid, WinCtrlOutputWriter writer)
     {
-        _hid = hid;
-        Writer = writer;
+        _hid = hid ?? throw new ArgumentNullException(nameof(hid));
+        Writer = writer ?? throw new ArgumentNullException(nameof(writer));
         _hid.InputReceived += (_, e) => InputReceived?.Invoke(this, e);
         Controls = [.. _hid.Controls];
     }

@@ -7,6 +7,17 @@ namespace Crossdeck.Devices.WinCtrl.Tests;
 
 public sealed class WinCtrlOutputWriterTests
 {
+    [Fact]
+    public void Constructors_VerifyGuardClauses()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new AutoNSubstituteCustomization());
+        var assertion = new GuardClauseAssertion(fixture);
+
+        // Act / Assert
+        assertion.Verify(typeof(WinCtrlOutputWriter).GetConstructors());
+    }
+
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_OnStart_WritesLedStateThenInitPacketsInOrder(
         byte[] ledData,
@@ -55,9 +66,8 @@ public sealed class WinCtrlOutputWriterTests
                 return [framePacket];
             });
 
-        var runTask = sut.RunAsync(cts.Token);
-
         // Act
+        var runTask = sut.RunAsync(cts.Token);
         sut.MarkDirty();
 
         // Assert

@@ -55,13 +55,13 @@ public sealed class InputDispatcherTests
 
         activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
-
         sut.Post(inputEvent);
 
         // Act
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sut.RunAsync(cts.Token));
+        var task = sut.RunAsync(cts.Token);
 
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await producer.Received(1).SendCommandAsync(Arg.Is<SimCommand>(c => c is SimCommand.Begin), Arg.Any<CancellationToken>());
     }
 
@@ -86,13 +86,13 @@ public sealed class InputDispatcherTests
 
         activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
-
         sut.Post(inputEvent);
 
         // Act
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sut.RunAsync(cts.Token));
+        var task = sut.RunAsync(cts.Token);
 
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await producer.Received(1).SendCommandAsync(Arg.Is<SimCommand>(c => c is SimCommand.End), Arg.Any<CancellationToken>());
     }
 
@@ -115,13 +115,13 @@ public sealed class InputDispatcherTests
 
         activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
         producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
-
         sut.Post(inputEvent);
 
         // Act
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sut.RunAsync(cts.Token));
+        var task = sut.RunAsync(cts.Token);
 
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await producer.DidNotReceive().SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>());
     }
 
@@ -137,13 +137,13 @@ public sealed class InputDispatcherTests
         inputEvent = inputEvent with { Kind = InputEventKind.Pressed };
         activeSim.Current.Returns(producer);
         await cts.CancelAsync();
-
         sut.Post(inputEvent);
 
         // Act
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sut.RunAsync(cts.Token));
+        var task = sut.RunAsync(cts.Token);
 
         // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await producer.DidNotReceive().SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>());
     }
 }
