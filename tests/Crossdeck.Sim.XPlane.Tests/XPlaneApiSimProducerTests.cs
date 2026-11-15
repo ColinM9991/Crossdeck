@@ -26,7 +26,7 @@ public sealed class XPlaneApiSimProducerTests
     }
 
     [Theory, AutoNSubstituteData]
-    public async Task Events_FirstAccess_ReturnsConsumableStream(
+    public async Task GetEventsAsync_FirstAccess_ReturnsConsumableStream(
         IHttpClientFactory httpClientFactory,
         XPlaneOptions options,
         string host,
@@ -38,14 +38,14 @@ public sealed class XPlaneApiSimProducerTests
         var sut = new XPlaneApiSimProducer(httpClientFactory, options);
 
         // Act
-        var stream = sut.Events;
+        var stream = sut.GetEventsAsync(CancellationToken.None);
 
         // Assert
         Assert.NotNull(stream);
     }
 
     [Theory, AutoNSubstituteData]
-    public void Events_SecondAccess_ThrowsInvalidOperationException(
+    public async Task GetEventsAsync_ConcurrentEnumeration_ThrowsInvalidOperationException(
         IHttpClientFactory httpClientFactory,
         XPlaneOptions options,
         string host,
@@ -55,10 +55,21 @@ public sealed class XPlaneApiSimProducerTests
         options.Host = host;
         options.Port = port;
         var sut = new XPlaneApiSimProducer(httpClientFactory, options);
-        _ = sut.Events;
 
-        // Act / Assert
-        Assert.Throws<InvalidOperationException>(() => sut.Events);
+        var activeFirstConsumer = sut.GetEventsAsync(CancellationToken.None).GetAsyncEnumerator();
+        var firstConsumption = activeFirstConsumer.MoveNextAsync();
+
+        // Act
+        var secondEnumeration = sut.GetEventsAsync(CancellationToken.None).GetAsyncEnumerator();
+
+        // Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await secondEnumeration.MoveNextAsync());
+
+        await sut.DisposeAsync();
+        await firstConsumption;
+        await secondEnumeration.DisposeAsync();
+        await activeFirstConsumer.DisposeAsync();
     }
 
     [Theory, AutoNSubstituteData]
@@ -72,7 +83,7 @@ public sealed class XPlaneApiSimProducerTests
         options.Host = host;
         options.Port = port;
         var sut = new XPlaneApiSimProducer(httpClientFactory, options);
-        var events = sut.Events;
+        var events = sut.GetEventsAsync(CancellationToken.None);
 
         // Act
         await sut.DisposeAsync();
@@ -80,5 +91,29 @@ public sealed class XPlaneApiSimProducerTests
         // Assert
         await using var enumerator = events.GetAsyncEnumerator();
         Assert.False(await enumerator.MoveNextAsync());
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task GetEventsAsync_CancelledToken_ThrowsOperationCanceledException(
+        IHttpClientFactory httpClientFactory,
+        XPlaneOptions options,
+        string host,
+        int port,
+        CancellationTokenSource cts)
+    {
+        // Arrange
+        options.Host = host;
+        options.Port = port;
+        var sut = new XPlaneApiSimProducer(httpClientFactory, options);
+
+        await cts.CancelAsync();
+        var events = sut.GetEventsAsync(cts.Token);
+
+        // Act
+        await using var enumerator = events.GetAsyncEnumerator();
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            async () => await enumerator.MoveNextAsync());
     }
 }

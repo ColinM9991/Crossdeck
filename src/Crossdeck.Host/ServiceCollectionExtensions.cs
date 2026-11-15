@@ -2,7 +2,6 @@
 using Crossdeck.Application.Devices;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Session;
-using Crossdeck.Core.Routing;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Moza;
 using Crossdeck.Devices.Serial;

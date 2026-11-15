@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
-using System.Net.Http.Json;
 using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -73,20 +73,35 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
     }
 
-    /// <summary>
-    /// Asynchronous stream of <see cref="SimEvent"/>s.
-    /// </summary>
-    /// <remarks>
-    /// This property provides a consumable channel for simulation events. It can only be accessed by a single reader.
-    /// Future attempts to access this property after the first consumption will result in an <see cref="InvalidOperationException"/>.
-    /// </remarks>
-    public IAsyncEnumerable<SimEvent> Events => Interlocked.Exchange(ref _eventsConsumed, 1) == 0
-        ? _eventsChannel.Reader.ReadAllAsync()
-        : throw new InvalidOperationException("Events can only be consumed by a single reader");
-
     private Uri WsUri => new($"ws://{_host}:{_port}/api/v3");
 
     public event EventHandler<SimReady>? Ready;
+
+    /// <summary>
+    /// Gets an asynchronous stream of <see cref="SimEvent"/>s.
+    /// </summary>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests, allowing the operation to be interrupted gracefully.</param>
+    /// <returns>An asynchronous stream of simulation events from the internal event channel.</returns>
+    /// <remarks>
+    /// The stream can only be consumed by a single reader at a time.
+    /// A second call while the first enumeration is still active throws an <see cref="InvalidOperationException"/> on its first <c>MoveNextAsync</c>.
+    /// The single-reader flag is cleared when the enumeration is disposed, so the stream can be re-consumed once the first reader has finished.
+    /// The token can also be supplied through <c>IAsyncEnumerable.GetAsyncEnumerator</c>, in which case it is combined with the token passed to this method and cancelling either one cancels the enumeration.
+    /// </remarks>
+    public async IAsyncEnumerable<SimEvent> GetEventsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (Interlocked.Exchange(ref _eventsConsumed, 1) != 0)
+            throw new InvalidOperationException("Events can only be consumed by a single reader");
+
+        try
+        {
+            await foreach (var e in _eventsChannel.Reader.ReadAllAsync(cancellationToken)) yield return e;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _eventsConsumed, 0);
+        }
+    }
 
     /// <summary>
     /// Starts the continuous operation of the simulation producer.

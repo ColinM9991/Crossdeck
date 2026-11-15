@@ -1,6 +1,5 @@
 using Crossdeck.Core.Devices.Display.Models;
 using Crossdeck.Devices.WinCtrl.Encoders;
-using Crossdeck.Devices.WinCtrl.Models;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 

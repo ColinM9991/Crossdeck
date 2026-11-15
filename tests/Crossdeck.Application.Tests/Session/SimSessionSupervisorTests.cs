@@ -1,7 +1,6 @@
 using Crossdeck.Application.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Session;
-using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Core.Simulators;
 
 namespace Crossdeck.Application.Tests.Session;

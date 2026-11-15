@@ -1,5 +1,3 @@
-using Crossdeck.Core;
-
 namespace Crossdeck.Core.Tests;
 
 public sealed class SignalTests

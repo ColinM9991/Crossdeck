@@ -4,7 +4,7 @@ namespace Crossdeck.Core.Routing;
 
 public interface ISimValueRouter : IRunnable
 {
-    event EventHandler<string> AircraftChanged;
+    event EventHandler<string?>? AircraftChanged;
 
     void SetBindings(IReadOnlyList<OutputMapping> bindings);
 }

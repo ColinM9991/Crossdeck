@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using Crossdeck.Core.Models;
 using Crossdeck.Sim.XPlane.Api;
 
