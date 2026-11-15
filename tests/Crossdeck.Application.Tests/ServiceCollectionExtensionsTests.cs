@@ -5,6 +5,8 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Session;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Crossdeck.Application.Tests;
 
@@ -30,7 +32,10 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddSimulationServices_Always_ResolvesSameDeviceRegistryInstanceForIDeviceRegistry()
     {
         // Arrange
-        var provider = new ServiceCollection().AddSimulationServices().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddSingleton<ILogger<DeviceRegistry>>(NullLogger<DeviceRegistry>.Instance);
+
+        var provider = services.AddSimulationServices().BuildServiceProvider();
 
         // Act
         var concrete = provider.GetRequiredService<DeviceRegistry>();

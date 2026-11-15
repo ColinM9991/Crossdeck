@@ -3,11 +3,14 @@ using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Devices;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Application.Devices;
 
 public sealed class DeviceRegistry : IDeviceRegistry
 {
+    private static readonly TimeSpan DriverRetryDelay = TimeSpan.FromSeconds(5);
+
     private readonly Channel<DeviceChange> _deviceChanges = Channel.CreateUnbounded<DeviceChange>(
         new UnboundedChannelOptions
         {
@@ -19,6 +22,8 @@ public sealed class DeviceRegistry : IDeviceRegistry
     private readonly IEnumerable<IDeviceWatcher> _deviceWatchers;
     private readonly IReadOnlyCollection<IDeviceDriverFactory> _deviceDriverFactories;
     private readonly Dictionary<DeviceIdentity, RunningDriver> _deviceDrivers = new();
+    private readonly TimeSpan _driverRetryDelay;
+    private readonly ILogger<DeviceRegistry> _logger;
 
     private volatile ImmutableDictionary<DeviceIdentity, IDeviceDriver> _snapshot =
         ImmutableDictionary<DeviceIdentity, IDeviceDriver>.Empty;
@@ -26,11 +31,16 @@ public sealed class DeviceRegistry : IDeviceRegistry
     public DeviceRegistry(
         IEnumerable<IDeviceWatcher> deviceWatchers,
         IEnumerable<IDeviceDriverFactory> deviceDriverFactories,
-        IInputSink inputSink)
+        IInputSink inputSink,
+        ILogger<DeviceRegistry> logger,
+        TimeSpan? driverRetryDelay = null)
     {
         _deviceWatchers = deviceWatchers ?? throw new ArgumentNullException(nameof(deviceWatchers));
-        _deviceDriverFactories = [.. deviceDriverFactories.OrderByDescending(x => x.Priority)];
+        _deviceDriverFactories = [.. (deviceDriverFactories ?? throw new ArgumentNullException(nameof(deviceDriverFactories)))
+            .OrderByDescending(x => x.Priority)];
         _inputSink = inputSink ?? throw new ArgumentNullException(nameof(inputSink));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _driverRetryDelay = driverRetryDelay ?? DriverRetryDelay;
     }
 
     public event EventHandler<DriverAddedEventArgs>? DriverAdded;
@@ -50,14 +60,15 @@ public sealed class DeviceRegistry : IDeviceRegistry
                     var task = change switch
                     {
                         DeviceChange.Arrived a => StartAsync(a.Descriptor, cancellationToken),
-                        DeviceChange.Removed r => StopAsync(r.Identity)
+                        DeviceChange.Removed r => StopAsync(r.Identity),
+                        DeviceChange.Faulted f => RecoverAsync(f.Descriptor, cancellationToken)
                     };
 
                     await task;
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    // TODO Logging
+                    _logger.LogError(ex, "Failed to process device change {Change}", change);
                 }
             }
         }
@@ -78,6 +89,9 @@ public sealed class DeviceRegistry : IDeviceRegistry
 
     private async Task StartAsync(DeviceDescriptor descriptor, CancellationToken cancellationToken)
     {
+        if (_deviceDrivers.ContainsKey(descriptor.Identity))
+            return;
+
         var factory = _deviceDriverFactories.FirstOrDefault(f => f.CanCreate(descriptor));
         if (factory is null)
             return;
@@ -91,11 +105,14 @@ public sealed class DeviceRegistry : IDeviceRegistry
             deviceCancellationToken.Token,
             TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
 
-        _deviceDrivers.Add(driver.Identity, new RunningDriver(deviceCancellationToken, driver, task));
+        var runningDriver = new RunningDriver(deviceCancellationToken, driver, task);
+        _deviceDrivers.Add(driver.Identity, runningDriver);
         _snapshot = _snapshot.SetItem(driver.Identity, driver);
         driver.InputReceived += DriverOnInputReceived;
 
         DriverAdded?.Invoke(this, new DriverAddedEventArgs(driver.Identity, driver));
+
+        ObserveFault(runningDriver, descriptor);
     }
 
     private async Task StopAsync(DeviceIdentity identity)
@@ -111,13 +128,49 @@ public sealed class DeviceRegistry : IDeviceRegistry
         {
             await runningDriver.Task;
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
+            // A faulted driver is already logged by ObserveFault before it reaches here.
         }
 
         runningDriver.Driver.InputReceived -= DriverOnInputReceived;
         await runningDriver.Driver.DisposeAsync();
         runningDriver.CancellationTokenSource.Dispose();
+    }
+
+    private void ObserveFault(RunningDriver runningDriver, DeviceDescriptor descriptor)
+    {
+        runningDriver.Task.ContinueWith(_ =>
+        {
+            if (!runningDriver.Task.IsFaulted)
+                return;
+
+            foreach (var failure in runningDriver.Task.Exception!.InnerExceptions)
+            {
+                _logger.LogError(failure, "Driver for {Identity} faulted; restarting in {RetryDelay}",
+                    runningDriver.Driver.Identity, _driverRetryDelay);
+            }
+
+            _deviceChanges.Writer.TryWrite(new DeviceChange.Faulted(descriptor));
+        }, TaskScheduler.Default);
+    }
+
+    private async Task RecoverAsync(DeviceDescriptor descriptor, CancellationToken cancellationToken)
+    {
+        await StopAsync(descriptor.Identity);
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        try
+        {
+            await Task.Delay(_driverRetryDelay, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await StartAsync(descriptor, cancellationToken);
     }
 
     private void DriverOnInputReceived(object? sender, DeviceInputEvent e)
@@ -152,6 +205,8 @@ public sealed class DeviceRegistry : IDeviceRegistry
         public sealed record Arrived(DeviceDescriptor Descriptor) : DeviceChange;
 
         public sealed record Removed(DeviceIdentity Identity) : DeviceChange;
+
+        public sealed record Faulted(DeviceDescriptor Descriptor) : DeviceChange;
     }
 
     private sealed record RunningDriver(
