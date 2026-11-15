@@ -56,6 +56,14 @@ Microsoft's .NET agent skills are vendored as a git submodule at `.opencode/skil
 - A hung `dotnet test` (a test that never completes) leaves a `testhost` process holding the test assembly, which blocks later builds with MSB3027. Find the stuck chain with `Get-CimInstance Win32_Process` (match `CommandLine` on `testhost` or the test assembly name) and stop it child-first before rebuilding. In pwsh, do not use `$pid` as a loop variable; it is reserved.
 - `dotnet test --no-build` runs whatever is in `bin`. If you edited that project's sources since its last build, build it first or you are verifying a stale binary.
 
+## State file
+
+- `STATE.md` at the repo root is the single working-state file. It is gitignored and transient: a tally of progress for the agent, not documentation. Never commit it.
+- One file, reused for every activity: when a new activity starts, replace its contents with that activity's state rather than accumulating stale activities.
+- Contents: objective; a checklist of the work items in scope (each type, file or scope, with its status); progress through each stage; hazards and known defects; the next move.
+- Update it after each task or stage completes. Keep it current during the activity, not just at the end.
+- On session start, or after any compaction, read `STATE.md` first to pick up the tally of progress, and say in the conversation that it is the source of truth so the compaction checkpoint references it.
+
 ## Git
 
 - Do not commit or push unless the user asks. Leave the changes in the working tree, staged, and report which files changed.

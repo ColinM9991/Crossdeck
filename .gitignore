@@ -59,3 +59,6 @@ nunit-*.xml
 # Graphify
 graphify-out/
 docs/
+
+# Agent working state (transient progress tally, see AGENTS.md)
+STATE.md
