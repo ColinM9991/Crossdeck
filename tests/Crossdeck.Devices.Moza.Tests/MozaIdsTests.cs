@@ -1,5 +1,3 @@
-using Crossdeck.Devices.Moza;
-
 namespace Crossdeck.Devices.Moza.Tests;
 
 public sealed class MozaIdsTests

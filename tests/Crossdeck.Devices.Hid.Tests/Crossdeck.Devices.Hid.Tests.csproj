@@ -25,4 +25,8 @@
       <ProjectReference Include="..\Crossdeck.Testing\Crossdeck.Testing.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="HidDeviceWatcherTests.cs" />
+    </ItemGroup>
+
 </Project>

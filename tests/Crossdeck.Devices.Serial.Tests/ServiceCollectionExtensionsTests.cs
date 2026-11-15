@@ -1,4 +1,3 @@
-using Crossdeck.Devices.Serial;
 using Crossdeck.Devices.Serial.Pairing;
 
 namespace Crossdeck.Devices.Serial.Tests;

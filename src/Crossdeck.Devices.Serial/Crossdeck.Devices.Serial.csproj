@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj" />
+      <ProjectReference Include="..\Crossdeck.Devices.Interop\Crossdeck.Devices.Interop.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using Crossdeck.Devices.Moza.Protocol;
 
 namespace Crossdeck.Devices.Moza.Tests.Protocol;

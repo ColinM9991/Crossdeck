@@ -1,4 +1,3 @@
-using Crossdeck.Devices.Moza;
 using Crossdeck.Devices.Serial;
 using Microsoft.Extensions.Logging;
 

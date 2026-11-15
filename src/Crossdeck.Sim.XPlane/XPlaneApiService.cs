@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json;
 using Crossdeck.Sim.XPlane.Api;
 using Crossdeck.Sim.XPlane.Models;

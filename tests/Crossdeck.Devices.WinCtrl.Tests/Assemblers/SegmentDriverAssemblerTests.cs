@@ -2,7 +2,6 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Assemblers;
-using Crossdeck.Devices.WinCtrl.Drivers;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Assemblers;
 
