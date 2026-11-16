@@ -21,7 +21,9 @@ public sealed class InputDispatcherTests
     }
 
     [Theory, AutoNSubstituteData]
-    public async Task Post_Always_MakesEventAvailableViaRecent(DeviceInputEvent inputEvent, InputDispatcher sut)
+    public async Task Post_Always_MakesEventAvailableViaRecent(
+        DeviceInputEvent inputEvent,
+        InputDispatcher sut)
     {
         // Act
         sut.Post(inputEvent);

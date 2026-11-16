@@ -17,10 +17,10 @@ public sealed class XPlaneProducerFactoryTests
 
     [Theory, AutoNSubstituteData]
     public void Create_Always_ReturnsXPlaneApiSimProducer(
-        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
-        int port)
+        int port,
+        IXPlaneApiService api)
     {
         // Arrange
         options.Host = host;

@@ -6,7 +6,11 @@ namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 public sealed class WinCtrlF0StreamTests
 {
     [Theory, AutoNSubstituteData]
-    public void Record_Always_WritesHeaderFieldsLittleEndian(ushort target, uint command, uint id, byte[] payload)
+    public void Record_Always_WritesHeaderFieldsLittleEndian(
+        ushort target,
+        uint command,
+        uint id,
+        byte[] payload)
     {
         // Arrange
         var sut = new WinCtrlF0Stream(target);
@@ -22,7 +26,11 @@ public sealed class WinCtrlF0StreamTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void Record_Always_AppendsPayloadAfterTheSeventeenByteHeader(ushort target, uint command, uint id, byte[] payload)
+    public void Record_Always_AppendsPayloadAfterTheSeventeenByteHeader(
+        ushort target,
+        uint command,
+        uint id,
+        byte[] payload)
     {
         // Arrange
         var sut = new WinCtrlF0Stream(target);

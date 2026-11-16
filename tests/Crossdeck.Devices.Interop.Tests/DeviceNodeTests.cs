@@ -161,7 +161,9 @@ public sealed class DeviceNodeTests
     [Theory]
     [InlineData(@"USB\VID_346E&PID_1305&MI_02\7&1175168319&0000", 2)]
     [InlineData(@"USB\VID_346E&PID_1305&MI_0A\7&1175168319&0000", 10)]
-    public void TryParseInterfaceNumber_WithChildId_ReturnsTheInterfaceNumber(string deviceId, int expected)
+    public void TryParseInterfaceNumber_WithChildId_ReturnsTheInterfaceNumber(
+        string deviceId,
+        int expected)
     {
         // Act
         var result = DeviceNode.TryParseInterfaceNumber(deviceId, out var interfaceNumber);

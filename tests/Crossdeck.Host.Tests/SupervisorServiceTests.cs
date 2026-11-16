@@ -6,7 +6,9 @@ namespace Crossdeck.Host.Tests;
 public sealed class SupervisorServiceTests
 {
     [Theory, AutoNSubstituteData]
-    public async Task StartAsync_Always_RunsTheGivenRunnableUntilStopped(IRunnable runner, ILogger<SupervisorService<IRunnable>> logger)
+    public async Task StartAsync_Always_RunsTheGivenRunnableUntilStopped(
+        IRunnable runner,
+        ILogger<SupervisorService<IRunnable>> logger)
     {
         // Arrange
         var sut = new SupervisorService<IRunnable>(runner, logger);
@@ -28,7 +30,9 @@ public sealed class SupervisorServiceTests
     }
 
     [Theory, AutoNSubstituteData]
-    public async Task StopAsync_Never_Throws_WhenTheRunnableFaults(IRunnable runner, InvalidOperationException fault)
+    public async Task StopAsync_Never_Throws_WhenTheRunnableFaults(
+        InvalidOperationException fault,
+        IRunnable runner)
     {
         // Arrange
         var logEntries = new List<LogEntry>();

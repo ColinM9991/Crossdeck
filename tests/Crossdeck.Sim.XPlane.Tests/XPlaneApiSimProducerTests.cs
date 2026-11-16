@@ -7,11 +7,11 @@ public sealed class XPlaneApiSimProducerTests
 {
     [Theory, AutoNSubstituteData]
     public async Task SendCommandAsync_BeforeAnySessionIsEstablished_ReturnsNoConnection(
-        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
         int port,
-        SimCommand command)
+        SimCommand command,
+        IXPlaneApiService api)
     {
         // Arrange
         options.Host = host;
@@ -27,10 +27,10 @@ public sealed class XPlaneApiSimProducerTests
 
     [Theory, AutoNSubstituteData]
     public async Task GetEventsAsync_FirstAccess_ReturnsConsumableStream(
-        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
-        int port)
+        int port,
+        IXPlaneApiService api)
     {
         // Arrange
         options.Host = host;
@@ -46,10 +46,10 @@ public sealed class XPlaneApiSimProducerTests
 
     [Theory, AutoNSubstituteData]
     public async Task GetEventsAsync_ConcurrentEnumeration_ThrowsInvalidOperationException(
-        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
-        int port)
+        int port,
+        IXPlaneApiService api)
     {
         // Arrange
         options.Host = host;
@@ -74,10 +74,10 @@ public sealed class XPlaneApiSimProducerTests
 
     [Theory, AutoNSubstituteData]
     public async Task DisposeAsync_BeforeAnySessionIsEstablished_CompletesEventsChannel(
-        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
-        int port)
+        int port,
+        IXPlaneApiService api)
     {
         // Arrange
         options.Host = host;
@@ -95,11 +95,11 @@ public sealed class XPlaneApiSimProducerTests
 
     [Theory, AutoNSubstituteData]
     public async Task GetEventsAsync_CancelledToken_ThrowsOperationCanceledException(
-        IXPlaneApiService api,
         XPlaneOptions options,
         string host,
         int port,
-        CancellationTokenSource cts)
+        CancellationTokenSource cts,
+        IXPlaneApiService api)
     {
         // Arrange
         options.Host = host;

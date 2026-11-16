@@ -24,3 +24,9 @@ Consecutive members are separated by a single blank line.
 Top-level declarations at file scope follow the StyleCop default order, which `SA1201` also enforces.
 
 When adding a member, insert it into its group at the position its access level dictates, not at the end of the class.
+
+## Local variable declarations
+
+Prefer `var` over an explicit type when the static type is apparent from the initializer: `new` with an explicit type name, a cast, a built-in literal, or a member access whose return type is self-evident. This matches the IDE analyzer settings in `.editorconfig` (`csharp_style_var_for_built_in_types`, `csharp_style_var_when_type_is_apparent`, `csharp_style_var_elsewhere`).
+
+Declare the type explicitly when the initializer does not make the type apparent: a value assigned to a narrower interface or base type without a cast (for example a substitute or factory implementing several interfaces), or where the explicit type documents a conversion the reader must see.

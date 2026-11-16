@@ -120,7 +120,7 @@ public sealed class StreamMuxTests
         // Arrange
         var sut = CreateMux(logger);
         var connection = OpenConnection(sut, StreamMux.TelemetryService);
-        byte[] body = Wire.WithCrc([0x42]);
+        var body = Wire.WithCrc([0x42]);
         body[^1] ^= 0xFF;
         var outgoing = new List<byte[]>();
 

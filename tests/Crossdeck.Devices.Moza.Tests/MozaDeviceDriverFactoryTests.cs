@@ -93,12 +93,12 @@ public sealed class MozaDeviceDriverFactoryTests
     [Theory, AutoNSubstituteData]
     public async Task CreateAsync_ReturnsFcdDeviceDriver_WhenHidConnectionIsCreated(
         DeviceDescriptor descriptor,
+        string portName,
         [Frozen] IHidTransportFactory hidTransportFactory,
         [Frozen] IHidTransport transport,
         [Frozen] ISerialPortLocator serialPortLocator,
         [Frozen] ISerialTransportFactory serialTransportFactory,
         [Frozen] ILoggerFactory loggerFactory,
-        string portName,
         MozaDeviceDriverFactory sut)
     {
         // Arrange

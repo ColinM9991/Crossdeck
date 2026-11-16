@@ -98,7 +98,9 @@ public sealed class HidControlFactoryTests
     [InlineData(0x02_00BA, "Rudder axis")]
     [InlineData(0x02_00BB, "Throttle axis")]
     [InlineData(0x02_00BF, "Toe Brake axis")]
-    public void Create_WhenUsageIsSimulationAxis_ReturnsNamedAxisControl(uint usage, string expectedName)
+    public void Create_WhenUsageIsSimulationAxis_ReturnsNamedAxisControl(
+        uint usage,
+        string expectedName)
     {
         // Arrange
         var sut = new HidControlFactory();

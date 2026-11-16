@@ -76,10 +76,10 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public void TryGet_WhenNoValuesHaveChanged_ReturnsFalse(
+        SimRef reference,
         IActiveSim activeSim,
         IDeviceRegistry deviceRegistry,
-        ILogger<SimValueRouter> logger,
-        SimRef reference)
+        ILogger<SimValueRouter> logger)
     {
         // Arrange
         var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
@@ -94,12 +94,12 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenAValueChanges_CachesTheValue(
+        SimRef reference,
+        SimValue value,
         [Frozen] IActiveSim activeSim,
         [Frozen] IDeviceRegistry deviceRegistry,
         [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
-        SimRef reference,
-        SimValue value)
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -125,14 +125,14 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task GetSnapshot_WhenMultipleValuesHaveChanged_ReturnsAllCachedEntries(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef firstReference,
         SimValue firstValue,
         SimRef secondReference,
-        SimValue secondValue)
+        SimValue secondValue,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] IDeviceRegistry deviceRegistry,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -166,13 +166,13 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheSameReferenceChangesTwice_CachesTheLatestValue(
+        SimRef reference,
+        SimValue firstValue,
+        SimValue secondValue,
         [Frozen] IActiveSim activeSim,
         [Frozen] IDeviceRegistry deviceRegistry,
         [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
-        SimRef reference,
-        SimValue firstValue,
-        SimValue secondValue)
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -199,13 +199,13 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenAValueChangesOnABoundReference_SetsTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -214,8 +214,8 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput indicator = (IIndicatorOutput)driver;
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)driver;
         registry.Add(device, driver);
 
         sut.SetBindings([new OutputMapping(
@@ -239,13 +239,13 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheValueIsAString_DoesNotSetTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
-        SimValue.String value)
+        SimValue.String value,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -254,8 +254,8 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput indicator = (IIndicatorOutput)driver;
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)driver;
         registry.Add(device, driver);
 
         sut.SetBindings([new OutputMapping(
@@ -280,14 +280,14 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheBindingHasMultipleSources_DoesNotSetTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef firstReference,
         SimRef secondReference,
         DeviceIdentity device,
         OutputId output,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -296,8 +296,8 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput indicator = (IIndicatorOutput)driver;
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)driver;
         registry.Add(device, driver);
 
         sut.SetBindings([new OutputMapping(
@@ -326,13 +326,13 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheDeviceIsNotConnected_DoesNotSetTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -341,7 +341,7 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IIndicatorOutput indicator = (IIndicatorOutput)Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)Substitute.For<IDeviceDriver, IIndicatorOutput>();
 
         sut.SetBindings([new OutputMapping(
             new Dictionary<string, SimRef> { ["deploy"] = reference },
@@ -364,12 +364,12 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheSinkIsNotAnIndicator_DoesNotSetTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity device,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -378,8 +378,8 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput indicator = (IIndicatorOutput)driver;
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)driver;
         registry.Add(device, driver);
 
         sut.SetBindings([new OutputMapping(
@@ -403,15 +403,15 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTwoBindingsShareAReference_BothIndicatorsAreSet(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity firstDevice,
         OutputId firstOutput,
         DeviceIdentity secondDevice,
         OutputId secondOutput,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -420,12 +420,12 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput firstIndicator = (IIndicatorOutput)firstDriver;
+        var firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var firstIndicator = (IIndicatorOutput)firstDriver;
         registry.Add(firstDevice, firstDriver);
 
-        IDeviceDriver secondDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput secondIndicator = (IIndicatorOutput)secondDriver;
+        var secondDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var secondIndicator = (IIndicatorOutput)secondDriver;
         registry.Add(secondDevice, secondDriver);
 
         sut.SetBindings([
@@ -456,15 +456,15 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenOneIndicatorThrows_TheOtherBindingIsStillDispatched(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity firstDevice,
         OutputId firstOutput,
         DeviceIdentity secondDevice,
         OutputId secondOutput,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -473,13 +473,13 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput firstIndicator = (IIndicatorOutput)firstDriver;
+        var firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var firstIndicator = (IIndicatorOutput)firstDriver;
         registry.Add(firstDevice, firstDriver);
         firstIndicator.When(i => i.Set(Arg.Any<OutputId>(), Arg.Any<int>())).Throw(new InvalidOperationException());
 
-        IDeviceDriver secondDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput secondIndicator = (IIndicatorOutput)secondDriver;
+        var secondDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var secondIndicator = (IIndicatorOutput)secondDriver;
         registry.Add(secondDevice, secondDriver);
 
         sut.SetBindings([
@@ -509,12 +509,12 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenNoBindingsAreSet_DoesNotSetTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity device,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -523,8 +523,8 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput indicator = (IIndicatorOutput)driver;
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)driver;
         registry.Add(device, driver);
 
         // Act
@@ -545,16 +545,16 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenBindingsAreReplaced_DispatchFollowsTheNewBinding(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef oldReference,
         DeviceIdentity oldDevice,
         OutputId oldOutput,
         SimRef newReference,
         DeviceIdentity newDevice,
         OutputId newOutput,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -563,12 +563,12 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver oldDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput oldIndicator = (IIndicatorOutput)oldDriver;
+        var oldDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var oldIndicator = (IIndicatorOutput)oldDriver;
         registry.Add(oldDevice, oldDriver);
 
-        IDeviceDriver newDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput newIndicator = (IIndicatorOutput)newDriver;
+        var newDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var newIndicator = (IIndicatorOutput)newDriver;
         registry.Add(newDevice, newDriver);
 
         sut.SetBindings([new OutputMapping(
@@ -604,13 +604,13 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenBindingsAreClearedWithAnEmptyList_DoesNotSetTheIndicator(
-        [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
-        SimValue.Number number)
+        SimValue.Number number,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -619,8 +619,8 @@ public sealed class SimValueRouterTests
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
 
-        IDeviceDriver driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        IIndicatorOutput indicator = (IIndicatorOutput)driver;
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        var indicator = (IIndicatorOutput)driver;
         registry.Add(device, driver);
 
         sut.SetBindings([new OutputMapping(

@@ -18,7 +18,10 @@ public sealed class HidDeviceWatcherTests
 
     [Theory, AutoNSubstituteData]
     public void BuildDeviceIdentity_WithSerial_ReturnsSerialIdentity(
-        string serial, int vendorId, int productId, uint usage)
+        string serial,
+        int vendorId,
+        int productId,
+        uint usage)
     {
         // Act
         var result = HidDeviceWatcher.BuildDeviceIdentity(vendorId, productId, serial, usage);
@@ -28,7 +31,10 @@ public sealed class HidDeviceWatcherTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void BuildDeviceIdentity_WithoutSerial_ReturnsUsageIdentity(int vendorId, int productId, uint usage)
+    public void BuildDeviceIdentity_WithoutSerial_ReturnsUsageIdentity(
+        int vendorId,
+        int productId,
+        uint usage)
     {
         // Act
         var result = HidDeviceWatcher.BuildDeviceIdentity(vendorId, productId, null, usage);
@@ -38,7 +44,10 @@ public sealed class HidDeviceWatcherTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void BuildDeviceIdentity_WithEmptySerial_ReturnsUsageIdentity(int vendorId, int productId, uint usage)
+    public void BuildDeviceIdentity_WithEmptySerial_ReturnsUsageIdentity(
+        int vendorId,
+        int productId,
+        uint usage)
     {
         // Act
         var result = HidDeviceWatcher.BuildDeviceIdentity(vendorId, productId, "", usage);
@@ -48,7 +57,10 @@ public sealed class HidDeviceWatcherTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void BuildDeviceIdentity_WithWhitespaceSerial_ReturnsUsageIdentity(int vendorId, int productId, uint usage)
+    public void BuildDeviceIdentity_WithWhitespaceSerial_ReturnsUsageIdentity(
+        int vendorId,
+        int productId,
+        uint usage)
     {
         // Act
         var result = HidDeviceWatcher.BuildDeviceIdentity(vendorId, productId, "   ", usage);
@@ -59,7 +71,9 @@ public sealed class HidDeviceWatcherTests
 
     [Theory, AutoNSubstituteData]
     public void BuildDeviceIdentity_WithPaddedSerial_ReturnsTrimmedSerialIdentity(
-        int vendorId, int productId, uint usage)
+        int vendorId,
+        int productId,
+        uint usage)
     {
         // Act
         var result = HidDeviceWatcher.BuildDeviceIdentity(vendorId, productId, " 8B4238001422361051353730 ", usage);
@@ -69,7 +83,10 @@ public sealed class HidDeviceWatcherTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OrderPaths_WhenUsagesDiffer_OrdersByUsage(string firstPath, string secondPath, string thirdPath)
+    public void OrderPaths_WhenUsagesDiffer_OrdersByUsage(
+        string firstPath,
+        string secondPath,
+        string thirdPath)
     {
         // Arrange
         var usages = new Dictionary<string, uint>
@@ -88,7 +105,9 @@ public sealed class HidDeviceWatcherTests
 
     [Theory, AutoNSubstituteData]
     public void OrderPaths_WhenTheSamePathsEnumerateInDifferentOrders_ReturnsTheSameOrder(
-        string firstPath, string secondPath, string thirdPath)
+        string firstPath,
+        string secondPath,
+        string thirdPath)
     {
         // Arrange
         Func<string, uint> firstUsage = _ => 1;

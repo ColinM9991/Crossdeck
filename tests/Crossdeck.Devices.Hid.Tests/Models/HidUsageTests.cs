@@ -5,7 +5,9 @@ namespace Crossdeck.Devices.Hid.Tests.Models;
 public sealed class HidUsageTests
 {
     [Theory, AutoNSubstituteData]
-    public void FromRaw_WithRawValue_SplitsIntoPageAndId(ushort page, ushort id)
+    public void FromRaw_WithRawValue_SplitsIntoPageAndId(
+        ushort page,
+        ushort id)
     {
         // Arrange
         var raw = ((uint)page << 16) | id;
@@ -19,7 +21,9 @@ public sealed class HidUsageTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void Raw_AfterFromRaw_ReturnsOriginalRawValue(ushort page, ushort id)
+    public void Raw_AfterFromRaw_ReturnsOriginalRawValue(
+        ushort page,
+        ushort id)
     {
         // Arrange
         var raw = ((uint)page << 16) | id;
@@ -33,7 +37,9 @@ public sealed class HidUsageTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void ImplicitConversion_FromRawUInt_ProducesEquivalentHidUsage(ushort page, ushort id)
+    public void ImplicitConversion_FromRawUInt_ProducesEquivalentHidUsage(
+        ushort page,
+        ushort id)
     {
         // Arrange
         var raw = ((uint)page << 16) | id;
@@ -46,7 +52,9 @@ public sealed class HidUsageTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void ToString_Always_FormatsAsPageAndIdHex(ushort page, ushort id)
+    public void ToString_Always_FormatsAsPageAndIdHex(
+        ushort page,
+        ushort id)
     {
         // Arrange
         var usage = new HidUsage(page, id);

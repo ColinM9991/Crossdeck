@@ -23,7 +23,7 @@ public sealed class FcdSessionTests
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        ISerialTransport transport = Substitute.For<ISerialTransport>();
+        var transport = Substitute.For<ISerialTransport>();
         transport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
@@ -47,7 +47,7 @@ public sealed class FcdSessionTests
     public async Task RunAsync_WhenReadReturnsZero_ThrowsFcdSessionLostException()
     {
         // Arrange
-        ISerialTransport transport = Substitute.For<ISerialTransport>();
+        var transport = Substitute.For<ISerialTransport>();
         transport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
             .Returns(0);
 
@@ -65,7 +65,7 @@ public sealed class FcdSessionTests
     public async Task DisposeAsync_WhenCalled_DisposesTheTransport()
     {
         // Arrange
-        ISerialTransport transport = Substitute.For<ISerialTransport>();
+        var transport = Substitute.For<ISerialTransport>();
         var sut = CreateSut(transport);
 
         // Act
