@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices;
+using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Mapping;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Routing.Models;
@@ -43,6 +45,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             SingleReader = true,
         });
 
+    private volatile BindingIndex _bindingIndex = BindingIndex.Empty;
     private CancellationTokenSource? _simulatorEventsCancellationToken;
     private Task? _simulatorEventsTask;
     private ISimProducer? _currentProducer;
@@ -64,7 +67,12 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
     public event EventHandler<string?>? AircraftChanged;
 
-    public void SetBindings(IReadOnlyList<OutputMapping> bindings) => throw new NotImplementedException();
+    public void SetBindings(IReadOnlyList<OutputMapping> bindings)
+    {
+        var bindingIndex = BuildIndex(bindings);
+
+        _bindingIndex = bindingIndex;
+    }
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -91,6 +99,51 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         _simCache.TryGetValue(reference, out value);
 
     public ImmutableDictionary<SimRef, SimValueCacheEntry> GetSnapshot() => _simCache.ToImmutableDictionary();
+
+    private static BindingIndex BuildIndex(IReadOnlyList<OutputMapping> mappings)
+    {
+        var byRef = new Dictionary<SimRef, List<OutputBinding>>();
+        var byDevice = new Dictionary<DeviceIdentity, List<OutputBinding>>();
+        var requiredRefs = new HashSet<SimRef>();
+
+        foreach (var mapping in mappings)
+        {
+            var outputBinding = new OutputBinding(mapping);
+
+            foreach (var simRef in mapping.Sources.Values.Distinct())
+            {
+                if (!byRef.TryGetValue(simRef, out var bindings))
+                {
+                    bindings = [];
+                    byRef[simRef] = bindings;
+                }
+
+                bindings.Add(outputBinding);
+                requiredRefs.Add(simRef);
+            }
+
+            if (mapping.Sink is not OutputSink.Indicator indicator) continue;
+            {
+                if (!byDevice.TryGetValue(indicator.Device, out var deviceBindings))
+                {
+                    deviceBindings = [];
+                    byDevice[indicator.Device] = deviceBindings;
+                }
+
+                deviceBindings.Add(outputBinding);
+            }
+        }
+
+        var byRefFrozen =
+            byRef.ToFrozenDictionary(
+                x => x.Key,
+                x => x.Value.Distinct().ToArray());
+        var byDeviceFrozen = byDevice.ToFrozenDictionary(
+            x => x.Key,
+            x => x.Value.Distinct().ToArray());
+
+        return new BindingIndex(byRefFrozen, byDeviceFrozen, requiredRefs.ToFrozenSet());
+    }
 
     private void HandleSimulatorChanged(RouterCommand.SimChanged p, CancellationToken cancellationToken)
     {
@@ -138,12 +191,47 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
                     AircraftChanged?.Invoke(this, ac.AircraftId);
                     break;
                 case SimEvent.ValueChanged v:
-                    _logger.LogDebug("Simulator value changed {SimRef}:{Value}", v.Ref, v.Value);
-
-                    _simCache[v.Ref] = new SimValueCacheEntry(v.Value, _timeProvider.GetTimestamp());
+                    HandleValueChanged(v);
                     break;
             }
         }
+    }
+
+    private void HandleValueChanged(SimEvent.ValueChanged valueChanged)
+    {
+        _logger.LogDebug("Simulator value changed {SimRef}:{Value}", valueChanged.Ref, valueChanged.Value);
+
+        _simCache[valueChanged.Ref] = new SimValueCacheEntry(valueChanged.Value, _timeProvider.GetTimestamp());
+
+        if (!_bindingIndex.ByRef.TryGetValue(valueChanged.Ref, out var bindings))
+            return;
+
+        foreach (var binding in bindings)
+        {
+            try
+            {
+                Dispatch(binding, valueChanged.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling binding for {SimRef}:{Value}", valueChanged.Ref,
+                    valueChanged.Value);
+            }
+        }
+    }
+
+    private void Dispatch(OutputBinding binding, SimValue value)
+    {
+        if (binding.Mapping.Sources.Count > 1)
+            return; // TODO: Implement transformations
+
+        if (value is not SimValue.Number valueNumber)
+            return;
+
+        if (binding.Mapping.Sink is OutputSink.Indicator indicator
+            && _deviceRegistry.TryGet(indicator.Device, out var driver)
+            && driver is IIndicatorOutput output)
+            output.Set(indicator.Output, (int)valueNumber.Value);
     }
 
     private void ActiveSimOnChanged(object? sender, ActiveSimChangedEventArgs e)
