@@ -63,7 +63,7 @@ public sealed class HidDeviceDriverFactoryTests
     {
         // Arrange
         var sut = new HidDeviceDriverFactory(transportFactory);
-        descriptor = descriptor with { Kind = DeviceKind.Hid };
+        descriptor = descriptor with { Kind = DeviceKind.Hid, HidInterfaces = [] };
         var connection = new HidConnection(
             Substitute.For<IHidTransport>(),
             new ReportDescriptor(TestReportDescriptor.Button));
@@ -86,6 +86,7 @@ public sealed class HidDeviceDriverFactoryTests
     {
         // Arrange
         var sut = new HidDeviceDriverFactory(transportFactory);
+        descriptor = descriptor with { HidInterfaces = [] };
         transportFactory
             .CreateAsync(descriptor.Path)
             .Returns(Task.FromException<HidConnection>(new DeviceNotUsableException(descriptor.Path)));
@@ -104,6 +105,7 @@ public sealed class HidDeviceDriverFactoryTests
     {
         // Arrange
         var sut = new HidDeviceDriverFactory(transportFactory);
+        descriptor = descriptor with { HidInterfaces = [] };
         transportFactory
             .CreateAsync(descriptor.Path)
             .Returns(Task.FromException<HidConnection>(new DeviceNotFoundException(descriptor.Path)));
@@ -122,6 +124,7 @@ public sealed class HidDeviceDriverFactoryTests
     {
         // Arrange
         var sut = new HidDeviceDriverFactory(transportFactory);
+        descriptor = descriptor with { HidInterfaces = [] };
         var failure = new InvalidOperationException();
         transportFactory
             .CreateAsync(descriptor.Path)
@@ -129,5 +132,64 @@ public sealed class HidDeviceDriverFactoryTests
 
         // Act / Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.CreateAsync(descriptor, CancellationToken.None));
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task CreateAsync_WithMultipleHidInterfaces_ReturnsCompositeDriver(
+        [Frozen] DeviceDescriptor descriptor,
+        [Frozen] IHidTransportFactory transportFactory)
+    {
+        // Arrange
+        var sut = new HidDeviceDriverFactory(transportFactory);
+        descriptor = descriptor with
+        {
+            Kind = DeviceKind.Hid,
+            HidInterfaces = [new HidInterfaceDescriptor("hid-first"), new HidInterfaceDescriptor("hid-second")]
+        };
+
+        var firstConnection = new HidConnection(
+            Substitute.For<IHidTransport>(),
+            new ReportDescriptor(TestReportDescriptor.Button));
+        var secondConnection = new HidConnection(
+            Substitute.For<IHidTransport>(),
+            new ReportDescriptor(TestReportDescriptor.Button));
+        transportFactory.CreateAsync("hid-first").Returns(firstConnection);
+        transportFactory.CreateAsync("hid-second").Returns(secondConnection);
+
+        // Act
+        var driver = await sut.CreateAsync(descriptor, CancellationToken.None);
+
+        // Assert
+        var compositeDriver = Assert.IsType<CompositeHidDeviceDriver>(driver);
+        Assert.Equal(descriptor.Identity, compositeDriver.Identity);
+        await transportFactory.Received(1).CreateAsync("hid-first");
+        await transportFactory.Received(1).CreateAsync("hid-second");
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task CreateAsync_WhenACompositeInterfaceCannotOpen_ReturnsNullAndDisposesOpenConnections(
+        [Frozen] DeviceDescriptor descriptor,
+        [Frozen] IHidTransportFactory transportFactory)
+    {
+        // Arrange
+        var sut = new HidDeviceDriverFactory(transportFactory);
+        descriptor = descriptor with
+        {
+            Kind = DeviceKind.Hid,
+            HidInterfaces = [new HidInterfaceDescriptor("hid-first"), new HidInterfaceDescriptor("hid-second")]
+        };
+
+        var firstTransport = Substitute.For<IHidTransport>();
+        transportFactory.CreateAsync("hid-first").Returns(
+            new HidConnection(firstTransport, new ReportDescriptor(TestReportDescriptor.Button)));
+        transportFactory.CreateAsync("hid-second").Returns(
+            Task.FromException<HidConnection>(new DeviceNotUsableException("hid-second")));
+
+        // Act
+        var result = await sut.CreateAsync(descriptor, CancellationToken.None);
+
+        // Assert
+        Assert.Null(result);
+        await firstTransport.Received(1).DisposeAsync();
     }
 }

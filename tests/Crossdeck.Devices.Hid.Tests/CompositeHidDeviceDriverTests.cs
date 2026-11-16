@@ -1,0 +1,105 @@
+using Crossdeck.Core.Devices.Models;
+using Crossdeck.Devices.Hid.Models;
+using HidSharp.Reports;
+
+namespace Crossdeck.Devices.Hid.Tests;
+
+public sealed class CompositeHidDeviceDriverTests
+{
+    [Fact]
+    public void Constructors_VerifyGuardClauses()
+    {
+        // Arrange
+        var fixture = new Fixture().Customize(new AutoNSubstituteCustomization());
+        var assertion = new GuardClauseAssertion(fixture);
+
+        // Act / Assert
+        assertion.Verify(typeof(CompositeHidDeviceDriver).GetConstructors());
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void Identity_Always_ReturnsConstructorValue(
+        [Frozen] DeviceIdentity identity,
+        CompositeHidDeviceDriver sut)
+    {
+        // Act
+        var result = sut.Identity;
+
+        // Assert
+        Assert.Equal(identity, result);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void Controls_WhenInnerDriversShareAnInputId_ReturnsEachControlOnce(
+        DeviceIdentity identity,
+        IHidTransport firstTransport,
+        IHidTransport secondTransport)
+    {
+        // Arrange
+        var firstDriver = new HidDeviceDriver(identity, firstTransport,
+            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)));
+        var secondDriver = new HidDeviceDriver(identity, secondTransport,
+            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)));
+
+        // Act
+        var sut = new CompositeHidDeviceDriver(identity, [firstDriver, secondDriver]);
+
+        // Assert
+        Assert.Single(sut.Controls);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenAnInnerDriverRaisesInput_ForwardsTheInputEvent(
+        [Frozen] DeviceIdentity identity,
+        ButtonControl button,
+        [Frozen] IHidTransport transport,
+        [Frozen] IHidReportDecoder decoder)
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var sut = new CompositeHidDeviceDriver(identity,
+            [new HidDeviceDriver(identity, transport, decoder)]);
+
+        transport.MaxInputReportLength.Returns(8);
+        transport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
+            .Returns(async _ =>
+            {
+                await cts.CancelAsync();
+                return 8;
+            });
+
+        decoder.When(d => d.Decode(Arg.Any<byte[]>(), Arg.Any<List<HidInputChange>>()))
+            .Do(call => call.ArgAt<List<HidInputChange>>(1).Add(new HidInputChange(button, 1)));
+
+        DeviceInputEvent? raised = null;
+        sut.InputReceived += (_, e) => raised = e;
+
+        // Act
+        await sut.RunAsync(cts.Token);
+
+        // Assert
+        Assert.Equal(InputEventKind.Pressed, raised?.Kind);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task DisposeAsync_Always_DisposesEveryInnerDriver(
+        DeviceIdentity identity,
+        IHidTransport firstTransport,
+        IHidTransport secondTransport,
+        IHidReportDecoder decoder)
+    {
+        // Arrange
+        var sut = new CompositeHidDeviceDriver(identity,
+        [
+            new HidDeviceDriver(identity, firstTransport, decoder),
+            new HidDeviceDriver(identity, secondTransport, decoder)
+        ]);
+
+        // Act
+        await sut.DisposeAsync();
+
+        // Assert
+        await firstTransport.Received(1).DisposeAsync();
+        await secondTransport.Received(1).DisposeAsync();
+    }
+}

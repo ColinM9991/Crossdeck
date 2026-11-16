@@ -8,8 +8,7 @@ namespace Crossdeck.Devices.Hid;
 
 public sealed class HidDeviceWatcher : IDeviceWatcher
 {
-    private static readonly HashSet<uint> SupportedDevices = new()
-        { 0x0001_0004, 0x0001_0005, 0x0001_0008, 0x0002_0001 };
+    private static readonly HashSet<uint> SupportedDevices = [0x0001_0004, 0x0001_0005, 0x0001_0008, 0x0002_0001];
 
     private readonly Signal _deviceChangedSignal = new();
     private readonly IUsbDeviceResolver _usbDeviceResolver;
@@ -67,61 +66,75 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 
     internal static string FormatUsage(uint usage) => $"{usage >> 16:X4}_{usage & 0xFFFF:X4}";
 
-    private void OnChanged(object? sender, DeviceListChangedEventArgs e)
-    {
-        _deviceChangedSignal.Set();
-    }
+    private void OnChanged(object? sender, DeviceListChangedEventArgs e) => _deviceChangedSignal.Set();
 
     private void RaiseDevicesChanged(
         IEnumerable<DeviceDescriptor> added,
         IEnumerable<DeviceDescriptor> removed)
     {
-        foreach (var device in removed)
-        {
-            DeviceRemoved?.Invoke(this, new DeviceRemovedEventArgs(device.Identity));
-        }
+        foreach (var device in removed) DeviceRemoved?.Invoke(this, new DeviceRemovedEventArgs(device.Identity));
 
-        foreach (var device in added)
-        {
-            DeviceArrived?.Invoke(this, new DeviceArrivedEventArgs(device));
-        }
+        foreach (var device in added) DeviceArrived?.Invoke(this, new DeviceArrivedEventArgs(device));
     }
 
     private Dictionary<DeviceIdentity, DeviceDescriptor> BuildDeviceCache(
         Dictionary<DeviceIdentity, DeviceDescriptor> cache,
         IEnumerable<HidDevice> devices)
     {
-        var localDevices = new Dictionary<DeviceIdentity, DeviceDescriptor>();
+        var facts = new Dictionary<string, DeviceFact>();
+        var groups = new Dictionary<DeviceIdentity, List<HidDevice>>();
+
         foreach (var device in devices)
         {
-            var deviceFact = BuildDeviceFact(device);
-            if (deviceFact is null || !deviceFact.Usages.All(x => SupportedDevices.Contains(x)))
+            if (!facts.TryGetValue(device.DevicePath, out var deviceFact))
             {
-                continue;
+                deviceFact = BuildDeviceFact(device);
+                if (deviceFact is null) continue;
+
+                facts[device.DevicePath] = deviceFact;
             }
 
             var deviceIdentity = BuildDeviceIdentity(device, deviceFact);
 
+            if (!groups.TryGetValue(deviceIdentity, out var group))
+            {
+                group = [];
+                groups.Add(deviceIdentity, group);
+            }
+
+            group.Add(device);
+        }
+
+        var localDevices = new Dictionary<DeviceIdentity, DeviceDescriptor>();
+        foreach (var (deviceIdentity, group) in groups)
+        {
             if (cache.TryGetValue(deviceIdentity, out var existingDevice))
             {
                 localDevices[deviceIdentity] = existingDevice;
                 continue;
             }
 
-            if (localDevices.ContainsKey(deviceIdentity))
-            {
-                continue;
-            }
+            var primaryIndex = group.FindIndex(device => HasSupportedUsages(facts[device.DevicePath]));
+            if (primaryIndex < 0) continue;
 
+            var primary = group[primaryIndex];
             localDevices[deviceIdentity] = new DeviceDescriptor(
                 deviceIdentity,
                 DeviceKind.Hid,
-                device.DevicePath,
-                GetSafe(device, x => x.GetProductName()));
+                primary.DevicePath,
+                GetSafe(primary, x => x.GetProductName()),
+                [.. group.Select(x => new HidInterfaceDescriptor(x.DevicePath))],
+                GetSerialInterfaces(primary.DevicePath));
         }
 
         return localDevices;
     }
+
+    private IReadOnlyList<SerialInterfaceDescriptor> GetSerialInterfaces(string hidPath) =>
+        _usbDeviceResolver.Resolve(hidPath)?.SerialInterfaces ?? [];
+
+    private static bool HasSupportedUsages(DeviceFact deviceFact) =>
+        deviceFact.Usages.All(x => SupportedDevices.Contains(x));
 
     private static DeviceFact? BuildDeviceFact(HidDevice device)
     {
@@ -135,13 +148,15 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
             return null;
         }
 
-        return new DeviceFact([.. descriptor.DeviceItems[0].Usages.GetAllValues()]); // TODO: Implement composite devices to handle child items
+        return new DeviceFact([
+            .. descriptor.DeviceItems[0].Usages.GetAllValues()
+        ]);
     }
 
     private DeviceIdentity BuildDeviceIdentity(HidDevice device, DeviceFact deviceFact)
     {
         var serial = _usbDeviceResolver.Resolve(device.DevicePath)?.Identity.Serial;
-        var usage = deviceFact.Usages.First();
+        var usage = deviceFact.Usages.FirstOrDefault();
 
         return BuildDeviceIdentity(device.VendorID, device.ProductID, serial, usage);
     }
@@ -163,13 +178,8 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         Dictionary<DeviceIdentity, DeviceDescriptor> right)
     {
         foreach (var (key, device) in right)
-        {
-            if (!left.ContainsKey(key))
-            {
-                yield return device;
-            }
-        }
+            if (!left.ContainsKey(key)) yield return device;
     }
-    
+
     private record DeviceFact(ICollection<uint> Usages);
 }
