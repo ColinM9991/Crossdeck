@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
@@ -76,6 +77,57 @@ public static class DeviceNode
         return new string(buffer, 0, nullIndex < 0 ? buffer.Length : nullIndex);
     }
 
+    public static (uint DevInst, string Id)? GetUsbParent(uint devInst)
+    {
+        foreach (var node in Walk(devInst, 10))
+        {
+            var id = GetDeviceId(node);
+            if (id is not null && IsUsbRootDeviceId(id))
+            {
+                return (node, id);
+            }
+        }
+
+        return null;
+    }
+
+    public static string? GetUsbParentId(uint devInst) => GetUsbParent(devInst)?.Id;
+
+    public static (int VendorId, int ProductId, string? Serial)? ParseUsbRootId(string deviceId)
+    {
+        var segments = deviceId.Split('\\');
+        if (segments.Length is not (2 or 3) || !IsUsbRootDeviceId(deviceId))
+        {
+            return null;
+        }
+
+        var hasVendor = false;
+        var hasProduct = false;
+        var vendorId = 0;
+        var productId = 0;
+
+        foreach (var part in segments[1].Split('&'))
+        {
+            if (TryParseIdPart(part, "VID_", out var vendor))
+            {
+                vendorId = vendor;
+                hasVendor = true;
+            }
+            else if (TryParseIdPart(part, "PID_", out var product))
+            {
+                productId = product;
+                hasProduct = true;
+            }
+        }
+
+        if (!hasVendor || !hasProduct)
+        {
+            return null;
+        }
+
+        return (vendorId, productId, segments.Length == 3 ? segments[2] : null);
+    }
+
     public static string? ReadDevNodeStringProperty(uint devInst, uint spdrpProperty)
     {
         var handle = SetupDi.SetupDiGetAllClassDevs(nint.Zero, nint.Zero, nint.Zero, SetupDi.DigcfPresent);
@@ -150,5 +202,16 @@ public static class DeviceNode
             if (Marshal.GetLastPInvokeError() != ErrorInsufficientBuffer) return null;
             buffer = new char[requiredSize];
         }
+    }
+
+    private static bool IsUsbRootDeviceId(string deviceId) =>
+        deviceId.StartsWith("USB\\VID_", StringComparison.OrdinalIgnoreCase) &&
+        !deviceId.Contains("&MI_", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseIdPart(string part, string prefix, out int value)
+    {
+        value = 0;
+        return part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(part.AsSpan(prefix.Length), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
     }
 }

@@ -10,6 +10,7 @@ public static partial class SetupDi
     public const uint DicsFlagGlobal = 0x01;
     public const uint DiregDev = 0x01;
     public const int KeyRead = 0x20019;
+    public const uint SpdrpDeviceDesc = 0;
     public const uint SpdrpDeviceSerial = 17;
 
     [LibraryImport("setupapi.dll", EntryPoint = "SetupDiGetClassDevsW", StringMarshalling = StringMarshalling.Utf16)]

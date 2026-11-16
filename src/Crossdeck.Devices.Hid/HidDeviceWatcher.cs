@@ -12,8 +12,14 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         { 0x0001_0004, 0x0001_0005, 0x0001_0008, 0x0002_0001 };
 
     private readonly Signal _deviceChangedSignal = new();
+    private readonly IUsbDeviceResolver _usbDeviceResolver;
 
-    private volatile Dictionary<string, DeviceDescriptor> _deviceCache = new();
+    private volatile Dictionary<DeviceIdentity, DeviceDescriptor> _deviceCache = new();
+
+    public HidDeviceWatcher(IUsbDeviceResolver usbDeviceResolver)
+    {
+        _usbDeviceResolver = usbDeviceResolver ?? throw new ArgumentNullException(nameof(usbDeviceResolver));
+    }
 
     public IReadOnlyCollection<DeviceDescriptor> ConnectedDevices =>
         [.. _deviceCache.Values];
@@ -47,6 +53,20 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         }
     }
 
+    internal static DeviceIdentity BuildDeviceIdentity(int vendorId, int productId, string? serial, uint usage)
+    {
+        var trimmedSerial = serial?.Trim();
+
+        var (kind, value) =
+            string.IsNullOrWhiteSpace(trimmedSerial)
+                ? (DeviceIdentitySource.Usage, FormatUsage(usage))
+                : (DeviceIdentitySource.Serial, trimmedSerial);
+
+        return new DeviceIdentity(kind, vendorId, productId, value);
+    }
+
+    internal static string FormatUsage(uint usage) => $"{usage >> 16:X4}_{usage & 0xFFFF:X4}";
+
     private void OnChanged(object? sender, DeviceListChangedEventArgs e)
     {
         _deviceChangedSignal.Set();
@@ -67,19 +87,13 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         }
     }
 
-    private static Dictionary<string, DeviceDescriptor> BuildDeviceCache(
-        Dictionary<string, DeviceDescriptor> cache,
+    private Dictionary<DeviceIdentity, DeviceDescriptor> BuildDeviceCache(
+        Dictionary<DeviceIdentity, DeviceDescriptor> cache,
         IEnumerable<HidDevice> devices)
     {
-        var localDevices = new Dictionary<string, DeviceDescriptor>();
+        var localDevices = new Dictionary<DeviceIdentity, DeviceDescriptor>();
         foreach (var device in devices)
         {
-            if (cache.TryGetValue(device.DevicePath, out var existingDevice))
-            {
-                localDevices[device.DevicePath] = existingDevice;
-                continue;
-            }
-
             var deviceFact = BuildDeviceFact(device);
             if (deviceFact is null || !deviceFact.Usages.All(x => SupportedDevices.Contains(x)))
             {
@@ -87,7 +101,19 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
             }
 
             var deviceIdentity = BuildDeviceIdentity(device, deviceFact);
-            localDevices[device.DevicePath] = new DeviceDescriptor(
+
+            if (cache.TryGetValue(deviceIdentity, out var existingDevice))
+            {
+                localDevices[deviceIdentity] = existingDevice;
+                continue;
+            }
+
+            if (localDevices.ContainsKey(deviceIdentity))
+            {
+                continue;
+            }
+
+            localDevices[deviceIdentity] = new DeviceDescriptor(
                 deviceIdentity,
                 DeviceKind.Hid,
                 device.DevicePath,
@@ -112,17 +138,12 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         return new DeviceFact([.. descriptor.DeviceItems[0].Usages.GetAllValues()]); // TODO: Implement composite devices to handle child items
     }
 
-    private static DeviceIdentity BuildDeviceIdentity(HidDevice device, DeviceFact deviceFact)
+    private DeviceIdentity BuildDeviceIdentity(HidDevice device, DeviceFact deviceFact)
     {
-        var serial = GetSafe(device, x => x.GetSerialNumber());
+        var serial = _usbDeviceResolver.Resolve(device.DevicePath)?.Identity.Serial;
         var usage = deviceFact.Usages.First();
 
-        var (kind, value) =
-            serial is not null
-                ? (DeviceIdentitySource.Serial, serial)
-                : (DeviceIdentitySource.Usage, $"{usage >> 16:X4}_{usage & 0xFFFF:X4}");
-
-        return new DeviceIdentity(kind, device.VendorID, device.ProductID, value);
+        return BuildDeviceIdentity(device.VendorID, device.ProductID, serial, usage);
     }
 
     private static TOut? GetSafe<TOut>(HidDevice device, Func<HidDevice, TOut> func) where TOut : class
@@ -137,8 +158,9 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         }
     }
 
-    private static IEnumerable<DeviceDescriptor> GetDevices(Dictionary<string, DeviceDescriptor> left,
-        Dictionary<string, DeviceDescriptor> right)
+    private static IEnumerable<DeviceDescriptor> GetDevices(
+        Dictionary<DeviceIdentity, DeviceDescriptor> left,
+        Dictionary<DeviceIdentity, DeviceDescriptor> right)
     {
         foreach (var (key, device) in right)
         {

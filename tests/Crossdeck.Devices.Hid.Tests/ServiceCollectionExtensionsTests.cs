@@ -8,7 +8,9 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddHidServices_Always_RegistersDeviceWatcherAsSingleton()
     {
         // Arrange
-        var provider = new ServiceCollection().AddHidServices().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddSingleton(Substitute.For<IUsbDeviceResolver>());
+        var provider = services.AddHidServices().BuildServiceProvider();
 
         // Act
         var first = provider.GetRequiredService<IDeviceWatcher>();
