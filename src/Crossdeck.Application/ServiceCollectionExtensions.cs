@@ -6,6 +6,7 @@ using Crossdeck.Application.Session;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Crossdeck.Application;
 
@@ -13,6 +14,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSimulationServices(this IServiceCollection services)
     {
+        services.TryAddSingleton<TimeProvider>();
+
         services.AddSingleton<SimSessionSupervisor>();
         services.AddSingleton<IActiveSim>(sp => sp.GetRequiredService<SimSessionSupervisor>());
         services.AddSingleton<ISimSessionSupervisor>(sp => sp.GetRequiredService<SimSessionSupervisor>());
@@ -27,6 +30,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<SimValueRouter>();
         services.AddSingleton<ISimValueRouter>(sp => sp.GetRequiredService<SimValueRouter>());
+        services.AddSingleton<ISimValueCache>(sp => sp.GetRequiredService<SimValueRouter>());
 
         return services;
     }

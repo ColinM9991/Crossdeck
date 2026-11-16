@@ -5,6 +5,7 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Session;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -16,7 +17,10 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddSimulationServices_Always_ResolvesSameSimSessionSupervisorInstanceForAllItsInterfaces()
     {
         // Arrange
-        var provider = new ServiceCollection().AddSimulationServices().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.TryAddSingleton(TimeProvider.System);
+
+        var provider = services.AddSimulationServices().BuildServiceProvider();
 
         // Act
         var concrete = provider.GetRequiredService<SimSessionSupervisor>();
@@ -33,6 +37,7 @@ public sealed class ServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<ILogger<DeviceRegistry>>(NullLogger<DeviceRegistry>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
@@ -49,7 +54,10 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddSimulationServices_Always_ResolvesSameInputDispatcherInstanceForAllItsInterfaces()
     {
         // Arrange
-        var provider = new ServiceCollection().AddSimulationServices().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.TryAddSingleton(TimeProvider.System);
+
+        var provider = services.AddSimulationServices().BuildServiceProvider();
 
         // Act
         var concrete = provider.GetRequiredService<InputDispatcher>();

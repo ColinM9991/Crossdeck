@@ -60,12 +60,14 @@ Microsoft's .NET agent skills are vendored as a git submodule at `.opencode/skil
 
 - `STATE.md` at the repo root is the single working-state file. It is gitignored and transient: a tally of progress for the agent, not documentation. Never commit it.
 - One file, reused for every activity: when a new activity starts, replace its contents with that activity's state rather than accumulating stale activities.
-- Contents: objective; a checklist of the work items in scope (each type, file or scope, with its status); progress through each stage; hazards and known defects; the next move.
+- Contents: objective; a checklist of the work items in scope (each type, file or scope, with its status); progress through each stage; hazards and known defects; persistence rank (this file's helpfulness as the persistence layer, re-ranked at each stage boundary); the next move.
 - Update timings, in order:
   - When the activity starts: write the objective, then fill in the work-item checklist as the plan solidifies.
   - When the picture is understood and a plan is proposed: record the plan as the work-item checklist with statuses, plus any design notes or hazards discovered.
   - After each stage of the plan completes: mark that stage's work items and refresh hazards and the next move.
 - Keep it current during the activity, not just at the end; a stale `STATE.md` after a completed stage is a defect.
+- Before completing each stage, rank the helpfulness of `STATE.md` as the persistence layer for resuming this task, and record the rank with a one-line reason in `STATE.md`. Every agent does this, including subagents, not just the primary one.
+- Use a fixed 1-5 scale so ranks are comparable across agents: 1 = redundant with the auto-generated compaction summary or already stale; 5 = the only reliable way to resume without re-deriving state. A low rank mid-task is a warning that the persistence layer is not doing its job, and a stale file misdirects the next agent, so re-rank whenever a new activity starts.
 - On session start, or after any compaction, read `STATE.md` first to pick up the tally of progress, and say in the conversation that it is the source of truth so the compaction checkpoint references it.
 
 ## Git

@@ -1,8 +1,10 @@
-﻿using System.Threading.Channels;
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Threading.Channels;
 using Crossdeck.Core.Devices;
-using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Mapping;
 using Crossdeck.Core.Routing;
+using Crossdeck.Core.Routing.Models;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
@@ -21,7 +23,6 @@ namespace Crossdeck.Application.Routing;
  *  b. Profile unloaded - wipe subscriptions
  * 4. Device changes (added, removed)
  *  a. Added - replay events for device
- *  b. Removed - removed subscriptions for that particular device
  *
  * Loops:
  * 1. Sim Event loop (created when simulator is connected)
@@ -31,7 +32,9 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 {
     private readonly IActiveSim _activeSim;
     private readonly IDeviceRegistry _deviceRegistry;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<SimValueRouter> _logger;
+    private readonly ConcurrentDictionary<SimRef, SimValueCacheEntry> _simCache = new();
 
     private readonly Channel<RouterCommand> _commands = Channel.CreateUnbounded<RouterCommand>(
         new UnboundedChannelOptions
@@ -47,15 +50,16 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
     public SimValueRouter(
         IActiveSim activeSim,
         IDeviceRegistry deviceRegistry,
+        TimeProvider timeProvider,
         ILogger<SimValueRouter> logger)
     {
         _activeSim = activeSim ?? throw new ArgumentNullException(nameof(activeSim));
         _deviceRegistry = deviceRegistry ?? throw new ArgumentNullException(nameof(deviceRegistry));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _activeSim.Changing += ActiveSimOnChanging;
         _activeSim.Changed += ActiveSimOnChanged;
-        _deviceRegistry.DriverAdded += DeviceRegistryOnDriverAdded;
     }
 
     public event EventHandler<string?>? AircraftChanged;
@@ -83,10 +87,10 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         }
     }
 
-    public bool TryGet(SimRef reference, out SimValue? value) => throw new NotImplementedException();
+    public bool TryGet(SimRef reference, out SimValueCacheEntry? value) =>
+        _simCache.TryGetValue(reference, out value);
 
-    public IReadOnlyDictionary<SimRef, (SimValue Value, long UpdatedAt)> GetSnapshot() =>
-        throw new NotImplementedException();
+    public ImmutableDictionary<SimRef, SimValueCacheEntry> GetSnapshot() => _simCache.ToImmutableDictionary();
 
     private void HandleSimulatorChanged(RouterCommand.SimChanged p, CancellationToken cancellationToken)
     {
@@ -94,6 +98,8 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             return;
 
         _logger.LogInformation("Simulator changed");
+        _simCache.Clear();
+
         _currentProducer = p.Producer;
         _currentProducer.Ready += CurrentProducerOnReady;
         _simulatorEventsCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -133,13 +139,11 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
                     break;
                 case SimEvent.ValueChanged v:
                     _logger.LogDebug("Simulator value changed {SimRef}:{Value}", v.Ref, v.Value);
+
+                    _simCache[v.Ref] = new SimValueCacheEntry(v.Value, _timeProvider.GetTimestamp());
                     break;
             }
         }
-    }
-
-    private void DeviceRegistryOnDriverAdded(object? sender, DriverAddedEventArgs e)
-    {
     }
 
     private void ActiveSimOnChanged(object? sender, ActiveSimChangedEventArgs e)
