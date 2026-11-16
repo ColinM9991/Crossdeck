@@ -23,10 +23,18 @@ internal sealed class WindowsUsbDeviceResolver : IUsbDeviceResolver
 
         var (vendorId, productId, serial) = rootIdentity.Value;
         var productName = DeviceNode.ReadDevNodeStringProperty(rootDevInst, SetupDi.SpdrpDeviceDesc);
+        var hidInterfaces = DeviceNode.EnumerateHidInterfaces(rootDevInst, rootId)
+            .Select(x => new HidInterfaceDescriptor(x.InterfaceNumber, x.HidPath))
+            .OrderBy(x => x.Key)
+            .ToList();
+
+        // A single-interface device has no MI_ child nodes, and its interface number is 0 by definition.
+        if (hidInterfaces.Count == 0)
+            hidInterfaces = [new HidInterfaceDescriptor(0, hidPath)];
 
         return new UsbDeviceDescriptor(
             new UsbDeviceIdentity(vendorId, productId, serial, productName),
-            [new HidInterfaceDescriptor(hidPath)],
+            hidInterfaces,
             FindSiblingPorts(rootId));
     }
 

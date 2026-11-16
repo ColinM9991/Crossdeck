@@ -66,6 +66,37 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 
     internal static string FormatUsage(uint usage) => $"{usage >> 16:X4}_{usage & 0xFFFF:X4}";
 
+    internal static IReadOnlyList<string> OrderPaths(
+        IEnumerable<string> paths,
+        Func<string, uint> firstUsage)
+    {
+        List<string> list =
+        [
+            .. paths.OrderBy(firstUsage)
+                .ThenBy(x => x, StringComparer.OrdinalIgnoreCase)
+        ];
+        return list;
+    }
+
+    internal static IReadOnlyList<HidInterfaceDescriptor> KeyInterfaces(
+        IReadOnlyList<string> orderedPaths,
+        IReadOnlyList<HidInterfaceDescriptor>? resolverInterfaces)
+    {
+        var keys = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (resolverInterfaces is not null)
+        {
+            foreach (var resolverInterface in resolverInterfaces) keys.TryAdd(resolverInterface.Path, resolverInterface.Key);
+        }
+
+        var interfaces = orderedPaths
+            .Select((path, ordinal) => new HidInterfaceDescriptor(
+                keys.GetValueOrDefault(path, ordinal),
+                path))
+            .ToList();
+
+        return interfaces.OrderBy(x => x.Key).ThenBy(x => x.Path, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     private void OnChanged(object? sender, DeviceListChangedEventArgs e) => _deviceChangedSignal.Set();
 
     private void RaiseDevicesChanged(
@@ -114,24 +145,23 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
                 continue;
             }
 
-            var primaryIndex = group.FindIndex(device => HasSupportedUsages(facts[device.DevicePath]));
-            if (primaryIndex < 0) continue;
+            var orderedPaths = OrderPaths(group.Select(x => x.DevicePath), x => facts[x].Usages.FirstOrDefault());
+            var primaryPath = orderedPaths.FirstOrDefault(x => HasSupportedUsages(facts[x]));
+            if (primaryPath is null) continue;
 
-            var primary = group[primaryIndex];
+            var primary = group.Single(x => x.DevicePath == primaryPath);
+            var usbDevice = _usbDeviceResolver.Resolve(primaryPath);
             localDevices[deviceIdentity] = new DeviceDescriptor(
                 deviceIdentity,
                 DeviceKind.Hid,
-                primary.DevicePath,
+                primaryPath,
                 GetSafe(primary, x => x.GetProductName()),
-                [.. group.Select(x => new HidInterfaceDescriptor(x.DevicePath))],
-                GetSerialInterfaces(primary.DevicePath));
+                KeyInterfaces(orderedPaths, usbDevice?.HidInterfaces),
+                usbDevice?.SerialInterfaces ?? []);
         }
 
         return localDevices;
     }
-
-    private IReadOnlyList<SerialInterfaceDescriptor> GetSerialInterfaces(string hidPath) =>
-        _usbDeviceResolver.Resolve(hidPath)?.SerialInterfaces ?? [];
 
     private static bool HasSupportedUsages(DeviceFact deviceFact) =>
         deviceFact.Usages.All(x => SupportedDevices.Contains(x));

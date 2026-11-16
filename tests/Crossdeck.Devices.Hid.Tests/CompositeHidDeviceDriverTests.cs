@@ -30,7 +30,7 @@ public sealed class CompositeHidDeviceDriverTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void Controls_WhenInnerDriversShareAnInputId_ReturnsEachControlOnce(
+    public void Controls_WhenInnerDriversShareAnInputId_ReturnsEveryControl(
         DeviceIdentity identity,
         IHidTransport firstTransport,
         IHidTransport secondTransport)
@@ -45,7 +45,9 @@ public sealed class CompositeHidDeviceDriverTests
         var sut = new CompositeHidDeviceDriver(identity, [firstDriver, secondDriver]);
 
         // Assert
-        Assert.Single(sut.Controls);
+        var controls = sut.Controls;
+        Assert.Equal(2, controls.Count);
+        Assert.All(controls, x => Assert.Equal(new InputId(InputKind.Button, "1"), x.Id));
     }
 
     [Theory, AutoNSubstituteData]
@@ -78,6 +80,7 @@ public sealed class CompositeHidDeviceDriverTests
         await sut.RunAsync(cts.Token);
 
         // Assert
+        Assert.Equal(identity, raised?.Identity);
         Assert.Equal(InputEventKind.Pressed, raised?.Kind);
     }
 

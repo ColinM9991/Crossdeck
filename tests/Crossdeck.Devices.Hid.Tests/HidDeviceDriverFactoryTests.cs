@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
@@ -144,7 +145,7 @@ public sealed class HidDeviceDriverFactoryTests
         descriptor = descriptor with
         {
             Kind = DeviceKind.Hid,
-            HidInterfaces = [new HidInterfaceDescriptor("hid-first"), new HidInterfaceDescriptor("hid-second")]
+            HidInterfaces = [new HidInterfaceDescriptor(0, "hid-first"), new HidInterfaceDescriptor(1, "hid-second")]
         };
 
         var firstConnection = new HidConnection(
@@ -167,6 +168,68 @@ public sealed class HidDeviceDriverFactoryTests
     }
 
     [Theory, AutoNSubstituteData]
+    public async Task CreateAsync_WithMultipleHidInterfaces_ForwardsInputEventsWithThePerInterfaceIdentity(
+        [Frozen] DeviceDescriptor descriptor,
+        [Frozen] IHidTransportFactory transportFactory)
+    {
+        // Arrange
+        var sut = new HidDeviceDriverFactory(transportFactory);
+        descriptor = descriptor with
+        {
+            Kind = DeviceKind.Hid,
+            HidInterfaces = [new HidInterfaceDescriptor(0, "hid-first"), new HidInterfaceDescriptor(1, "hid-second")]
+        };
+
+        using var cts = new CancellationTokenSource();
+        var firstTransport = Substitute.For<IHidTransport>();
+        firstTransport.MaxInputReportLength.Returns(2);
+        firstTransport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
+            .Returns(async call =>
+            {
+                var report = call.ArgAt<Memory<byte>>(0).Span;
+                report[0] = 0x00;
+                report[1] = 0x01;
+                await cts.CancelAsync();
+                return 2;
+            });
+
+        var secondTransport = Substitute.For<IHidTransport>();
+        secondTransport.MaxInputReportLength.Returns(2);
+        secondTransport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
+            .Returns(async call =>
+            {
+                var report = call.ArgAt<Memory<byte>>(0).Span;
+                report[0] = 0x00;
+                report[1] = 0x01;
+                await cts.CancelAsync();
+                return 2;
+            });
+
+        var firstConnection = new HidConnection(firstTransport, new ReportDescriptor(TestReportDescriptor.Button));
+        var secondConnection = new HidConnection(secondTransport, new ReportDescriptor(TestReportDescriptor.Button));
+        transportFactory.CreateAsync("hid-first").Returns(firstConnection);
+        transportFactory.CreateAsync("hid-second").Returns(secondConnection);
+
+        // Act
+        var compositeDriver = Assert.IsType<CompositeHidDeviceDriver>(await sut.CreateAsync(descriptor, CancellationToken.None));
+        var events = new ConcurrentBag<DeviceInputEvent>();
+        compositeDriver.InputReceived += (_, e) => events.Add(e);
+        await compositeDriver.RunAsync(cts.Token);
+
+        // Assert
+        var expectedIdentities = new[]
+        {
+            new DeviceIdentity(descriptor.Identity.Kind, descriptor.Identity.VendorId, descriptor.Identity.ProductId,
+                $"{descriptor.Identity.Value}@if=0"),
+            new DeviceIdentity(descriptor.Identity.Kind, descriptor.Identity.VendorId, descriptor.Identity.ProductId,
+                $"{descriptor.Identity.Value}@if=1")
+        };
+        Assert.Equal(expectedIdentities.OrderBy(x => x.Value), events.Select(x => x.Identity).OrderBy(x => x.Value));
+        Assert.Equal(2, compositeDriver.Controls.Count);
+        Assert.All(events, x => Assert.Equal(new InputId(InputKind.Button, "1"), x.Control.Id));
+    }
+
+    [Theory, AutoNSubstituteData]
     public async Task CreateAsync_WhenACompositeInterfaceCannotOpen_ReturnsNullAndDisposesOpenConnections(
         [Frozen] DeviceDescriptor descriptor,
         [Frozen] IHidTransportFactory transportFactory)
@@ -176,7 +239,7 @@ public sealed class HidDeviceDriverFactoryTests
         descriptor = descriptor with
         {
             Kind = DeviceKind.Hid,
-            HidInterfaces = [new HidInterfaceDescriptor("hid-first"), new HidInterfaceDescriptor("hid-second")]
+            HidInterfaces = [new HidInterfaceDescriptor(0, "hid-first"), new HidInterfaceDescriptor(1, "hid-second")]
         };
 
         var firstTransport = Substitute.For<IHidTransport>();

@@ -12,7 +12,7 @@ public sealed class CompositeHidDeviceDriver : IDeviceDriver
     {
         Identity = identity;
         _drivers = drivers ?? throw new ArgumentNullException(nameof(drivers));
-        _controls = _drivers.SelectMany(x => x.Controls).DistinctBy(x => x.Id).ToList();
+        _controls = [.. _drivers.SelectMany(x => x.Controls)];
 
         foreach (var driver in _drivers)
         {

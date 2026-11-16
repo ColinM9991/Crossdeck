@@ -184,6 +184,55 @@ public static class DeviceNode
         }
     }
 
+    public static IEnumerable<(uint DevInst, string? Id)> EnumerateChildren(uint devInst)
+    {
+        if (CfgMgr32.CM_Get_Child(out var child, devInst, 0) != CfgMgr32.CrSuccess)
+            yield break;
+
+        while (true)
+        {
+            yield return (child, GetDeviceId(child));
+
+            if (CfgMgr32.CM_Get_Sibling(out var sibling, child, 0) != CfgMgr32.CrSuccess)
+                yield break;
+
+            child = sibling;
+        }
+    }
+
+    public static IEnumerable<(int InterfaceNumber, string HidPath)> EnumerateHidInterfaces(
+        uint usbParentDevInst,
+        string usbParentId)
+    {
+        var segments = usbParentId.Split('\\');
+        if (segments.Length is not (2 or 3)) yield break;
+
+        var prefix = $"{segments[0]}\\{segments[1]}&MI_";
+
+        foreach (var (_, childId) in EnumerateChildren(usbParentDevInst))
+        {
+            if (childId is null || !childId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!TryParseInterfaceNumber(childId, out var interfaceNumber)) continue;
+
+            yield return (interfaceNumber, $@"\\?\hid\{childId}");
+        }
+    }
+
+    public static bool TryParseInterfaceNumber(string deviceId, out int interfaceNumber)
+    {
+        interfaceNumber = 0;
+
+        var segments = deviceId.Split('\\');
+        if (segments.Length < 2) return false;
+
+        foreach (var part in segments[1].Split('&'))
+        {
+            if (TryParseIdPart(part, "MI_", out interfaceNumber)) return true;
+        }
+
+        return false;
+    }
+
     private static string? ReadStringProperty(nint deviceInfoSet, ref SP_DEVINFO_DATA data, uint spdrpProperty)
     {
         var buffer = new char[128];

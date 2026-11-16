@@ -27,9 +27,7 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
         try
         {
             if (deviceDescriptor.HidInterfaces.Count > 1)
-            {
                 return await CreateCompositeAsync(deviceDescriptor);
-            }
 
             var hidConnection = await _hidTransportFactory.CreateAsync(deviceDescriptor.Path);
 
@@ -55,9 +53,7 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
         try
         {
             foreach (var hidInterface in deviceDescriptor.HidInterfaces)
-            {
                 connections.Add(await _hidTransportFactory.CreateAsync(hidInterface.Path));
-            }
         }
         catch
         {
@@ -66,10 +62,10 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
         }
 
         var drivers = connections
-            .Select(x => new HidDeviceDriver(
-                deviceDescriptor.Identity,
-                x.Transport,
-                new HidReportDecoder(x.ReportDescriptor)))
+            .Select((connection, index) => new HidDeviceDriver(
+                WithInterfaceKey(deviceDescriptor.Identity, deviceDescriptor.HidInterfaces[index].Key),
+                connection.Transport,
+                new HidReportDecoder(connection.ReportDescriptor)))
             .ToList();
 
         return new CompositeHidDeviceDriver(deviceDescriptor.Identity, drivers);
@@ -78,8 +74,9 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
     private static async Task DisposeConnectionsAsync(List<HidConnection> connections)
     {
         foreach (var connection in connections)
-        {
             await connection.Transport.DisposeAsync();
-        }
     }
+
+    private static DeviceIdentity WithInterfaceKey(DeviceIdentity identity, int key) =>
+        identity with { Value = $"{identity.Value}@if={key}" };
 }

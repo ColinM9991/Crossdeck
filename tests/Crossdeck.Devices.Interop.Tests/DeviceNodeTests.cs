@@ -157,4 +157,58 @@ public sealed class DeviceNodeTests
         // Assert
         Assert.Null(result);
     }
+
+    [Theory]
+    [InlineData(@"USB\VID_346E&PID_1305&MI_02\7&1175168319&0000", 2)]
+    [InlineData(@"USB\VID_346E&PID_1305&MI_0A\7&1175168319&0000", 10)]
+    public void TryParseInterfaceNumber_WithChildId_ReturnsTheInterfaceNumber(string deviceId, int expected)
+    {
+        // Act
+        var result = DeviceNode.TryParseInterfaceNumber(deviceId, out var interfaceNumber);
+
+        // Assert
+        Assert.True(result);
+        Assert.Equal(expected, interfaceNumber);
+    }
+
+    [Fact]
+    public void TryParseInterfaceNumber_WithoutInterfaceNumber_ReturnsFalse()
+    {
+        // Arrange
+        var deviceId = @"USB\VID_346E&PID_1305\8B4238001422361051353730";
+
+        // Act
+        var result = DeviceNode.TryParseInterfaceNumber(deviceId, out var interfaceNumber);
+
+        // Assert
+        Assert.False(result);
+        Assert.Equal(0, interfaceNumber);
+    }
+
+    [Fact]
+    public void EnumerateChildren_WithInvalidDevInst_YieldsNoChildren()
+    {
+        // Arrange
+        const uint devInst = 0;
+
+        // Act
+        var result = DeviceNode.EnumerateChildren(devInst).ToList();
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void EnumerateHidInterfaces_WithInvalidDevInst_YieldsNoInterfaces()
+    {
+        // Arrange
+        const uint devInst = 0;
+        var usbParentId = @"USB\VID_346E&PID_1305";
+
+        // Act
+        var result = DeviceNode.EnumerateHidInterfaces(devInst, usbParentId).ToList();
+
+        // Assert
+        Assert.Empty(result);
+    }
 }

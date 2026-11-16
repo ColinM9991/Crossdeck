@@ -102,6 +102,7 @@ public sealed class MozaDeviceDriverFactoryTests
         MozaDeviceDriverFactory sut)
     {
         // Arrange
+        descriptor = descriptor with { SerialInterfaces = [new SerialInterfaceDescriptor(portName)] };
         var connection = new HidConnection(transport, new ReportDescriptor(TestReportDescriptor.Fcd));
         hidTransportFactory.CreateAsync(descriptor.Path).Returns(connection);
 
