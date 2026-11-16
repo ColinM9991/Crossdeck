@@ -226,7 +226,12 @@ public sealed class HidDeviceDriverFactoryTests
         };
         Assert.Equal(expectedIdentities.OrderBy(x => x.Value), events.Select(x => x.Identity).OrderBy(x => x.Value));
         Assert.Equal(2, compositeDriver.Controls.Count);
-        Assert.All(events, x => Assert.Equal(new InputId(InputKind.Button, "1"), x.Control.Id));
+        Assert.All(events, x =>
+        {
+            var key = x.Identity.Value.Split('@').Last();
+            Assert.Equal(new InputId(InputKind.Button, $"1@{key}"), x.Control.Id);
+            Assert.Equal($"Button 1 ({key.Replace("=", " ")})", x.Control.Name);
+        });
     }
 
     [Theory, AutoNSubstituteData]
