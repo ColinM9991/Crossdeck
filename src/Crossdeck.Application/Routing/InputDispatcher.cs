@@ -47,6 +47,9 @@ public sealed class InputDispatcher :
 
     public void Post(DeviceInputEvent inputEvent)
     {
+        if (inputEvent.Control is AxisControl)
+            return; // Disabled for now until noise mitigation is implemented for Axis controls
+
         _queue.Writer.TryWrite(inputEvent);
         _recent.Writer.TryWrite(inputEvent);
     }
