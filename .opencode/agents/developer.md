@@ -1,5 +1,5 @@
 ---
-description: Implements changes in C#/.NET: features, fixes and refactors. Builds the affected projects and hands test coverage to the Tester. Use for any task that ends in a production code change.
+description: "Implements changes in C#/.NET: features, fixes and refactors. Builds the affected projects and hands test coverage to the Tester. Use for any task that ends in a production code change."
 mode: all
 model: ninfer/qwen3.8-27b-nvfp4full
 permissions:

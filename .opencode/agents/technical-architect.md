@@ -1,5 +1,5 @@
 ---
-description: Designs changes with no development responsibility: phased plans, contracts, decisions and plan documents with diagrams. Use before implementation when a design decision or a plan document is due.
+description: "Designs changes with no development responsibility: phased plans, contracts, decisions and plan documents with diagrams. Use before implementation when a design decision or a plan document is due."
 mode: all
 model: ninfer/qwen3.8-27b-nvfp4full
 permissions:
