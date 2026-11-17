@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSimulationServices(this IServiceCollection services)
     {
-        services.TryAddSingleton<TimeProvider>();
+        services.TryAddSingleton(TimeProvider.System);
 
         services.AddSingleton<SimSessionSupervisor>();
         services.AddSingleton<IActiveSim>(sp => sp.GetRequiredService<SimSessionSupervisor>());
