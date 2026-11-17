@@ -7,7 +7,8 @@ public enum InputEventKind
     Increment,
     Decrement,
     HatChanged,
-    AxisChanged
+    AxisChanged,
+    PositionChanged
 }
 
 public sealed record DeviceInputEvent(

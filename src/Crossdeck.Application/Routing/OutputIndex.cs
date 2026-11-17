@@ -4,14 +4,14 @@ using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Application.Routing;
 
-internal sealed record BindingIndex
+internal sealed record OutputIndex
 {
-    public static readonly BindingIndex Empty = new(
+    public static readonly OutputIndex Empty = new(
         FrozenDictionary<SimRef, OutputBinding[]>.Empty,
         FrozenDictionary<DeviceIdentity, OutputBinding[]>.Empty,
         FrozenSet<SimRef>.Empty);
 
-    public BindingIndex(
+    public OutputIndex(
         FrozenDictionary<SimRef, OutputBinding[]> byRef,
         FrozenDictionary<DeviceIdentity, OutputBinding[]> byDevice,
         FrozenSet<SimRef> requiredRefs)

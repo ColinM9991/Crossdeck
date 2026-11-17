@@ -45,7 +45,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             SingleReader = true,
         });
 
-    private volatile BindingIndex _bindingIndex = BindingIndex.Empty;
+    private volatile OutputIndex _outputIndex = OutputIndex.Empty;
     private CancellationTokenSource? _simulatorEventsCancellationToken;
     private Task? _simulatorEventsTask;
     private ISimProducer? _currentProducer;
@@ -71,7 +71,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
     {
         var bindingIndex = BuildIndex(bindings);
 
-        _bindingIndex = bindingIndex;
+        _outputIndex = bindingIndex;
 
         _commands.Writer.TryWrite(new RouterCommand.ProfileBindingUpdate(bindingIndex));
     }
@@ -107,7 +107,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
     public ImmutableDictionary<SimRef, SimValueCacheEntry> GetSnapshot() => _simCache.ToImmutableDictionary();
 
-    private static BindingIndex BuildIndex(IReadOnlyList<OutputMapping> mappings)
+    private static OutputIndex BuildIndex(IReadOnlyList<OutputMapping> mappings)
     {
         var byRef = new Dictionary<SimRef, List<OutputBinding>>();
         var byDevice = new Dictionary<DeviceIdentity, List<OutputBinding>>();
@@ -149,7 +149,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             x => x.Key,
             x => x.Value.Distinct().ToArray());
 
-        return new BindingIndex(byRefFrozen, byDeviceFrozen, requiredRefs.ToFrozenSet());
+        return new OutputIndex(byRefFrozen, byDeviceFrozen, requiredRefs.ToFrozenSet());
     }
 
     private void HandleSimulatorChanged(RouterCommand.SimChanged p, CancellationToken cancellationToken)
@@ -210,7 +210,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
         _simCache[valueChanged.Ref] = new SimValueCacheEntry(valueChanged.Value, _timeProvider.GetTimestamp());
 
-        if (!_bindingIndex.ByRef.TryGetValue(valueChanged.Ref, out var bindings))
+        if (!_outputIndex.ByRef.TryGetValue(valueChanged.Ref, out var bindings))
             return;
 
         foreach (var binding in bindings)
@@ -292,6 +292,6 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         /// <summary>
         /// Represents a router command that carries an updated binding index for profile output mappings.
         /// </summary>
-        internal sealed record ProfileBindingUpdate(BindingIndex Index) : RouterCommand;
+        internal sealed record ProfileBindingUpdate(OutputIndex Index) : RouterCommand;
     }
 }

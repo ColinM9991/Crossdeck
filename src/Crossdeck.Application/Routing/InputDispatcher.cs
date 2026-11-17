@@ -1,9 +1,12 @@
-﻿using System.Threading.Channels;
+﻿using System.Collections.Frozen;
+using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
+using Crossdeck.Core.Mapping.Input;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
+using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Application.Routing;
@@ -20,8 +23,17 @@ public sealed class InputDispatcher :
         Channel.CreateBounded<DeviceInputEvent>(new BoundedChannelOptions(256)
             { FullMode = BoundedChannelFullMode.DropOldest });
 
+    private readonly Channel<DispatcherCommand> _commands =
+        Channel.CreateUnbounded<DispatcherCommand>(new UnboundedChannelOptions { SingleReader = true });
+
     private readonly IActiveSim _activeSim;
+
+    private ISimProducer? _currentProducer;
+    private CancellationTokenSource? _inputEventsCancellationTokenSource;
+    private Task? _inputEventsTask;
+
     private volatile bool _isSimReady;
+    private volatile InputIndex _inputIndex = InputIndex.Empty;
 
     public InputDispatcher(
         IActiveSim activeSim)
@@ -39,57 +51,122 @@ public sealed class InputDispatcher :
         _recent.Writer.TryWrite(inputEvent);
     }
 
-    /*
-     * TODO
-     * 1. Handle:
-     *    Null
-     *    Unloaded Profile
-     *    Disconnected Sim
-     * 2. Commands:
-     *    Writing Values
-     *    Invoking Commands
-     */
     public async Task RunAsync(CancellationToken cancellationToken)
+    {
+        await foreach (var command in _commands.Reader.ReadAllAsync(cancellationToken))
+        {
+            switch (command)
+            {
+                case DispatcherCommand.SimChanging:
+                    await HandleSimulatorChanging();
+                    break;
+                case DispatcherCommand.SimChanged p:
+                    HandleSimulatorChanged(p.Producer, cancellationToken);
+                    break;
+                case DispatcherCommand.SimReady:
+                    _isSimReady = true;
+                    break;
+                case DispatcherCommand.ProfileBindingUpdate b:
+                    break;
+                case DispatcherCommand.DeviceRemoved d:
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    public void SetBindings(IReadOnlyList<InputMapping> bindings)
+    {
+        var byDevice = new Dictionary<(DeviceIdentity, InputId), InputMapping>();
+        var requiredRefs = new HashSet<SimRef>();
+        foreach (var binding in bindings)
+        {
+            byDevice[(binding.Device, binding.Control)] = binding;
+
+            foreach (var inputAction in binding.Actions.Values.SelectMany(x => x))
+            {
+                if (inputAction is not InputAction.Set set)
+                    continue;
+
+                _ = requiredRefs.Add(set.Ref);
+            }
+        }
+
+        var inputIndex = new InputIndex(
+            byDevice.ToFrozenDictionary(),
+            requiredRefs.ToFrozenSet());
+
+        _inputIndex = inputIndex;
+
+        _commands.Writer.TryWrite(new DispatcherCommand.ProfileBindingUpdate(_inputIndex));
+    }
+
+    private void HandleSimulatorChanged(ISimProducer producer, CancellationToken cancellationToken)
+    {
+        if (ReferenceEquals(producer, _currentProducer))
+            return;
+
+        _currentProducer = producer;
+        _currentProducer.Ready += CurrentProducerOnReady;
+        _inputEventsCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _inputEventsTask = RunInputEventsLoopAsync(_currentProducer!, _inputEventsCancellationTokenSource!.Token);
+    }
+
+    private async Task HandleSimulatorChanging()
+    {
+        if (_currentProducer is null)
+            return;
+
+        _isSimReady = false;
+        _currentProducer.Ready -= CurrentProducerOnReady;
+
+        if (_inputEventsCancellationTokenSource is null || _inputEventsTask is null)
+            return;
+
+        await _inputEventsCancellationTokenSource!.CancelAsync();
+        await _inputEventsTask;
+
+        _inputEventsCancellationTokenSource = null;
+        _inputEventsTask = null;
+        _currentProducer = null;
+    }
+
+    private async Task RunInputEventsLoopAsync(
+        ISimProducer producer,
+        CancellationToken cancellationToken)
     {
         await foreach (var inputEvent in _queue.Reader.ReadAllAsync(cancellationToken))
         {
-            if (!_isSimReady || _activeSim.Current is null)
+            if (!_inputIndex.ByDevice.TryGetValue((inputEvent.Identity, inputEvent.Control.Id), out var binding))
                 continue;
 
-            var simRef = new SimRef("laminar/B738/pfd/dh_pilot_dn");
-
-            // TODO: Hardcoded for now. Should come from profile bindings
-            SimCommand? simCommand = inputEvent.Kind switch
+            switch (inputEvent.Control)
             {
-                InputEventKind.Pressed => new SimCommand.Begin(simRef),
-                InputEventKind.Released => new SimCommand.End(simRef),
-                _ => null,
-            };
-
-            if (simCommand is null)
-                continue;
-
-            await _activeSim.Current.SendCommandAsync(simCommand, cancellationToken);
+                // TODO: Handle inputs
+            }
         }
     }
+
+    private void CurrentProducerOnReady(object? sender, SimReady e)
+        => _commands.Writer.TryWrite(new DispatcherCommand.SimReady());
 
     private void ActiveSimOnChanging(object? sender, ActiveSimChangingEventArgs e)
-    {
-        if (e.Current is { } outgoing)
-        {
-            outgoing.Ready -= SimulatorReady;
-        }
-
-        _isSimReady = false;
-    }
+        => _commands.Writer.TryWrite(new DispatcherCommand.SimChanging());
 
     private void ActiveSimOnChanged(object? sender, ActiveSimChangedEventArgs e)
-    {
-        if (e.Current is { } incoming)
-        {
-            incoming.Ready += SimulatorReady;
-        }
-    }
+        => _commands.Writer.TryWrite(new DispatcherCommand.SimChanged(e.Current));
 
-    private void SimulatorReady(object? sender, SimReady e) => _isSimReady = true;
+    internal closed record DispatcherCommand
+    {
+        internal sealed record SimChanging : DispatcherCommand;
+
+        internal sealed record SimChanged(ISimProducer? Producer) : DispatcherCommand;
+
+        internal sealed record SimReady : DispatcherCommand;
+
+        internal sealed record ProfileBindingUpdate(InputIndex Index) : DispatcherCommand;
+
+        internal sealed record DeviceRemoved : DispatcherCommand;
+    }
 }
