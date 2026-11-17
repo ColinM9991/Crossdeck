@@ -2,3 +2,7 @@
 	path = .opencode/skills/dotnet-skills
 	url = https://github.com/dotnet/skills
 	branch = main
+[submodule ".opencode/skills/c4-codebase-architecture-skill"]
+	path = .opencode/skills/c4-codebase-architecture-skill
+	url = https://github.com/lmammino/c4-codebase-architecture-skill
+	branch = main
