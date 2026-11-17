@@ -138,13 +138,28 @@ public sealed class InputDispatcher :
     {
         await foreach (var inputEvent in _queue.Reader.ReadAllAsync(cancellationToken))
         {
-            if (!_inputIndex.ByDevice.TryGetValue((inputEvent.Identity, inputEvent.Control.Id), out var binding))
+            if (!_isSimReady
+                || !_inputIndex.ByDevice.TryGetValue((inputEvent.Identity, inputEvent.Control.Id), out var binding))
                 continue;
 
-            switch (inputEvent.Control)
-            {
-                // TODO: Handle inputs
-            }
+            await DispatchInputEventAsync(producer, inputEvent, binding, cancellationToken);
+        }
+    }
+
+    private async Task DispatchInputEventAsync(
+        ISimProducer producer,
+        DeviceInputEvent inputEvent,
+        InputMapping binding,
+        CancellationToken cancellationToken)
+    {
+        if (!binding.Actions.TryGetValue(inputEvent.Kind.ToString(), out var actions))
+            return;
+
+        foreach (var action in actions)
+        {
+            var simCommand = action.ToSimCommand();
+
+            await producer.SendCommandAsync(simCommand, cancellationToken);
         }
     }
 
