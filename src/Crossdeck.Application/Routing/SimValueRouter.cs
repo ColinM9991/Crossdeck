@@ -72,6 +72,8 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         var bindingIndex = BuildIndex(bindings);
 
         _bindingIndex = bindingIndex;
+
+        _commands.Writer.TryWrite(new RouterCommand.ProfileBindingUpdate(bindingIndex));
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -90,6 +92,11 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
                     HandleSimulatorChanged(p, cancellationToken);
                     break;
                 case RouterCommand.SimReady:
+                    break;
+                case RouterCommand.ProfileBindingUpdate update:
+                    if (_currentProducer is null)
+                        break;
+                    await _currentProducer.SetSubscriptionsAsync(update.Index.RequiredRefs, cancellationToken);
                     break;
             }
         }
@@ -248,8 +255,14 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
     private void ActiveSimOnChanging(object? sender, ActiveSimChangingEventArgs e) =>
         _commands.Writer.TryWrite(RouterCommand.SimChanging.Instance.Value);
 
+    /// <summary>
+    /// Contains the commands that can be dispatched within the router.
+    /// </summary>
     internal closed record RouterCommand
     {
+        /// <summary>
+        /// Represents a router command indicating that the active simulator producer has changing.
+        /// </summary>
         internal sealed record SimChanging : RouterCommand
         {
             public static readonly Lazy<SimChanging> Instance = new(() => new());
@@ -259,8 +272,14 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             }
         }
 
+        /// <summary>
+        /// Represents a router command indicating that the active simulator producer has changed.
+        /// </summary>
         internal sealed record SimChanged(ISimProducer Producer) : RouterCommand;
 
+        /// <summary>
+        /// Represents a router command indicating that the active simulator producer is ready.
+        /// </summary>
         internal sealed record SimReady : RouterCommand
         {
             public static readonly Lazy<SimReady> Instance = new(() => new());
@@ -269,5 +288,10 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             {
             }
         }
+
+        /// <summary>
+        /// Represents a router command that carries an updated binding index for profile output mappings.
+        /// </summary>
+        internal sealed record ProfileBindingUpdate(BindingIndex Index) : RouterCommand;
     }
 }
