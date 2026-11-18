@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
 
         services.AddHostedService<SupervisorService<InputDispatcher>>();
         services.AddHostedService<SupervisorService<SimValueRouter>>();
+        services.AddHostedService<SupervisorService<SubscriptionAggregator>>();
         services.AddHostedService<SupervisorService<DeviceRegistry>>();
         services.AddHostedService<SupervisorService<SimSessionSupervisor>>();
 

@@ -1,12 +1,9 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+﻿using System.Collections.Frozen;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Mapping;
 using Crossdeck.Core.Routing;
-using Crossdeck.Core.Routing.Models;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
@@ -30,13 +27,14 @@ namespace Crossdeck.Application.Routing;
  * 1. Sim Event loop (created when simulator is connected)
  * 2.
  */
-public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
+public sealed class SimValueRouter : ISimValueRouter
 {
     private readonly IActiveSim _activeSim;
     private readonly IDeviceRegistry _deviceRegistry;
+    private readonly ISimValueCache _simValueCache;
+    private readonly ISubscriptionAggregator _subscriptionAggregator;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SimValueRouter> _logger;
-    private readonly ConcurrentDictionary<SimRef, SimValueCacheEntry> _simCache = new();
 
     private readonly Channel<RouterCommand> _commands = Channel.CreateUnbounded<RouterCommand>(
         new UnboundedChannelOptions
@@ -53,11 +51,16 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
     public SimValueRouter(
         IActiveSim activeSim,
         IDeviceRegistry deviceRegistry,
+        ISimValueCache simValueCache,
+        ISubscriptionAggregator subscriptionAggregator,
         TimeProvider timeProvider,
         ILogger<SimValueRouter> logger)
     {
         _activeSim = activeSim ?? throw new ArgumentNullException(nameof(activeSim));
         _deviceRegistry = deviceRegistry ?? throw new ArgumentNullException(nameof(deviceRegistry));
+        _simValueCache = simValueCache ?? throw new ArgumentNullException(nameof(simValueCache));
+        _subscriptionAggregator =
+            subscriptionAggregator ?? throw new ArgumentNullException(nameof(subscriptionAggregator));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -73,8 +76,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
         _outputIndex = bindingIndex;
         _logger.LogInformation("Output bindings set {Count}", bindings.Count);
-
-        _commands.Writer.TryWrite(new RouterCommand.ProfileBindingUpdate(bindingIndex));
+        _subscriptionAggregator.SetOutputRefs(_outputIndex.RequiredRefs);
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -96,9 +98,6 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
                         break;
                     case RouterCommand.SimReady:
                         break;
-                    case RouterCommand.ProfileBindingUpdate update:
-                        await HandleProfileBindingUpdateAsync(update, cancellationToken);
-                        break;
                 }
             }
         }
@@ -107,11 +106,6 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             await StopSimEventLoopAsync();
         }
     }
-
-    public bool TryGet(SimRef reference, out SimValueCacheEntry? value) =>
-        _simCache.TryGetValue(reference, out value);
-
-    public ImmutableDictionary<SimRef, SimValueCacheEntry> GetSnapshot() => _simCache.ToImmutableDictionary();
 
     private static OutputIndex BuildIndex(IReadOnlyList<OutputMapping> mappings)
     {
@@ -164,7 +158,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             return;
 
         _logger.LogInformation("Simulator changed {Producer}", p.Producer);
-        _simCache.Clear();
+        _simValueCache.Clear();
 
         _currentProducer = p.Producer;
         p.Producer.Ready += CurrentProducerOnReady;
@@ -181,27 +175,6 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
 
         _logger.LogInformation("Simulator changing");
         await StopSimEventLoopAsync();
-    }
-
-    private async Task HandleProfileBindingUpdateAsync(
-        RouterCommand.ProfileBindingUpdate update,
-        CancellationToken cancellationToken)
-    {
-        if (_currentProducer is null)
-            return;
-
-        try
-        {
-            await _currentProducer.SetSubscriptionsAsync(update.Index.RequiredRefs, cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // The run is stopping; subscriptions are re-applied when a session starts.
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to set simulator subscriptions");
-        }
     }
 
     private async Task StopSimEventLoopAsync()
@@ -265,7 +238,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
     {
         _logger.LogDebug("Simulator value changed {SimRef}:{Value}", valueChanged.Ref, valueChanged.Value);
 
-        _simCache[valueChanged.Ref] = new SimValueCacheEntry(valueChanged.Value, _timeProvider.GetTimestamp());
+        _simValueCache.TrySet(valueChanged.Ref, valueChanged.Value);
 
         if (!_outputIndex.ByRef.TryGetValue(valueChanged.Ref, out var bindings))
             return;
@@ -351,10 +324,5 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
             {
             }
         }
-
-        /// <summary>
-        /// Represents a router command that carries an updated binding index for profile output mappings.
-        /// </summary>
-        internal sealed record ProfileBindingUpdate(OutputIndex Index) : RouterCommand;
     }
 }

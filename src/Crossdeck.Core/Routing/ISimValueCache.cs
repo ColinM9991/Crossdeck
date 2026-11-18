@@ -10,12 +10,24 @@ namespace Crossdeck.Core.Routing;
 public interface ISimValueCache
 {
     /// <summary>
+    /// Clears the cache.
+    /// </summary>
+    void Clear();
+
+    /// <summary>
     /// Attempts to retrieve a cached simulator value.
     /// </summary>
     /// <param name="reference">The reference of the value to retrieve.</param>
     /// <param name="value">When this method returns, the cached value, or null if not found.</param>
     /// <returns><c>true</c> if a value was found; otherwise, <c>false</c>.</returns>
     bool TryGet(SimRef reference, out SimValueCacheEntry? value);
+
+    /// <summary>
+    /// Attempts to set a cached simulator value
+    /// </summary>
+    /// <param name="reference">The reference of the value to retrieve.</param>
+    /// <param name="value">When this method returns, the cached value, or null if not found.</param>
+    void TrySet(SimRef reference, SimValue value);
 
     /// <summary>
     /// Gets a snapshot of all cached simulator values.

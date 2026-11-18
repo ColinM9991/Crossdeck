@@ -30,7 +30,10 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<SimValueRouter>();
         services.AddSingleton<ISimValueRouter>(sp => sp.GetRequiredService<SimValueRouter>());
-        services.AddSingleton<ISimValueCache>(sp => sp.GetRequiredService<SimValueRouter>());
+        services.AddSingleton<ISimValueCache, SimValueCache>();
+
+        services.AddSingleton<SubscriptionAggregator>();
+        services.AddSingleton<ISubscriptionAggregator>(sp => sp.GetRequiredService<SubscriptionAggregator>());
 
         return services;
     }

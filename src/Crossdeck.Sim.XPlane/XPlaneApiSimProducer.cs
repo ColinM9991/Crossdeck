@@ -281,11 +281,16 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         SimValue simValue,
         CancellationToken cancellationToken)
     {
-        var (dataRef, index) = FetchDataRefAndIndex();
+        if (!TrySplitDataRefKey(simRef.Key, out var dataRef, out var index))
+        {
+            _logger.LogWarning("X-Plane dataref {DataRef} has an unparseable index; not sent", simRef);
+            return new CommandResult.Failure();
+        }
+
         var dataRefId = await ResolveDataRefIdAsync(dataRef, session.DataRefCache, cancellationToken);
         if (dataRefId is null)
         {
-            _logger.LogWarning("X-Plane dataref {DataRef} could not be resolved", dataRef);
+            _logger.LogWarning("X-Plane dataref {DataRef} could not be resolved", simRef);
             return new CommandResult.Failure();
         }
 
@@ -302,17 +307,31 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             cancellationToken);
 
         return new CommandResult.Success();
+    }
 
-        (string, int?) FetchDataRefAndIndex()
-        {
-            var refSpan = simRef.Key.AsSpan();
-            var firstIndexer = refSpan.IndexOf('[');
-            if (firstIndexer == -1)
-                return (simRef.Key, null);
+    /// <summary>
+    /// Splits a dataref key into its registered name and element index, for example
+    /// "path/to/ref[10]" into ("path/to/ref", 10).
+    /// </summary>
+    private static bool TrySplitDataRefKey(string key, out string name, out int? index)
+    {
+        name = key;
+        index = null;
 
-            var lastIndexer = refSpan.LastIndexOf(']');
-            return (refSpan[..firstIndexer].ToString(), int.Parse(refSpan[(firstIndexer + 1)..lastIndexer]));
-        }
+        var open = key.IndexOf('[');
+        if (open == -1)
+            return true;
+
+        var close = key.LastIndexOf(']');
+        if (close <= open)
+            return false;
+
+        if (!int.TryParse(key.AsSpan(open + 1, close - open - 1), out var elementIndex))
+            return false;
+
+        name = key[..open];
+        index = elementIndex;
+        return true;
     }
 
     private CommandResult Unsupported(SimCommand command)
@@ -422,37 +441,51 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
             var toRemove = existingSubscriptions.Except(allSubscriptions).ToHashSet();
 
-            var toAddIds = new List<long>();
+            var toAdd = new List<DatarefSubscription>();
             var toRemoveIds = new List<long>();
 
             foreach (var add in toAddKeys)
             {
-                var id = await ResolveDataRefIdAsync(add.Key, session.DataRefCache, cancellationToken);
+                if (!TrySplitDataRefKey(add.Key, out var name, out var index))
+                {
+                    _logger.LogWarning("X-Plane dataref {DataRef} has an unparseable index; not subscribed", add.Key);
+                    continue;
+                }
+
+                var id = await ResolveDataRefIdAsync(name, session.DataRefCache, cancellationToken);
                 if (id is null)
                 {
                     _logger.LogWarning("X-Plane dataref {DataRef} could not be subscribed; not found", add.Key);
                     continue;
                 }
 
+                if (session.IdToRef.TryGetValue(id.Value, out var existing) && existing != add)
+                {
+                    _logger.LogWarning("X-Plane dataref id {Id} already subscribed as {Existing}; {Ref} skipped",
+                        id.Value, existing, add);
+                    continue;
+                }
+
                 session.IdToRef[id.Value] = add;
                 session.RefToId[add] = id.Value;
-                toAddIds.Add(id.Value);
+                session.RefToIndex[add] = index;
+                toAdd.Add(new DatarefSubscription { Id = id.Value, Index = index });
             }
 
             foreach (var remove in toRemove)
             {
-                if (session.RefToId.TryGetValue(remove, out var id))
-                {
-                    toRemoveIds.Add(id);
-                }
+                if (!session.RefToId.TryGetValue(remove, out var id)) continue;
+
+                session.RefToIndex.TryRemove(remove, out var _);
+                toRemoveIds.Add(id);
             }
 
-            if (toAddIds.Count > 0)
+            if (toAdd.Count > 0)
             {
                 await EnqueueAsync(session, XPlaneConstants.DatarefSubscribeValues,
                     new DatarefSubscriptionParams
                     {
-                        Datarefs = toAddIds.Select(x => new DatarefSubscription { Id = x })
+                        Datarefs = toAdd
                     },
                     cancellationToken);
             }
@@ -546,14 +579,31 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                         continue;
                     }
 
-                    var value = ToSimValue(entry.Value);
                     if (simRef == AircraftRef)
                     {
-                        PublishAircraftIfChanged(value);
+                        PublishAircraftIfChanged(ToSimValue(entry.Value));
                         continue;
                     }
 
-                    Publish(new SimEvent.ValueChanged(simRef, value));
+                    var element = entry.Value;
+                    if (element.ValueKind == JsonValueKind.Array)
+                    {
+                        var elementIndex = session.RefToIndex.GetValueOrDefault(simRef);
+                        if (elementIndex is null)
+                        {
+                            if (session.WholeArrayWarned.Add(id))
+                                _logger.LogWarning("X-Plane dataref id {Id} ({Ref}) is an array subscribed without an index; values skipped", id, simRef);
+                            continue;
+                        }
+
+                        var values = element.EnumerateArray();
+                        if (!values.MoveNext())
+                            continue;
+
+                        element = values.Current;
+                    }
+
+                    Publish(new SimEvent.ValueChanged(simRef, ToSimValue(element)));
                 }
 
                 break;
@@ -630,6 +680,10 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         public readonly ConcurrentDictionary<long, SimRef> IdToRef = new();
 
         public readonly ConcurrentDictionary<SimRef, long> RefToId = new();
+
+        public readonly ConcurrentDictionary<SimRef, int?> RefToIndex = new();
+
+        public readonly HashSet<long> WholeArrayWarned = new();
 
         public readonly ConcurrentDictionary<string, long> DataRefCache = new();
 

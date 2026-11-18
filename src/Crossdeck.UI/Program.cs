@@ -4,7 +4,6 @@ using Crossdeck.UI.ViewModels;
 using Crossdeck.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 namespace Crossdeck.UI;
 

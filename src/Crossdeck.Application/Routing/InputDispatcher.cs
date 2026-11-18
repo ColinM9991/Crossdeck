@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
@@ -28,6 +29,8 @@ public sealed class InputDispatcher :
         Channel.CreateUnbounded<DispatcherCommand>(new UnboundedChannelOptions { SingleReader = true });
 
     private readonly IActiveSim _activeSim;
+    private readonly ISubscriptionAggregator _subscriptionAggregator;
+    private readonly ISimValueCache _simValueCache;
     private readonly ILogger<InputDispatcher> _logger;
 
     private ISimProducer? _currentProducer;
@@ -39,9 +42,14 @@ public sealed class InputDispatcher :
 
     public InputDispatcher(
         IActiveSim activeSim,
+        ISubscriptionAggregator subscriptionAggregator,
+        ISimValueCache simValueCache,
         ILogger<InputDispatcher> logger)
     {
         _activeSim = activeSim ?? throw new ArgumentNullException(nameof(activeSim));
+        _subscriptionAggregator =
+            subscriptionAggregator ?? throw new ArgumentNullException(nameof(subscriptionAggregator));
+        _simValueCache = simValueCache ?? throw new ArgumentNullException(nameof(simValueCache));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _activeSim.Changing += ActiveSimOnChanging;
         _activeSim.Changed += ActiveSimOnChanged;
@@ -73,8 +81,6 @@ public sealed class InputDispatcher :
                         _isSimReady = true;
                         _logger.LogInformation("Simulator ready");
                         break;
-                    case DispatcherCommand.ProfileBindingUpdate b:
-                        break;
                     case DispatcherCommand.DeviceRemoved d:
                         break;
                     default:
@@ -98,7 +104,7 @@ public sealed class InputDispatcher :
 
             foreach (var inputAction in binding.Actions.Values.SelectMany(x => x))
             {
-                if (inputAction is not InputAction.Set set)
+                if (inputAction is not InputAction.Step set)
                     continue;
 
                 _ = requiredRefs.Add(set.Ref);
@@ -111,8 +117,7 @@ public sealed class InputDispatcher :
 
         _inputIndex = inputIndex;
         _logger.LogInformation("Input bindings set {Count}", bindings.Count);
-
-        _commands.Writer.TryWrite(new DispatcherCommand.ProfileBindingUpdate(_inputIndex));
+        _subscriptionAggregator.SetInputRefs(inputIndex.RequiredRefs);
     }
 
     private void HandleSimulatorChanged(ISimProducer? producer, CancellationToken cancellationToken)
@@ -168,7 +173,6 @@ public sealed class InputDispatcher :
                 }
                 catch (OperationCanceledException)
                 {
-                    // The loop exits with an OperationCanceledException when its token is cancelled.
                 }
                 catch (Exception ex)
                 {
@@ -215,7 +219,15 @@ public sealed class InputDispatcher :
 
         foreach (var action in actions)
         {
+            if (action is InputAction.Step step)
+            {
+                await ExecuteStepAsync(producer, step, cancellationToken);
+                continue;
+            }
+
             var simCommand = action.ToSimCommand();
+            if (simCommand is null)
+                continue;
 
             try
             {
@@ -227,6 +239,32 @@ public sealed class InputDispatcher :
                     inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
             }
         }
+    }
+
+    private async Task ExecuteStepAsync(
+        ISimProducer producer,
+        InputAction.Step step,
+        CancellationToken cancellationToken)
+    {
+        var baseValue = double.NaN;
+
+        if (_simValueCache.TryGet(step.Ref, out var entry)
+            && entry?.Value is SimValue.Number number)
+        {
+            baseValue = number.Value;
+        }
+
+        if (double.IsNaN(baseValue))
+        {
+            _logger.LogInformation("Step on {Ref} skipped: no current value", step.Ref);
+            return;
+        }
+
+        var result = Math.Clamp(baseValue + step.Amount, step.Min, step.Max);
+
+        await producer.SendCommandAsync(
+            new SimCommand.Set(step.Ref, new SimValue.Number(result)),
+            cancellationToken);
     }
 
     private void CurrentProducerOnReady(object? sender, SimReady e)
@@ -245,8 +283,6 @@ public sealed class InputDispatcher :
         internal sealed record SimChanged(ISimProducer? Producer) : DispatcherCommand;
 
         internal sealed record SimReady : DispatcherCommand;
-
-        internal sealed record ProfileBindingUpdate(InputIndex Index) : DispatcherCommand;
 
         internal sealed record DeviceRemoved : DispatcherCommand;
     }
