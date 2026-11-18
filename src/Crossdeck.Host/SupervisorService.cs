@@ -4,23 +4,68 @@ using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Host;
 
-public sealed class SupervisorService<T>(T runner, ILogger<SupervisorService<T>> logger) : BackgroundService where T : IRunnable
+/// <summary>
+/// Runs an <see cref="IRunnable"/> as a background service, restarting it with a backoff delay when it faults.
+/// </summary>
+/// <param name="runner">The component to run.</param>
+/// <param name="logger">A logger for the supervised loop.</param>
+/// <param name="backoff">The delay between restarts, or <c>null</c> to use the default of five seconds.</param>
+public sealed class SupervisorService<T>(
+    T runner,
+    ILogger<SupervisorService<T>> logger,
+    TimeSpan? backoff = null) : BackgroundService where T : IRunnable
 {
+    private static readonly TimeSpan DefaultBackoff = TimeSpan.FromSeconds(5);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var restartDelay = backoff ?? DefaultBackoff;
+
         logger.LogInformation("Supervised loop {Runner} starting", typeof(T).Name);
-        await Task.Yield();
+
+        while (true)
+        {
+            try
+            {
+                await runner.RunAsync(stoppingToken);
+
+                logger.LogInformation("Supervised loop {Runner} completed", typeof(T).Name);
+                return;
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                logger.LogInformation("Supervised loop {Runner} stopped", typeof(T).Name);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                logger.LogWarning("Supervised loop {Runner} cancelled; restarting in {Backoff}", typeof(T).Name,
+                    restartDelay);
+
+                if (!await DelayBeforeRestartAsync(restartDelay, stoppingToken))
+                    return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Supervised loop {Runner} faulted; restarting in {Backoff}", typeof(T).Name,
+                    restartDelay);
+
+                if (!await DelayBeforeRestartAsync(restartDelay, stoppingToken))
+                    return;
+            }
+        }
+    }
+
+    private static async Task<bool> DelayBeforeRestartAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
         try
         {
-            await runner.RunAsync(stoppingToken);
+            await Task.Delay(delay, cancellationToken);
+            return true;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "Supervised loop {Runner} faulted", typeof(T).Name);
-        }
-        finally
-        {
-            logger.LogInformation("Supervised loop {Runner} stopped", typeof(T).Name);
+            return false;
         }
     }
 }

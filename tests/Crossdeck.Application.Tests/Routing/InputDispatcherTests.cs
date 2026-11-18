@@ -172,6 +172,92 @@ public sealed class InputDispatcherTests
         await producer.DidNotReceive().SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>());
     }
 
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenTheSimulatorIsDisconnected_RecoversWhenANewSimulatorConnects(
+        [Frozen] IActiveSim activeSim,
+        ISimProducer producer,
+        [Frozen] ILogger<InputDispatcher> logger,
+        InputDispatcher sut)
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var secondProducer = Substitute.For<ISimProducer>();
+        var (simulatorChanged, _) = WireSimulator(activeSim, producer, logger);
+
+        var simulatorChangingHandled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        logger.When(l => l.LogInformation("Simulator changing"))
+            .Do(_ => simulatorChangingHandled.TrySetResult());
+
+        var simulatorChangedCount = 0;
+        var secondSimulatorChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        logger.When(l => l.LogInformation("Simulator changed"))
+            .Do(_ =>
+            {
+                simulatorChangedCount++;
+                if (simulatorChangedCount == 2)
+                {
+                    secondSimulatorChanged.TrySetResult();
+                }
+            });
+
+        activeSim.Changing += Raise.Event<EventHandler<ActiveSimChangingEventArgs>>(activeSim,
+            new ActiveSimChangingEventArgs(producer, null));
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim,
+            new ActiveSimChangedEventArgs(secondProducer));
+
+        // Act
+        var task = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+        await simulatorChangingHandled.Task;
+        await secondSimulatorChanged.Task;
+        await cts.CancelAsync();
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenTheSimulatorDisconnects_DiscardsInputEvents(
+        DeviceInputEvent inputEvent,
+        [Frozen] IActiveSim activeSim,
+        ISimProducer producer,
+        [Frozen] ILogger<InputDispatcher> logger,
+        InputDispatcher sut)
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        inputEvent = inputEvent with { Kind = InputEventKind.Pressed };
+
+        sut.SetBindings([new InputMapping(
+            inputEvent.Identity,
+            inputEvent.Control.Id,
+            new Dictionary<string, IReadOnlyList<InputAction>>
+            {
+                ["Pressed"] = [new InputAction.Command(new SimRef("disconnect.test"), CommandPhase.Begin)]
+            })]);
+        var (simulatorChanged, _) = WireSimulator(activeSim, producer, logger);
+
+        var simulatorDisconnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        logger.When(l => l.LogInformation("Simulator disconnected"))
+            .Do(_ => simulatorDisconnected.TrySetResult());
+
+        // Act
+        var task = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+
+        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
+
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim,
+            new ActiveSimChangedEventArgs(null));
+        await simulatorDisconnected.Task;
+        sut.Post(inputEvent);
+        await cts.CancelAsync();
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+        await producer.DidNotReceive().SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>());
+    }
+
     private static (Task SimulatorChanged, Task SimulatorReady) WireSimulator(
         IActiveSim activeSim,
         ISimProducer producer,

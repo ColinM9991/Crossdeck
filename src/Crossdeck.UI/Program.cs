@@ -4,6 +4,7 @@ using Crossdeck.UI.ViewModels;
 using Crossdeck.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Crossdeck.UI;
 
@@ -25,6 +26,9 @@ sealed class Program
 #endif
 
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(settings);
+
+        builder.Services.Configure<HostOptions>(options =>
+            options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
 
         builder.Services.AddHostServices()
             .AddSingleton<MainWindow>()

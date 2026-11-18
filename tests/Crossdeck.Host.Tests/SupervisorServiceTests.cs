@@ -1,3 +1,4 @@
+using AutoFixture.Xunit2;
 using Crossdeck.Core;
 using Microsoft.Extensions.Logging;
 
@@ -53,6 +54,95 @@ public sealed class SupervisorServiceTests
 
         // Assert
         Assert.Contains(logEntries, entry => entry.Level == LogLevel.Error && entry.Exception == fault);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task StartAsync_WhenTheRunnableFaults_RestartsItAfterTheBackoff(
+        InvalidOperationException fault,
+        IRunnable runner)
+    {
+        // Arrange
+        var logEntries = new List<LogEntry>();
+        var logger = new CapturingLogger<SupervisorService<IRunnable>>(logEntries);
+        var sut = new SupervisorService<IRunnable>(runner, logger, TimeSpan.FromMilliseconds(50));
+
+        var secondRunStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var runCount = 0;
+        runner.RunAsync(Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                runCount++;
+                if (runCount == 1)
+                {
+                    return Task.FromException(fault);
+                }
+
+                secondRunStarted.TrySetResult();
+                return Task.Delay(Timeout.Infinite, call.ArgAt<CancellationToken>(0));
+            });
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await secondRunStarted.Task;
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        await runner.Received(2).RunAsync(Arg.Any<CancellationToken>());
+        Assert.Contains(logEntries, entry => entry.Level == LogLevel.Error && entry.Exception == fault);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task StopAsync_WhenTheHostStopsAfterTheRunnableFaults_DoesNotRestartIt(
+        InvalidOperationException fault,
+        IRunnable runner)
+    {
+        // Arrange
+        var logEntries = new List<LogEntry>();
+        var logger = new CapturingLogger<SupervisorService<IRunnable>>(logEntries);
+        var sut = new SupervisorService<IRunnable>(runner, logger, TimeSpan.FromMinutes(5));
+
+        var runnableFaulted = new TaskCompletionSource();
+        runner.RunAsync(Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                runnableFaulted.TrySetResult();
+                return Task.FromException(fault);
+            });
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await runnableFaulted.Task;
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        await runner.Received(1).RunAsync(Arg.Any<CancellationToken>());
+        Assert.Contains(logEntries, entry => entry.Level == LogLevel.Error && entry.Exception == fault);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task StartAsync_WhenTheRunnableCompletesNormally_DoesNotRestartIt(
+        IRunnable runner,
+        [Frozen] ILogger<SupervisorService<IRunnable>> logger)
+    {
+        // Arrange
+        var sut = new SupervisorService<IRunnable>(runner, logger, TimeSpan.FromMilliseconds(50));
+
+        var runCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        runner.RunAsync(Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                runCompleted.TrySetResult();
+                return Task.CompletedTask;
+            });
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await runCompleted.Task;
+        await Task.Delay(100);
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        await runner.Received(1).RunAsync(Arg.Any<CancellationToken>());
     }
 
     private readonly record struct LogEntry(LogLevel Level, Exception? Exception, string Message);

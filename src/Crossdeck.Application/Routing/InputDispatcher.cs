@@ -57,27 +57,34 @@ public sealed class InputDispatcher :
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        await foreach (var command in _commands.Reader.ReadAllAsync(cancellationToken))
+        try
         {
-            switch (command)
+            await foreach (var command in _commands.Reader.ReadAllAsync(cancellationToken))
             {
-                case DispatcherCommand.SimChanging:
-                    await HandleSimulatorChanging();
-                    break;
-                case DispatcherCommand.SimChanged p:
-                    HandleSimulatorChanged(p.Producer, cancellationToken);
-                    break;
-                case DispatcherCommand.SimReady:
-                    _isSimReady = true;
-                    _logger.LogInformation("Simulator ready");
-                    break;
-                case DispatcherCommand.ProfileBindingUpdate b:
-                    break;
-                case DispatcherCommand.DeviceRemoved d:
-                    break;
-                default:
-                    break;
+                switch (command)
+                {
+                    case DispatcherCommand.SimChanging:
+                        await HandleSimulatorChanging();
+                        break;
+                    case DispatcherCommand.SimChanged p:
+                        HandleSimulatorChanged(p.Producer, cancellationToken);
+                        break;
+                    case DispatcherCommand.SimReady:
+                        _isSimReady = true;
+                        _logger.LogInformation("Simulator ready");
+                        break;
+                    case DispatcherCommand.ProfileBindingUpdate b:
+                        break;
+                    case DispatcherCommand.DeviceRemoved d:
+                        break;
+                    default:
+                        break;
+                }
             }
+        }
+        finally
+        {
+            await StopInputEventsLoopAsync();
         }
     }
 
@@ -108,37 +115,77 @@ public sealed class InputDispatcher :
         _commands.Writer.TryWrite(new DispatcherCommand.ProfileBindingUpdate(_inputIndex));
     }
 
-    private void HandleSimulatorChanged(ISimProducer producer, CancellationToken cancellationToken)
+    private void HandleSimulatorChanged(ISimProducer? producer, CancellationToken cancellationToken)
     {
+        if (producer is null)
+        {
+            _logger.LogInformation("Simulator disconnected");
+            _currentProducer = null;
+            _isSimReady = false;
+            return;
+        }
+
         if (ReferenceEquals(producer, _currentProducer))
             return;
 
         _logger.LogInformation("Simulator changed");
         _currentProducer = producer;
-        _currentProducer.Ready += CurrentProducerOnReady;
-        _inputEventsCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _inputEventsTask = RunInputEventsLoopAsync(_currentProducer!, _inputEventsCancellationTokenSource!.Token);
+        producer.Ready += CurrentProducerOnReady;
+
+        var inputEventsCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _inputEventsCancellationTokenSource = inputEventsCancellationTokenSource;
+        _inputEventsTask = RunInputEventsLoopAsync(producer, inputEventsCancellationTokenSource.Token);
     }
 
     private async Task HandleSimulatorChanging()
     {
-        if (_currentProducer is null)
+        if (_currentProducer is null && _inputEventsTask is null)
             return;
 
         _logger.LogInformation("Simulator changing");
 
         _isSimReady = false;
-        _currentProducer.Ready -= CurrentProducerOnReady;
+        await StopInputEventsLoopAsync();
+    }
 
-        if (_inputEventsCancellationTokenSource is null || _inputEventsTask is null)
-            return;
+    private async Task StopInputEventsLoopAsync()
+    {
+        if (_inputEventsCancellationTokenSource is not null)
+        {
+            var cts = _inputEventsCancellationTokenSource;
+            _inputEventsCancellationTokenSource = null;
 
-        await _inputEventsCancellationTokenSource!.CancelAsync();
-        await _inputEventsTask;
+            await cts.CancelAsync();
 
-        _inputEventsCancellationTokenSource = null;
-        _inputEventsTask = null;
-        _currentProducer = null;
+            if (_inputEventsTask is not null)
+            {
+                var task = _inputEventsTask;
+                _inputEventsTask = null;
+
+                try
+                {
+                    await task;
+                }
+                catch (OperationCanceledException)
+                {
+                    // The loop exits with an OperationCanceledException when its token is cancelled.
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Input events loop faulted");
+                }
+            }
+
+            cts.Dispose();
+        }
+
+        if (_currentProducer is not null)
+        {
+            _currentProducer.Ready -= CurrentProducerOnReady;
+            _currentProducer = null;
+        }
+
+        _isSimReady = false;
     }
 
     private async Task RunInputEventsLoopAsync(

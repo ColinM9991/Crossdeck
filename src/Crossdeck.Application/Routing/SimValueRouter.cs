@@ -46,7 +46,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         });
 
     private volatile OutputIndex _outputIndex = OutputIndex.Empty;
-    private CancellationTokenSource? _simulatorEventsCancellationToken;
+    private CancellationTokenSource? _simulatorEventsCancellationTokenSource;
     private Task? _simulatorEventsTask;
     private ISimProducer? _currentProducer;
 
@@ -82,24 +82,29 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         if (_activeSim.Current is not null)
             _commands.Writer.TryWrite(new RouterCommand.SimChanged(_activeSim.Current));
 
-        await foreach (var command in _commands.Reader.ReadAllAsync(cancellationToken))
+        try
         {
-            switch (command)
+            await foreach (var command in _commands.Reader.ReadAllAsync(cancellationToken))
             {
-                case RouterCommand.SimChanging:
-                    await HandleSimulatorChanging();
-                    break;
-                case RouterCommand.SimChanged p:
-                    HandleSimulatorChanged(p, cancellationToken);
-                    break;
-                case RouterCommand.SimReady:
-                    break;
-                case RouterCommand.ProfileBindingUpdate update:
-                    if (_currentProducer is null)
+                switch (command)
+                {
+                    case RouterCommand.SimChanging:
+                        await HandleSimulatorChanging();
                         break;
-                    await _currentProducer.SetSubscriptionsAsync(update.Index.RequiredRefs, cancellationToken);
-                    break;
+                    case RouterCommand.SimChanged p:
+                        HandleSimulatorChanged(p, cancellationToken);
+                        break;
+                    case RouterCommand.SimReady:
+                        break;
+                    case RouterCommand.ProfileBindingUpdate update:
+                        await HandleProfileBindingUpdateAsync(update, cancellationToken);
+                        break;
+                }
             }
+        }
+        finally
+        {
+            await StopSimEventLoopAsync();
         }
     }
 
@@ -162,28 +167,79 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         _simCache.Clear();
 
         _currentProducer = p.Producer;
-        _currentProducer.Ready += CurrentProducerOnReady;
-        _simulatorEventsCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _simulatorEventsTask = RunSimEventLoopAsync(_currentProducer!, _simulatorEventsCancellationToken!.Token);
+        p.Producer.Ready += CurrentProducerOnReady;
+
+        var simulatorEventsCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _simulatorEventsCancellationTokenSource = simulatorEventsCancellationTokenSource;
+        _simulatorEventsTask = RunSimEventLoopAsync(p.Producer, simulatorEventsCancellationTokenSource.Token);
     }
 
     private async Task HandleSimulatorChanging()
     {
+        if (_currentProducer is null && _simulatorEventsTask is null)
+            return;
+
         _logger.LogInformation("Simulator changing");
+        await StopSimEventLoopAsync();
+    }
+
+    private async Task HandleProfileBindingUpdateAsync(
+        RouterCommand.ProfileBindingUpdate update,
+        CancellationToken cancellationToken)
+    {
         if (_currentProducer is null)
             return;
 
-        _currentProducer.Ready -= CurrentProducerOnReady;
+        try
+        {
+            await _currentProducer.SetSubscriptionsAsync(update.Index.RequiredRefs, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // The run is stopping; subscriptions are re-applied when a session starts.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set simulator subscriptions");
+        }
+    }
 
-        if (_simulatorEventsCancellationToken is null || _simulatorEventsTask is null)
-            return;
+    private async Task StopSimEventLoopAsync()
+    {
+        if (_simulatorEventsCancellationTokenSource is not null)
+        {
+            var cts = _simulatorEventsCancellationTokenSource;
+            _simulatorEventsCancellationTokenSource = null;
 
-        await _simulatorEventsCancellationToken!.CancelAsync();
-        await _simulatorEventsTask;
+            await cts.CancelAsync();
 
-        _simulatorEventsCancellationToken = null;
-        _simulatorEventsTask = null;
-        _currentProducer = null;
+            if (_simulatorEventsTask is not null)
+            {
+                var task = _simulatorEventsTask;
+                _simulatorEventsTask = null;
+
+                try
+                {
+                    await task;
+                }
+                catch (OperationCanceledException)
+                {
+                    // The loop exits with an OperationCanceledException when its token is cancelled.
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Simulator event loop faulted");
+                }
+            }
+
+            cts.Dispose();
+        }
+
+        if (_currentProducer is not null)
+        {
+            _currentProducer.Ready -= CurrentProducerOnReady;
+            _currentProducer = null;
+        }
     }
 
     private async Task RunSimEventLoopAsync(

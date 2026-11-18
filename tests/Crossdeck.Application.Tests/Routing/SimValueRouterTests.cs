@@ -647,6 +647,93 @@ public sealed class SimValueRouterTests
         Assert.Single(calls);
     }
 
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenTheSimulatorIsDisconnected_RecoversWhenANewSimulatorConnects(
+        [Frozen] IActiveSim activeSim,
+        [Frozen] IDeviceRegistry deviceRegistry,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var secondProducer = Substitute.For<ISimProducer>();
+
+        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
+        var (_, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
+        activeSim.Current.Returns((ISimProducer?)null);
+
+        var secondSimulatorConnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondEvents = Channel.CreateUnbounded<SimEvent>();
+        secondProducer.GetEventsAsync(Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                secondSimulatorConnected.TrySetResult();
+                return secondEvents.Reader.ReadAllAsync(call.ArgAt<CancellationToken>(0));
+            });
+
+        var simulatorChangingHandled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        logger.When(l => l.LogInformation("Simulator changing"))
+            .Do(_ => simulatorChangingHandled.TrySetResult());
+
+        activeSim.Changing += Raise.Event<EventHandler<ActiveSimChangingEventArgs>>(activeSim,
+            new ActiveSimChangingEventArgs(producer, null));
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim,
+            new ActiveSimChangedEventArgs(secondProducer));
+
+        // Act
+        var runTask = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+        await simulatorChangingHandled.Task;
+        await secondSimulatorConnected.Task;
+
+        secondEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
+        var aircraft = await aircraftChanged;
+
+        await cts.CancelAsync();
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+        Assert.Equal("A320", aircraft);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenSettingSubscriptionsFails_ContinuesProcessingCommands(
+        SimRef firstReference,
+        SimRef secondReference,
+        DeviceIdentity device,
+        OutputId output,
+        InvalidOperationException fault,
+        [Frozen] IActiveSim activeSim,
+        [Frozen] IDeviceRegistry deviceRegistry,
+        [Frozen] ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger)
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+
+        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
+        var (_, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
+
+        producer.SetSubscriptionsAsync(Arg.Any<IReadOnlySet<SimRef>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(fault));
+
+        // Act
+        var runTask = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+
+        sut.SetBindings([new OutputMapping(
+            new Dictionary<string, SimRef> { ["deploy"] = firstReference },
+            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([new OutputMapping(
+            new Dictionary<string, SimRef> { ["deploy"] = secondReference },
+            new OutputSink.Indicator(device, output))]);
+        await cts.CancelAsync();
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+        await producer.Received(2).SetSubscriptionsAsync(Arg.Any<IReadOnlySet<SimRef>>(), Arg.Any<CancellationToken>());
+    }
+
     private static (List<(OutputId Output, int Value)> Calls, Task Completed) WatchSets(IIndicatorOutput indicator)
     {
         var calls = new List<(OutputId Output, int Value)>();
