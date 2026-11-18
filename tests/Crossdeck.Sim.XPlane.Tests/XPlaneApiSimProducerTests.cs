@@ -1,5 +1,6 @@
 using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Sim.XPlane.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Sim.XPlane.Tests;
 
@@ -11,12 +12,13 @@ public sealed class XPlaneApiSimProducerTests
         string host,
         int port,
         SimCommand command,
-        IXPlaneApiService api)
+        IXPlaneApiService api,
+        ILogger<XPlaneApiSimProducer> logger)
     {
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneApiSimProducer(api, options);
+        var sut = new XPlaneApiSimProducer(api, options, logger);
 
         // Act
         var result = await sut.SendCommandAsync(command, CancellationToken.None);
@@ -30,12 +32,13 @@ public sealed class XPlaneApiSimProducerTests
         XPlaneOptions options,
         string host,
         int port,
-        IXPlaneApiService api)
+        IXPlaneApiService api,
+        ILogger<XPlaneApiSimProducer> logger)
     {
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneApiSimProducer(api, options);
+        var sut = new XPlaneApiSimProducer(api, options, logger);
 
         // Act
         var stream = sut.GetEventsAsync(CancellationToken.None);
@@ -49,12 +52,13 @@ public sealed class XPlaneApiSimProducerTests
         XPlaneOptions options,
         string host,
         int port,
-        IXPlaneApiService api)
+        IXPlaneApiService api,
+        ILogger<XPlaneApiSimProducer> logger)
     {
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneApiSimProducer(api, options);
+        var sut = new XPlaneApiSimProducer(api, options, logger);
 
         var activeFirstConsumer = sut.GetEventsAsync(CancellationToken.None).GetAsyncEnumerator();
         var firstConsumption = activeFirstConsumer.MoveNextAsync();
@@ -77,12 +81,13 @@ public sealed class XPlaneApiSimProducerTests
         XPlaneOptions options,
         string host,
         int port,
-        IXPlaneApiService api)
+        IXPlaneApiService api,
+        ILogger<XPlaneApiSimProducer> logger)
     {
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneApiSimProducer(api, options);
+        var sut = new XPlaneApiSimProducer(api, options, logger);
         var events = sut.GetEventsAsync(CancellationToken.None);
 
         // Act
@@ -99,12 +104,13 @@ public sealed class XPlaneApiSimProducerTests
         string host,
         int port,
         CancellationTokenSource cts,
-        IXPlaneApiService api)
+        IXPlaneApiService api,
+        ILogger<XPlaneApiSimProducer> logger)
     {
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneApiSimProducer(api, options);
+        var sut = new XPlaneApiSimProducer(api, options, logger);
 
         await cts.CancelAsync();
         var events = sut.GetEventsAsync(cts.Token);

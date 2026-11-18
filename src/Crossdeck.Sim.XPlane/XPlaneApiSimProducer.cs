@@ -10,6 +10,7 @@ using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Sim.XPlane.Messages;
 using Crossdeck.Sim.XPlane.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Sim.XPlane;
 
@@ -43,6 +44,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private readonly IXPlaneApiService _api;
     private readonly string _host;
     private readonly int _port;
+    private readonly ILogger<XPlaneApiSimProducer> _logger;
 
     private int _eventsConsumed;
     private int _requestId;
@@ -65,12 +67,14 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// </remarks>
     public XPlaneApiSimProducer(
         IXPlaneApiService api,
-        XPlaneOptions options)
+        XPlaneOptions options,
+        ILogger<XPlaneApiSimProducer> logger)
     {
         _api = api ??
                throw new ArgumentNullException(nameof(api));
         _host = options.Host ?? throw new ArgumentNullException(nameof(options.Host));
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     private Uri WsUri => new($"ws://{_host}:{_port}{XPlaneConstants.WebSocketPath}");
@@ -171,7 +175,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             SimCommand.Begin begin => await SendCommandAsync(session, begin.Action, true, null, cancellationToken),
             SimCommand.End end => await SendCommandAsync(session, end.Action, false, null, cancellationToken),
             SimCommand.Set set => await SendDataRefAsync(session, set.Target, set.Value, cancellationToken),
-            _ => new CommandResult.Unsupported()
+            _ => Unsupported(command)
         };
     }
 
@@ -187,7 +191,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         return ValueTask.CompletedTask;
     }
 
-    private static async Task RunChildLoopAsync(Task loop, CancellationTokenSource cts)
+    private static async Task RunChildLoopAsync(Task loop, CancellationTokenSource cts,
+        ILogger logger)
     {
         try
         {
@@ -196,8 +201,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "X-Plane session loop faulted");
             await cts.CancelAsync();
         }
     }
@@ -249,7 +255,11 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         CancellationToken cancellationToken)
     {
         var commandId = await ResolveCommandIdAsync(action.Key, session.CommandCache, cancellationToken);
-        if (commandId is null) return new CommandResult.Failure();
+        if (commandId is null)
+        {
+            _logger.LogWarning("X-Plane command {Command} could not be resolved", action);
+            return new CommandResult.Failure();
+        }
 
         var command = new CommandSetIsActive
         {
@@ -273,7 +283,11 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     {
         var (dataRef, index) = FetchDataRefAndIndex();
         var dataRefId = await ResolveDataRefIdAsync(dataRef, session.DataRefCache, cancellationToken);
-        if (dataRefId is null) return new CommandResult.Failure();
+        if (dataRefId is null)
+        {
+            _logger.LogWarning("X-Plane dataref {DataRef} could not be resolved", dataRef);
+            return new CommandResult.Failure();
+        }
 
         object value = simValue switch
         {
@@ -301,16 +315,31 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
+    private CommandResult Unsupported(SimCommand command)
+    {
+        _logger.LogWarning("Simulator command type {CommandType} is not supported", command.GetType().Name);
+        return new CommandResult.Unsupported();
+    }
+
     private async Task RunSessionAsync(CancellationToken cancellationToken)
     {
         _isReady = false;
         SetStatus(new SimStatus.Disconnected());
 
         using var ws = new ClientWebSocket();
-        await ws.ConnectAsync(WsUri, cancellationToken);
+        try
+        {
+            await ws.ConnectAsync(WsUri, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "X-Plane connection to {Host}:{Port} failed", _host, _port);
+            throw;
+        }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+        _logger.LogInformation("X-Plane session connected to {Host}:{Port}", _host, _port);
         SetStatus(new SimStatus.Connected());
 
         await WaitForInitializationAsync(cancellationToken);
@@ -320,22 +349,28 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _sessionState = sessionState;
         _aircraft = null;
 
-        var sendLoop = RunChildLoopAsync(SendLoopAsync(ws, sessionState, cts.Token), cts);
-        var subscriptionLoop = RunChildLoopAsync(SubscriptionLoopAsync(sessionState, cts.Token), cts);
+        var sendLoop = RunChildLoopAsync(SendLoopAsync(ws, sessionState, cts.Token), cts, _logger);
+        var subscriptionLoop = RunChildLoopAsync(SubscriptionLoopAsync(sessionState, cts.Token), cts, _logger);
 
         try
         {
             await ReceiveLoopAsync(ws, sessionState, cts.Token);
         }
-        catch
+        catch (OperationCanceledException)
         {
-            // Ignored
+            // Session teardown: the linked token was cancelled.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "X-Plane receive loop faulted");
         }
         finally
         {
             await cts.CancelAsync();
             await Task.WhenAll(sendLoop, subscriptionLoop);
         }
+
+        _logger.LogInformation("X-Plane session on {Host}:{Port} ended", _host, _port);
     }
 
     /// <summary>
@@ -395,6 +430,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                 var id = await ResolveDataRefIdAsync(add.Key, session.DataRefCache, cancellationToken);
                 if (id is null)
                 {
+                    _logger.LogWarning("X-Plane dataref {DataRef} could not be subscribed; not found", add.Key);
                     continue;
                 }
 
@@ -566,6 +602,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                     if (countResponse.Data == lastCount)
                     {
                         _isReady = true;
+                        _logger.LogInformation("X-Plane session ready");
                         Ready?.Invoke(this, new SimReady());
                         SetStatus(new SimStatus.Ready());
                         return;

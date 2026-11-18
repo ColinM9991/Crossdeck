@@ -2,6 +2,7 @@
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Hid;
 
@@ -10,15 +11,18 @@ public sealed class HidDeviceDriver : IDeviceDriver
     private readonly Dictionary<InputId, double?> _lastSentValues = [];
     private readonly IHidTransport _transport;
     private readonly IHidReportDecoder _decoder;
+    private readonly ILogger<HidDeviceDriver> _logger;
 
     public HidDeviceDriver(
         DeviceIdentity identity,
         IHidTransport transport,
-        IHidReportDecoder decoder)
+        IHidReportDecoder decoder,
+        ILogger<HidDeviceDriver> logger)
     {
         Identity = identity;
         _transport = transport ?? throw new ArgumentNullException(nameof(transport));
         _decoder = decoder ?? throw new ArgumentNullException(nameof(decoder));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public DeviceIdentity Identity { get; }
@@ -42,36 +46,51 @@ public sealed class HidDeviceDriver : IDeviceDriver
             var buffer = new byte[_transport.MaxInputReportLength];
             var changes = new List<HidInputChange>();
 
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                var read = await _transport.ReadAsync(buffer, cancellationToken);
-                if (read == 0) break;
-
-                changes.Clear();
-                _decoder.Decode(buffer, changes);
-
-                foreach (var change in changes)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (!ShouldRepeat(change))
-                        continue;
+                    var read = await _transport.ReadAsync(buffer, cancellationToken);
+                    if (read == 0)
+                    {
+                        _logger.LogWarning("Transport read returned zero bytes; ending input loop for {Identity}",
+                            Identity);
+                        break;
+                    }
 
-                    var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
-                    var inputEvent = new DeviceInputEvent(
-                        Identity,
-                        change.DeviceControl,
-                        inputEventKind,
-                        change.Value,
-                        Stopwatch.GetTimestamp());
+                    changes.Clear();
+                    _decoder.Decode(buffer, changes);
 
-                    InputReceived?.Invoke(this, inputEvent);
+                    foreach (var change in changes)
+                    {
+                        if (!ShouldRaise(change))
+                            continue;
+
+                        var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
+                        var inputEvent = new DeviceInputEvent(
+                            Identity,
+                            change.DeviceControl,
+                            inputEventKind,
+                            change.Value,
+                            Stopwatch.GetTimestamp());
+
+                        _logger.LogDebug("Input event {Identity} {Control} {Kind} {Value}",
+                            Identity, change.DeviceControl.Id, inputEventKind, change.Value);
+                        InputReceived?.Invoke(this, inputEvent);
+                    }
                 }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "HID input read loop for {Identity} faulted", Identity);
+                throw;
             }
         }
     }
 
     public async ValueTask DisposeAsync() => await _transport.DisposeAsync();
 
-    private bool ShouldRepeat(HidInputChange change)
+    private bool ShouldRaise(HidInputChange change)
     {
         var control = change.DeviceControl;
         if (!_lastSentValues.TryGetValue(control.Id, out var lastValue))

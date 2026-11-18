@@ -1,6 +1,7 @@
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Sim.XPlane.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Sim.XPlane.Tests;
 
@@ -10,7 +11,9 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddXPlane_Always_RegistersSimProducerFactoryAsSingleton()
     {
         // Arrange
-        var provider = new ServiceCollection().AddXPlane().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddSingleton(Substitute.For<ILoggerFactory>());
+        var provider = services.AddXPlane().BuildServiceProvider();
 
         // Act
         var first = provider.GetRequiredService<ISimProducerFactory>();
@@ -40,7 +43,10 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddXPlane_Always_RegistersSimProducerAsTransient()
     {
         // Arrange
-        var provider = new ServiceCollection().AddXPlane().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddSingleton(Substitute.For<ILoggerFactory>());
+        services.AddSingleton(Substitute.For<ILogger<XPlaneApiSimProducer>>());
+        var provider = services.AddXPlane().BuildServiceProvider();
 
         // Act
         var first = provider.GetRequiredService<ISimProducer>();

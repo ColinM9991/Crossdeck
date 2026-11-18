@@ -2,6 +2,7 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Assemblers;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Assemblers;
 
@@ -11,7 +12,7 @@ public sealed class SegmentDriverAssemblerTests
     public void Kind_Always_IsSegment()
     {
         // Arrange
-        var sut = new SegmentDriverAssembler();
+        var sut = new SegmentDriverAssembler(Substitute.For<ILoggerFactory>());
 
         // Act / Assert
         Assert.Equal(WinCtrlKind.Segment, sut.Kind);
@@ -20,11 +21,12 @@ public sealed class SegmentDriverAssemblerTests
     [Theory, AutoNSubstituteData]
     public void Assemble_WhenTheDefinitionHasNoSegmentLayout_Throws(
         [Frozen] HidDeviceDriver hid,
-        [Frozen] IHidTransport transport)
+        [Frozen] IHidTransport transport,
+        ILoggerFactory loggerFactory)
     {
         // Arrange
         var definition = WinCtrlDefinitions.ForPid(0xBB32)!;
-        var sut = new SegmentDriverAssembler();
+        var sut = new SegmentDriverAssembler(loggerFactory);
 
         // Act / Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -38,15 +40,16 @@ public sealed class SegmentDriverAssemblerTests
     public async Task Assemble_WhenTheDeviceIsFcuWithEfisL_WritesOnlyTheKeptLights(
         [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
-        [Frozen] IHidReportDecoder decoder)
+        [Frozen] IHidReportDecoder decoder,
+        ILoggerFactory loggerFactory)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
         identity = identity with { ProductId = 0xBC1D };
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, loggerFactory.CreateLogger<HidDeviceDriver>());
         var definition = WinCtrlDefinitions.ForPid(0xBC1D)!;
-        var driver = new SegmentDriverAssembler().Assemble(definition, hid, transport);
+        var driver = new SegmentDriverAssembler(loggerFactory).Assemble(definition, hid, transport);
 
         var ledsWritten = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var written = new List<byte[]>();
@@ -90,15 +93,16 @@ public sealed class SegmentDriverAssemblerTests
     public async Task Assemble_WhenTheDeviceIsNotFcu_KeepsEveryLightOfTheLayout(
         [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
-        [Frozen] IHidReportDecoder decoder)
+        [Frozen] IHidReportDecoder decoder,
+        ILoggerFactory loggerFactory)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
         identity = identity with { ProductId = 0xBF0F };
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, loggerFactory.CreateLogger<HidDeviceDriver>());
         var definition = WinCtrlDefinitions.ForPid(0xBF0F)!;
-        var driver = new SegmentDriverAssembler().Assemble(definition, hid, transport);
+        var driver = new SegmentDriverAssembler(loggerFactory).Assemble(definition, hid, transport);
 
         var ledsWritten = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var written = new List<byte[]>();

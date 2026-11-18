@@ -4,6 +4,7 @@ using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Drivers;
 using Crossdeck.Devices.WinCtrl.Encoders;
 using Crossdeck.Devices.WinCtrl.Frames;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Drivers;
 
@@ -27,12 +28,14 @@ public sealed class WinCtrlCduDeviceDriverTests
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
         [Frozen] IWinCtrlDisplayEncoder encoder,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
         var source = new CduFrameSource(encoder);
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
         var sut = new WinCtrlCduDeviceDriver(hid, writer, source);
         byte[] frame = [0x01, 0x02, 0x03];
         encoder.EncodeFrame(screen).Returns([frame]);
@@ -53,14 +56,16 @@ public sealed class WinCtrlCduDeviceDriverTests
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
         [Frozen] IWinCtrlDisplayEncoder encoder,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
         var source = new CduFrameSource(encoder);
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
         var sut = new WinCtrlCduDeviceDriver(hid, writer, source);
 
         byte[] frame = [0x01, 0x02, 0x03];

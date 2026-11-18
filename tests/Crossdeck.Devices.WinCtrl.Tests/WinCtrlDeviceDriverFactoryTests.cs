@@ -5,6 +5,7 @@ using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.Hid.Models;
 using Crossdeck.Devices.WinCtrl.Assemblers;
 using HidSharp.Reports;
+using Microsoft.Extensions.Logging;
 using NSubstitute.ExceptionExtensions;
 
 namespace Crossdeck.Devices.WinCtrl.Tests;
@@ -32,7 +33,7 @@ public sealed class WinCtrlDeviceDriverFactoryTests
     public void Priority_Always_Is100()
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), []);
+        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [], Substitute.For<ILoggerFactory>());
 
         // Act / Assert
         Assert.Equal(100, sut.Priority);
@@ -44,7 +45,8 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler],
+            Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -64,7 +66,8 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler],
+            Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -84,7 +87,8 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler],
+            Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -104,7 +108,8 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), [cduAssembler],
+            Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -125,7 +130,7 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler], Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -147,7 +152,7 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler], Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -170,7 +175,7 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler], Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -194,7 +199,7 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler], Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {
@@ -231,7 +236,7 @@ public sealed class WinCtrlDeviceDriverFactoryTests
         [Frozen] IWinCtrlDriverAssembler cduAssembler)
     {
         // Arrange
-        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler]);
+        var sut = new WinCtrlDeviceDriverFactory(transportFactory, [cduAssembler], Substitute.For<ILoggerFactory>());
         cduAssembler.Kind.Returns(WinCtrlKind.Cdu);
         descriptor = descriptor with
         {

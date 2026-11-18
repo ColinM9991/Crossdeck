@@ -2,6 +2,7 @@ using Crossdeck.Application.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Application.Tests.Session;
 
@@ -12,7 +13,8 @@ public sealed class SimSessionSupervisorTests
         SimDetection detection,
         ISimDetector detector,
         ISimProducerFactory factory,
-        ISimProducer producer)
+        ISimProducer producer,
+        ILogger<SimSessionSupervisor> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -29,7 +31,7 @@ public sealed class SimSessionSupervisorTests
                 throw new OperationCanceledException();
             });
 
-        var sut = new SimSessionSupervisor([detector], [factory]);
+        var sut = new SimSessionSupervisor([detector], [factory], logger);
         sut.Changed += (_, e) => changes.Add(e.Current);
 
         // Act
@@ -47,7 +49,8 @@ public sealed class SimSessionSupervisorTests
         SimDetection detection,
         ISimDetector detector,
         ISimProducerFactory factory,
-        ISimProducer producer)
+        ISimProducer producer,
+        ILogger<SimSessionSupervisor> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -65,7 +68,7 @@ public sealed class SimSessionSupervisorTests
         factory.Create().Returns(producer);
         producer.RunAsync(Arg.Any<CancellationToken>()).Returns(_ => throw new OperationCanceledException());
 
-        var sut = new SimSessionSupervisor([detector], [factory]);
+        var sut = new SimSessionSupervisor([detector], [factory], logger);
 
         // Act
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sut.RunAsync(cts.Token));

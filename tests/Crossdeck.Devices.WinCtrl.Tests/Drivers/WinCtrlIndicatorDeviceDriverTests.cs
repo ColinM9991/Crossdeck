@@ -2,6 +2,7 @@ using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Drivers;
 using Crossdeck.Devices.WinCtrl.Frames;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Drivers;
 
@@ -27,14 +28,16 @@ public sealed class WinCtrlIndicatorDeviceDriverTests
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
         [Frozen] IWinCtrlFrameSource frames,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
         id = id with { Kind = OutputKind.Level };
-        var hid = new HidDeviceDriver(identity, transport, decoder);
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, frames);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, frames, writerLogger);
         var sut = new WinCtrlIndicatorDeviceDriver(hid, writer);
 
         IReadOnlyDictionary<OutputId, int> state = new Dictionary<OutputId, int>();

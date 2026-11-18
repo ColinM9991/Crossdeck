@@ -94,7 +94,10 @@ public sealed class DeviceRegistry : IDeviceRegistry
 
         var factory = _deviceDriverFactories.FirstOrDefault(f => f.CanCreate(descriptor));
         if (factory is null)
+        {
+            _logger.LogWarning("No driver factory matched {Identity}", descriptor.Identity);
             return;
+        }
 
         var driver = await factory.CreateAsync(descriptor, cancellationToken);
         if (driver is null)
@@ -110,6 +113,7 @@ public sealed class DeviceRegistry : IDeviceRegistry
         _snapshot = _snapshot.SetItem(driver.Identity, driver);
         driver.InputReceived += DriverOnInputReceived;
 
+        _logger.LogInformation("Driver added {Identity}", driver.Identity);
         DriverAdded?.Invoke(this, new DriverAddedEventArgs(driver.Identity, driver));
 
         ObserveFault(runningDriver, descriptor);
@@ -121,6 +125,7 @@ public sealed class DeviceRegistry : IDeviceRegistry
             return;
 
         _snapshot = _snapshot.Remove(identity);
+        _logger.LogInformation("Driver removed {Identity}", identity);
         DriverRemoved?.Invoke(this, new DriverRemovedEventArgs(runningDriver.Driver.Identity));
 
         await runningDriver.CancellationTokenSource.CancelAsync();
@@ -170,6 +175,7 @@ public sealed class DeviceRegistry : IDeviceRegistry
             return;
         }
 
+        _logger.LogInformation("Restarting driver for {Identity}", descriptor.Identity);
         await StartAsync(descriptor, cancellationToken);
     }
 

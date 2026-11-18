@@ -2,17 +2,23 @@
 using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Hid;
 
 internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
 {
     private readonly IHidTransportFactory _hidTransportFactory;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<HidDeviceDriverFactory> _logger;
 
     public HidDeviceDriverFactory(
-        IHidTransportFactory hidTransportFactory)
+        IHidTransportFactory hidTransportFactory,
+        ILoggerFactory loggerFactory)
     {
         _hidTransportFactory = hidTransportFactory ?? throw new ArgumentNullException(nameof(hidTransportFactory));
+        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        _logger = loggerFactory.CreateLogger<HidDeviceDriverFactory>();
     }
 
     public int Priority => 0;
@@ -34,14 +40,17 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
             return new HidDeviceDriver(
                 deviceDescriptor.Identity,
                 hidConnection.Transport,
-                new HidReportDecoder(hidConnection.ReportDescriptor));
+                new HidReportDecoder(hidConnection.ReportDescriptor),
+                _loggerFactory.CreateLogger<HidDeviceDriver>());
         }
         catch (DeviceNotUsableException)
         {
+            _logger.LogWarning("HID device {Path} is not usable; no driver created", deviceDescriptor.Path);
             return null;
         }
         catch (DeviceNotFoundException)
         {
+            _logger.LogWarning("HID device {Path} was not found; no driver created", deviceDescriptor.Path);
             return null;
         }
     }
@@ -65,7 +74,8 @@ internal sealed class HidDeviceDriverFactory : IDeviceDriverFactory
             .Select((connection, index) => new HidDeviceDriver(
                 WithInterfaceKey(deviceDescriptor.Identity, deviceDescriptor.HidInterfaces[index].Key),
                 connection.Transport,
-                new HidReportDecoder(connection.ReportDescriptor)))
+                new HidReportDecoder(connection.ReportDescriptor),
+                _loggerFactory.CreateLogger<HidDeviceDriver>()))
             .ToList();
 
         return new CompositeHidDeviceDriver(deviceDescriptor.Identity, drivers);

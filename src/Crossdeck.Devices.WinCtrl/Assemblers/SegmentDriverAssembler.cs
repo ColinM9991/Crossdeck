@@ -3,10 +3,11 @@ using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Drivers;
 using Crossdeck.Devices.WinCtrl.Encoders;
 using Crossdeck.Devices.WinCtrl.Frames;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Assemblers;
 
-public sealed class SegmentDriverAssembler : IWinCtrlDriverAssembler
+public sealed class SegmentDriverAssembler(ILoggerFactory loggerFactory) : IWinCtrlDriverAssembler
 {
     public WinCtrlKind Kind => WinCtrlKind.Segment;
 
@@ -23,7 +24,8 @@ public sealed class SegmentDriverAssembler : IWinCtrlDriverAssembler
 
         var frameSource = new SegmentFrameSource(new WinCtrlSegmentEncoder(panels));
         var writer = new WinCtrlOutputWriter(transport,
-            new WinCtrlHidReportEncoder(definition with { Lights = lights }), frameSource);
+            new WinCtrlHidReportEncoder(definition with { Lights = lights }), frameSource,
+            loggerFactory.CreateLogger<WinCtrlOutputWriter>());
         return new WinCtrlSegmentDeviceDriver(hid, writer, frameSource);
     }
 }

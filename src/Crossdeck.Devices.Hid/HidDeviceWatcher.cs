@@ -3,6 +3,7 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using HidSharp;
 using HidSharp.Reports;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Hid;
 
@@ -12,12 +13,16 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 
     private readonly Signal _deviceChangedSignal = new();
     private readonly IUsbDeviceResolver _usbDeviceResolver;
+    private readonly ILogger<HidDeviceWatcher> _logger;
 
     private volatile Dictionary<DeviceIdentity, DeviceDescriptor> _deviceCache = new();
 
-    public HidDeviceWatcher(IUsbDeviceResolver usbDeviceResolver)
+    public HidDeviceWatcher(
+        IUsbDeviceResolver usbDeviceResolver,
+        ILogger<HidDeviceWatcher> logger)
     {
         _usbDeviceResolver = usbDeviceResolver ?? throw new ArgumentNullException(nameof(usbDeviceResolver));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public IReadOnlyCollection<DeviceDescriptor> ConnectedDevices =>
@@ -28,6 +33,7 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
+        _logger.LogInformation("HID device watch starting");
         DeviceList.Local.Changed += OnChanged;
         try
         {
@@ -49,6 +55,7 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         finally
         {
             DeviceList.Local.Changed -= OnChanged;
+            _logger.LogInformation("HID device watch stopped");
         }
     }
 
@@ -103,9 +110,17 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
         IEnumerable<DeviceDescriptor> added,
         IEnumerable<DeviceDescriptor> removed)
     {
-        foreach (var device in removed) DeviceRemoved?.Invoke(this, new DeviceRemovedEventArgs(device.Identity));
+        foreach (var device in removed)
+        {
+            _logger.LogInformation("HID device removed {Identity}", device.Identity);
+            DeviceRemoved?.Invoke(this, new DeviceRemovedEventArgs(device.Identity));
+        }
 
-        foreach (var device in added) DeviceArrived?.Invoke(this, new DeviceArrivedEventArgs(device));
+        foreach (var device in added)
+        {
+            _logger.LogInformation("HID device added {Identity}", device.Identity);
+            DeviceArrived?.Invoke(this, new DeviceArrivedEventArgs(device));
+        }
     }
 
     private Dictionary<DeviceIdentity, DeviceDescriptor> BuildDeviceCache(
@@ -166,15 +181,17 @@ public sealed class HidDeviceWatcher : IDeviceWatcher
     private static bool HasSupportedUsages(DeviceFact deviceFact) =>
         deviceFact.Usages.All(x => SupportedDevices.Contains(x));
 
-    private static DeviceFact? BuildDeviceFact(HidDevice device)
+    private DeviceFact? BuildDeviceFact(HidDevice device)
     {
         ReportDescriptor? descriptor;
         try
         {
             descriptor = device.GetReportDescriptor();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to read report descriptor for {DevicePath}; skipping device",
+                device.DevicePath);
             return null;
         }
 

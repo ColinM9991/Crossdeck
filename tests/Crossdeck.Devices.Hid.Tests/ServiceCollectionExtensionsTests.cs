@@ -1,4 +1,5 @@
 using Crossdeck.Core.Devices;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Hid.Tests;
 
@@ -10,6 +11,7 @@ public sealed class ServiceCollectionExtensionsTests
         // Arrange
         var services = new ServiceCollection();
         services.AddSingleton(Substitute.For<IUsbDeviceResolver>());
+        services.AddSingleton(Substitute.For<ILogger<HidDeviceWatcher>>());
         var provider = services.AddHidServices().BuildServiceProvider();
 
         // Act
@@ -25,7 +27,9 @@ public sealed class ServiceCollectionExtensionsTests
     public void AddHidServices_Always_RegistersDeviceDriverFactoryAsSingleton()
     {
         // Arrange
-        var provider = new ServiceCollection().AddHidServices().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddSingleton(Substitute.For<ILoggerFactory>());
+        var provider = services.AddHidServices().BuildServiceProvider();
 
         // Act
         var first = provider.GetRequiredService<IDeviceDriverFactory>();

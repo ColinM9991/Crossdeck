@@ -57,7 +57,7 @@ public sealed class SimValueRouterTests
         using var cts = new CancellationTokenSource();
 
         var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
 
         // Act
@@ -105,7 +105,7 @@ public sealed class SimValueRouterTests
         using var cts = new CancellationTokenSource();
 
         var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
@@ -138,7 +138,7 @@ public sealed class SimValueRouterTests
         using var cts = new CancellationTokenSource();
 
         var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
@@ -178,7 +178,7 @@ public sealed class SimValueRouterTests
         using var cts = new CancellationTokenSource();
 
         var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
@@ -212,7 +212,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
         var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var indicator = (IIndicatorOutput)driver;
@@ -252,7 +252,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var indicator = (IIndicatorOutput)driver;
@@ -294,7 +294,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var indicator = (IIndicatorOutput)driver;
@@ -339,7 +339,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var indicator = (IIndicatorOutput)Substitute.For<IDeviceDriver, IIndicatorOutput>();
 
@@ -376,7 +376,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var indicator = (IIndicatorOutput)driver;
@@ -418,7 +418,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
         var firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var firstIndicator = (IIndicatorOutput)firstDriver;
@@ -471,7 +471,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
         var firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var firstIndicator = (IIndicatorOutput)firstDriver;
@@ -521,7 +521,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var indicator = (IIndicatorOutput)driver;
@@ -561,7 +561,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var oldDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var oldIndicator = (IIndicatorOutput)oldDriver;
@@ -617,7 +617,7 @@ public sealed class SimValueRouterTests
 
         var registry = new FakeDeviceRegistry();
         var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer, logger);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
         var indicator = (IIndicatorOutput)driver;
@@ -664,16 +664,17 @@ public sealed class SimValueRouterTests
     private static (Channel<SimEvent> Events, Task SimulatorChanged, Task<string?> AircraftChanged) ConnectSimulator(
         SimValueRouter sut,
         IActiveSim activeSim,
-        ISimProducer producer,
-        ILogger<SimValueRouter> logger)
+        ISimProducer producer)
     {
         var events = Channel.CreateUnbounded<SimEvent>();
-        producer.GetEventsAsync(Arg.Any<CancellationToken>())
-            .Returns(call => events.Reader.ReadAllAsync(call.ArgAt<CancellationToken>(0)));
 
         var simulatorChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        logger.When(l => l.LogInformation("Simulator changed"))
-            .Do(_ => simulatorChanged.TrySetResult());
+        producer.GetEventsAsync(Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                simulatorChanged.TrySetResult();
+                return events.Reader.ReadAllAsync(call.ArgAt<CancellationToken>(0));
+            });
 
         var aircraftChanged = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         sut.AircraftChanged += (_, aircraft) => aircraftChanged.TrySetResult(aircraft);

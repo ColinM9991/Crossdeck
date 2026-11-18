@@ -72,6 +72,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         var bindingIndex = BuildIndex(bindings);
 
         _outputIndex = bindingIndex;
+        _logger.LogInformation("Output bindings set {Count}", bindings.Count);
 
         _commands.Writer.TryWrite(new RouterCommand.ProfileBindingUpdate(bindingIndex));
     }
@@ -157,7 +158,7 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
         if (ReferenceEquals(p.Producer, _currentProducer))
             return;
 
-        _logger.LogInformation("Simulator changed");
+        _logger.LogInformation("Simulator changed {Producer}", p.Producer);
         _simCache.Clear();
 
         _currentProducer = p.Producer;
@@ -230,10 +231,16 @@ public sealed class SimValueRouter : ISimValueRouter, ISimValueCache
     private void Dispatch(OutputBinding binding, SimValue value)
     {
         if (binding.Mapping.Sources.Count > 1)
+        {
+            _logger.LogWarning("Binding {Sink} has multiple sources; skipping", binding.Mapping.Sink);
             return; // TODO: Implement transformations
+        }
 
         if (value is not SimValue.Number valueNumber)
+        {
+            _logger.LogWarning("Binding {Sink} skipped: value is not a number", binding.Mapping.Sink);
             return;
+        }
 
         if (binding.Mapping.Sink is OutputSink.Indicator indicator
             && _deviceRegistry.TryGet(indicator.Device, out var driver)

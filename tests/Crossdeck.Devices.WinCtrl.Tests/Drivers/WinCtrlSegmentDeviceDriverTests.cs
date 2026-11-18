@@ -4,6 +4,7 @@ using Crossdeck.Devices.WinCtrl.Drivers;
 using Crossdeck.Devices.WinCtrl.Encoders;
 using Crossdeck.Devices.WinCtrl.Frames;
 using Crossdeck.Devices.WinCtrl.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Drivers;
 
@@ -25,12 +26,14 @@ public sealed class WinCtrlSegmentDeviceDriverTests
         [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
         var source = new SegmentFrameSource(new WinCtrlSegmentEncoder([Panel()]));
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
         var sut = new WinCtrlSegmentDeviceDriver(hid, writer, source);
         var display = new OutputId(OutputKind.Display, "spd");
         const string text = "123";
@@ -51,12 +54,14 @@ public sealed class WinCtrlSegmentDeviceDriverTests
         [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
         var source = new SegmentFrameSource(new WinCtrlSegmentEncoder([Panel()]));
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
         var sut = new WinCtrlSegmentDeviceDriver(hid, writer, source);
         var flag = new OutputId(OutputKind.Flag, "spd.mach");
 
@@ -74,12 +79,14 @@ public sealed class WinCtrlSegmentDeviceDriverTests
         [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
         var source = new SegmentFrameSource(new WinCtrlSegmentEncoder([Panel()]));
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
         var sut = new WinCtrlSegmentDeviceDriver(hid, writer, source);
         var flag = new OutputId(OutputKind.Flag, "spd.mach");
 
@@ -97,14 +104,16 @@ public sealed class WinCtrlSegmentDeviceDriverTests
         [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
         [Frozen] IHidReportDecoder decoder,
-        [Frozen] IHidReportEncoder ledEncoder)
+        [Frozen] IHidReportEncoder ledEncoder,
+        ILogger<HidDeviceDriver> hidLogger,
+        ILogger<WinCtrlOutputWriter> writerLogger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var hid = new HidDeviceDriver(identity, transport, decoder);
+        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
         var source = new SegmentFrameSource(new WinCtrlSegmentEncoder([Panel()]));
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source);
+        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
         var sut = new WinCtrlSegmentDeviceDriver(hid, writer, source);
 
         var frameWritten = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

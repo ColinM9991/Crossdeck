@@ -5,17 +5,21 @@ using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Frames;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl;
 
 public sealed class WinCtrlOutputWriter(
     IHidTransport transport,
     IHidReportEncoder ledEncoder,
-    IWinCtrlFrameSource frames) : IDeviceOutputWriter
+    IWinCtrlFrameSource frames,
+    ILogger<WinCtrlOutputWriter> logger) : IDeviceOutputWriter
 {
     private readonly IHidTransport _transport = transport ?? throw new ArgumentNullException(nameof(transport));
     private readonly IHidReportEncoder _ledEncoder = ledEncoder ?? throw new ArgumentNullException(nameof(ledEncoder));
     private readonly IWinCtrlFrameSource _frames = frames ?? throw new ArgumentNullException(nameof(frames));
+    private readonly ILogger<WinCtrlOutputWriter> _logger = logger ??
+                                                           throw new ArgumentNullException(nameof(logger));
     private readonly ConcurrentDictionary<OutputId, int> _state = new();
     private readonly Signal _dirty = new();
     private long _lastFrame;
@@ -30,6 +34,7 @@ public sealed class WinCtrlOutputWriter(
 
     public async Task RunAsync(CancellationToken ct)
     {
+        _logger.LogInformation("WinCtrl output writer starting");
         await SendLedsAsync(ct);
         await WriteAllAsync(_frames.EncodeInit(), ct);
         await _dirty.SetAsync(ct);
@@ -44,6 +49,7 @@ public sealed class WinCtrlOutputWriter(
             if (_frames.TakeFrame() is not { } reports) continue;
 
             await WriteAllAsync(reports, ct);
+            _logger.LogDebug("Wrote {Count} HID reports", reports.Length);
             _lastFrame = Stopwatch.GetTimestamp();
         }
     }
@@ -53,7 +59,15 @@ public sealed class WinCtrlOutputWriter(
 
     private async Task WriteAllAsync(IEnumerable<byte[]> reports, CancellationToken ct)
     {
-        foreach (var report in reports)
-            await _transport.WriteAsync(report, ct);
+        try
+        {
+            foreach (var report in reports)
+                await _transport.WriteAsync(report, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "WinCtrl HID write faulted");
+            throw;
+        }
     }
 }

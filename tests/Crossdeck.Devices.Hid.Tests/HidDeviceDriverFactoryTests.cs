@@ -3,6 +3,7 @@ using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
 using HidSharp.Reports;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Hid.Tests;
 
@@ -23,7 +24,7 @@ public sealed class HidDeviceDriverFactoryTests
     public void Priority_Always_IsZero()
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(Substitute.For<IHidTransportFactory>());
+        var sut = new HidDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), Substitute.For<ILoggerFactory>());
 
         // Act / Assert
         Assert.Equal(0, sut.Priority);
@@ -33,7 +34,7 @@ public sealed class HidDeviceDriverFactoryTests
     public void CanCreate_WhenDeviceIsHid_ReturnsTrue([Frozen] DeviceDescriptor descriptor)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(Substitute.For<IHidTransportFactory>());
+        var sut = new HidDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), Substitute.For<ILoggerFactory>());
         descriptor = descriptor with { Kind = DeviceKind.Hid };
 
         // Act
@@ -47,7 +48,7 @@ public sealed class HidDeviceDriverFactoryTests
     public void CanCreate_WhenDeviceIsNotHid_ReturnsFalse([Frozen] DeviceDescriptor descriptor)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(Substitute.For<IHidTransportFactory>());
+        var sut = new HidDeviceDriverFactory(Substitute.For<IHidTransportFactory>(), Substitute.For<ILoggerFactory>());
         descriptor = descriptor with { Kind = DeviceKind.Serial };
 
         // Act
@@ -63,7 +64,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with { Kind = DeviceKind.Hid, HidInterfaces = [] };
         var connection = new HidConnection(
             Substitute.For<IHidTransport>(),
@@ -86,7 +88,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with { HidInterfaces = [] };
         transportFactory
             .CreateAsync(descriptor.Path)
@@ -105,7 +108,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with { HidInterfaces = [] };
         transportFactory
             .CreateAsync(descriptor.Path)
@@ -124,7 +128,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with { HidInterfaces = [] };
         var failure = new InvalidOperationException();
         transportFactory
@@ -141,7 +146,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with
         {
             Kind = DeviceKind.Hid,
@@ -173,7 +179,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with
         {
             Kind = DeviceKind.Hid,
@@ -240,7 +247,8 @@ public sealed class HidDeviceDriverFactoryTests
         [Frozen] IHidTransportFactory transportFactory)
     {
         // Arrange
-        var sut = new HidDeviceDriverFactory(transportFactory);
+        var loggerFactory = Substitute.For<ILoggerFactory>();
+        var sut = new HidDeviceDriverFactory(transportFactory, loggerFactory);
         descriptor = descriptor with
         {
             Kind = DeviceKind.Hid,

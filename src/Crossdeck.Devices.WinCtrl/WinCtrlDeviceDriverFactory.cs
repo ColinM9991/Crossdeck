@@ -3,6 +3,7 @@ using Crossdeck.Core.Devices.Exceptions;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Assemblers;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl;
 
@@ -10,12 +11,17 @@ public sealed class WinCtrlDeviceDriverFactory : IDeviceDriverFactory
 {
     private readonly IHidTransportFactory _hidTransportFactory;
     private readonly IReadOnlyDictionary<WinCtrlKind, IWinCtrlDriverAssembler> _assemblers;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<WinCtrlDeviceDriverFactory> _logger;
 
     public WinCtrlDeviceDriverFactory(IHidTransportFactory hidTransportFactory,
-        IEnumerable<IWinCtrlDriverAssembler> assemblers)
+        IEnumerable<IWinCtrlDriverAssembler> assemblers,
+        ILoggerFactory loggerFactory)
     {
         _hidTransportFactory = hidTransportFactory ?? throw new ArgumentNullException(nameof(hidTransportFactory));
         _assemblers = (assemblers ?? throw new ArgumentNullException(nameof(assemblers))).ToDictionary(a => a.Kind);
+        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        _logger = loggerFactory.CreateLogger<WinCtrlDeviceDriverFactory>();
     }
 
     public int Priority => 100;
@@ -41,7 +47,8 @@ public sealed class WinCtrlDeviceDriverFactory : IDeviceDriverFactory
                 var hidDevice = new HidDeviceDriver(
                     deviceDescriptor.Identity,
                     hidConnection.Transport,
-                    new HidReportDecoder(hidConnection.ReportDescriptor));
+                    new HidReportDecoder(hidConnection.ReportDescriptor),
+                    _loggerFactory.CreateLogger<HidDeviceDriver>());
 
                 return assembler.Assemble(definition, hidDevice, hidConnection.Transport);
             }
@@ -53,10 +60,12 @@ public sealed class WinCtrlDeviceDriverFactory : IDeviceDriverFactory
         }
         catch (DeviceNotUsableException)
         {
+            _logger.LogWarning("WinCtrl device {Path} is not usable; no driver created", deviceDescriptor.Path);
             return null;
         }
         catch (DeviceNotFoundException)
         {
+            _logger.LogWarning("WinCtrl device {Path} was not found; no driver created", deviceDescriptor.Path);
             return null;
         }
     }

@@ -68,6 +68,7 @@ public sealed class FcdSession : IAsyncDisposable
         try
         {
             _transport.Open();
+            _logger.LogInformation("FCD session on {Port} started", _transport.PortName);
             timer = StartTicker();
             reader = Task.Run(() => ReadAsync(readerCts.Token), CancellationToken.None);
             await ProcessEventsAsync(cancellationToken);
@@ -113,6 +114,7 @@ public sealed class FcdSession : IAsyncDisposable
 
     private async Task StopAsync(ITimer? timer, CancellationTokenSource readerCts, Task reader)
     {
+        _logger.LogInformation("FCD session on {Port} stopped", _transport.PortName);
         if (timer is not null)
             await timer.DisposeAsync();
 
@@ -236,6 +238,7 @@ public sealed class FcdSession : IAsyncDisposable
 
     private void OnStreamOpened(StreamConnection connection)
     {
+        _logger.LogInformation("FCD stream opened {Service}", connection.Service);
         switch (connection.Service)
         {
             case StreamMux.TelemetryService:

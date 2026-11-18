@@ -19,6 +19,7 @@ public sealed class ServiceCollectionExtensionsTests
         // Arrange
         var services = new ServiceCollection();
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<ILogger<SimSessionSupervisor>>(NullLogger<SimSessionSupervisor>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
 
@@ -39,6 +40,8 @@ public sealed class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<ILogger<DeviceRegistry>>(NullLogger<DeviceRegistry>.Instance);
+        services.AddSingleton<ILogger<SimSessionSupervisor>>(NullLogger<SimSessionSupervisor>.Instance);
+        services.AddSingleton<ILogger<InputDispatcher>>(NullLogger<InputDispatcher>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
 
@@ -56,6 +59,8 @@ public sealed class ServiceCollectionExtensionsTests
         // Arrange
         var services = new ServiceCollection();
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<ILogger<SimSessionSupervisor>>(NullLogger<SimSessionSupervisor>.Instance);
+        services.AddSingleton<ILogger<InputDispatcher>>(NullLogger<InputDispatcher>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
 

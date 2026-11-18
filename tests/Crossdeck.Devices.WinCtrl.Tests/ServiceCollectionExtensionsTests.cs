@@ -1,6 +1,7 @@
 using Crossdeck.Core.Devices;
 using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Assemblers;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Tests;
 
@@ -12,6 +13,7 @@ public sealed class ServiceCollectionExtensionsTests
         // Arrange
         var services = new ServiceCollection();
         services.AddSingleton(Substitute.For<IHidTransportFactory>());
+        services.AddSingleton(Substitute.For<ILoggerFactory>());
 
         // Act
         services.AddWinCtrlDevices();

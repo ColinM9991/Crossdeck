@@ -43,7 +43,8 @@ public sealed class MozaDeviceDriverFactory : IDeviceDriverFactory
             var hidDeviceDriver = new HidDeviceDriver(
                 deviceDescriptor.Identity,
                 hidConnection.Transport,
-                new HidReportDecoder(hidConnection.ReportDescriptor));
+                new HidReportDecoder(hidConnection.ReportDescriptor),
+                _loggerFactory.CreateLogger<HidDeviceDriver>());
 
             var serialTransport = CreateSerialTransport(deviceDescriptor);
             if (serialTransport is null)

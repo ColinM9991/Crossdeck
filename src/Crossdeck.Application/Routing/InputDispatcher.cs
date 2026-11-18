@@ -8,6 +8,7 @@ using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Application.Routing;
 
@@ -27,6 +28,7 @@ public sealed class InputDispatcher :
         Channel.CreateUnbounded<DispatcherCommand>(new UnboundedChannelOptions { SingleReader = true });
 
     private readonly IActiveSim _activeSim;
+    private readonly ILogger<InputDispatcher> _logger;
 
     private ISimProducer? _currentProducer;
     private CancellationTokenSource? _inputEventsCancellationTokenSource;
@@ -36,9 +38,11 @@ public sealed class InputDispatcher :
     private volatile InputIndex _inputIndex = InputIndex.Empty;
 
     public InputDispatcher(
-        IActiveSim activeSim)
+        IActiveSim activeSim,
+        ILogger<InputDispatcher> logger)
     {
         _activeSim = activeSim ?? throw new ArgumentNullException(nameof(activeSim));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _activeSim.Changing += ActiveSimOnChanging;
         _activeSim.Changed += ActiveSimOnChanged;
     }
@@ -65,6 +69,7 @@ public sealed class InputDispatcher :
                     break;
                 case DispatcherCommand.SimReady:
                     _isSimReady = true;
+                    _logger.LogInformation("Simulator ready");
                     break;
                 case DispatcherCommand.ProfileBindingUpdate b:
                     break;
@@ -98,6 +103,7 @@ public sealed class InputDispatcher :
             requiredRefs.ToFrozenSet());
 
         _inputIndex = inputIndex;
+        _logger.LogInformation("Input bindings set {Count}", bindings.Count);
 
         _commands.Writer.TryWrite(new DispatcherCommand.ProfileBindingUpdate(_inputIndex));
     }
@@ -107,6 +113,7 @@ public sealed class InputDispatcher :
         if (ReferenceEquals(producer, _currentProducer))
             return;
 
+        _logger.LogInformation("Simulator changed");
         _currentProducer = producer;
         _currentProducer.Ready += CurrentProducerOnReady;
         _inputEventsCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -117,6 +124,8 @@ public sealed class InputDispatcher :
     {
         if (_currentProducer is null)
             return;
+
+        _logger.LogInformation("Simulator changing");
 
         _isSimReady = false;
         _currentProducer.Ready -= CurrentProducerOnReady;
@@ -142,6 +151,8 @@ public sealed class InputDispatcher :
                 || !_inputIndex.ByDevice.TryGetValue((inputEvent.Identity, inputEvent.Control.Id), out var binding))
                 continue;
 
+            _logger.LogDebug("Dispatching input event {Identity} {Control} {Kind}",
+                inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
             await DispatchInputEventAsync(producer, inputEvent, binding, cancellationToken);
         }
     }
@@ -159,7 +170,15 @@ public sealed class InputDispatcher :
         {
             var simCommand = action.ToSimCommand();
 
-            await producer.SendCommandAsync(simCommand, cancellationToken);
+            try
+            {
+                await producer.SendCommandAsync(simCommand, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
+                    inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
+            }
         }
     }
 

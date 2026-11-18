@@ -15,7 +15,16 @@ sealed class Program
     [STAThread]
     public static async Task Main(string[] args)
     {
-        var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(args);
+        var settings = new HostApplicationBuilderSettings
+        {
+            Args = args,
+        };
+
+#if DEBUG
+        settings.EnvironmentName = Environments.Development;
+#endif
+
+        var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(settings);
 
         builder.Services.AddHostServices()
             .AddSingleton<MainWindow>()

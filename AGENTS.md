@@ -1,11 +1,15 @@
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+This project has a knowledge graph at `graphify-out/` (graph.json, GRAPH_REPORT.md, graph.html, cache/) with god nodes, community structure, and cross-file relationships. It is maintained in place, and the shell hook announces it at command start.
 
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
-- When graphify-out/graph.json exists, run `graphify query "<question>"` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- `graphify query "<question>"` is the first tool for any codebase question: run it before your first grep, glob, search, file listing or source-file read. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. They return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output. Read raw files only for lines the graph or an earlier read already located.
+- Do not verify `graphify-out/` with a directory listing or glob before using it; the directory's presence is a given of this project, and the `graphify` CLI (on PATH) confirms it live: its output states the graph path and node count, and an error tells you the graph is missing. If a query seems to miss recently changed code, run `graphify update .` and re-query instead of falling back to raw browsing.
+- When a query result is truncated, raise the budget (`graphify query "<question>" --budget <tokens>`) or narrow the query (context_filter, get_node for a specific symbol) before resorting to raw file reads.
+- A failure to use graphify (a failed CLI call, or reaching a raw grep/glob/source read before the first query) stops the context immediately: flag the issue in the conversation and do not continue that context, and never substitute raw file browsing to cover for it. A subagent that fails to use graphify stops and reports the failure to its parent, and the parent does not accept results derived from raw browsing in that context.
+- Put these same rules in every subagent prompt that explores code.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.

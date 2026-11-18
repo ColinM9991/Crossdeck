@@ -1,9 +1,11 @@
 using Crossdeck.Application.Routing;
 using Crossdeck.Core.Devices.Models;
+using Crossdeck.Core.Mapping.Input;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Application.Tests.Routing;
 
@@ -41,26 +43,34 @@ public sealed class InputDispatcherTests
         DeviceInputEvent inputEvent,
         [Frozen] IActiveSim activeSim,
         ISimProducer producer,
+        [Frozen] ILogger<InputDispatcher> logger,
         InputDispatcher sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
         inputEvent = inputEvent with { Kind = InputEventKind.Pressed };
 
-        activeSim.Current.Returns(producer);
         producer.SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 cts.Cancel();
                 return new CommandResult.Success();
             });
-
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
-        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
-        sut.Post(inputEvent);
+        sut.SetBindings([new InputMapping(
+            inputEvent.Identity,
+            inputEvent.Control.Id,
+            new Dictionary<string, IReadOnlyList<InputAction>>
+            {
+                ["Pressed"] = [new InputAction.Command(new SimRef("begin.test"), CommandPhase.Begin)]
+            })]);
+        var (simulatorChanged, simulatorReady) = WireSimulator(activeSim, producer, logger);
 
         // Act
         var task = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
+        await simulatorReady;
+        sut.Post(inputEvent);
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
@@ -72,26 +82,34 @@ public sealed class InputDispatcherTests
         DeviceInputEvent inputEvent,
         [Frozen] IActiveSim activeSim,
         ISimProducer producer,
+        [Frozen] ILogger<InputDispatcher> logger,
         InputDispatcher sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
         inputEvent = inputEvent with { Kind = InputEventKind.Released };
 
-        activeSim.Current.Returns(producer);
         producer.SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 cts.Cancel();
                 return new CommandResult.Success();
             });
-
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
-        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
-        sut.Post(inputEvent);
+        sut.SetBindings([new InputMapping(
+            inputEvent.Identity,
+            inputEvent.Control.Id,
+            new Dictionary<string, IReadOnlyList<InputAction>>
+            {
+                ["Released"] = [new InputAction.Command(new SimRef("end.test"), CommandPhase.End)]
+            })]);
+        var (simulatorChanged, simulatorReady) = WireSimulator(activeSim, producer, logger);
 
         // Act
         var task = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
+        await simulatorReady;
+        sut.Post(inputEvent);
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
@@ -103,24 +121,29 @@ public sealed class InputDispatcherTests
         DeviceInputEvent inputEvent,
         [Frozen] IActiveSim activeSim,
         ISimProducer producer,
+        [Frozen] ILogger<InputDispatcher> logger,
         InputDispatcher sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
         inputEvent = inputEvent with { Kind = InputEventKind.AxisChanged };
 
-        activeSim.Current.Returns(_ =>
-        {
-            cts.Cancel();
-            return producer;
-        });
-
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
-        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
-        sut.Post(inputEvent);
+        sut.SetBindings([new InputMapping(
+            inputEvent.Identity,
+            inputEvent.Control.Id,
+            new Dictionary<string, IReadOnlyList<InputAction>>
+            {
+                ["Pressed"] = [new InputAction.Command(new SimRef("begin.test"), CommandPhase.Begin)]
+            })]);
+        var (simulatorChanged, simulatorReady) = WireSimulator(activeSim, producer, logger);
 
         // Act
         var task = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+        producer.Ready += Raise.Event<EventHandler<SimReady>>(producer, new SimReady());
+        await simulatorReady;
+        sut.Post(inputEvent);
+        await cts.CancelAsync();
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
@@ -147,5 +170,24 @@ public sealed class InputDispatcherTests
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
         await producer.DidNotReceive().SendCommandAsync(Arg.Any<SimCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    private static (Task SimulatorChanged, Task SimulatorReady) WireSimulator(
+        IActiveSim activeSim,
+        ISimProducer producer,
+        ILogger<InputDispatcher> logger)
+    {
+        var simulatorChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        logger.When(l => l.LogInformation("Simulator changed"))
+            .Do(_ => simulatorChanged.TrySetResult());
+
+        var simulatorReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        logger.When(l => l.LogInformation("Simulator ready"))
+            .Do(_ => simulatorReady.TrySetResult());
+
+        activeSim.Current.Returns(producer);
+        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
+
+        return (simulatorChanged.Task, simulatorReady.Task);
     }
 }

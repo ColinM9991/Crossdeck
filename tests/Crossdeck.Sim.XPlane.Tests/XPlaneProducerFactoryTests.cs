@@ -1,5 +1,6 @@
 using Crossdeck.Core.Models;
 using Crossdeck.Sim.XPlane.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Sim.XPlane.Tests;
 
@@ -20,12 +21,13 @@ public sealed class XPlaneProducerFactoryTests
         XPlaneOptions options,
         string host,
         int port,
-        IXPlaneApiService api)
+        IXPlaneApiService api,
+        ILoggerFactory loggerFactory)
     {
         // Arrange
         options.Host = host;
         options.Port = port;
-        var sut = new XPlaneProducerFactory(api, options);
+        var sut = new XPlaneProducerFactory(api, options, loggerFactory);
 
         // Act
         var result = sut.Create();

@@ -1,6 +1,7 @@
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.Hid.Models;
 using HidSharp.Reports;
+using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Hid.Tests;
 
@@ -33,13 +34,14 @@ public sealed class CompositeHidDeviceDriverTests
     public void Controls_WhenInnerDriversShareAnInputId_ReturnsEveryControl(
         DeviceIdentity identity,
         IHidTransport firstTransport,
-        IHidTransport secondTransport)
+        IHidTransport secondTransport,
+        ILogger<HidDeviceDriver> logger)
     {
         // Arrange
         var firstDriver = new HidDeviceDriver(identity, firstTransport,
-            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)));
+            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)), logger);
         var secondDriver = new HidDeviceDriver(identity, secondTransport,
-            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)));
+            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)), logger);
 
         // Act
         var sut = new CompositeHidDeviceDriver(identity, [firstDriver, secondDriver]);
@@ -54,15 +56,16 @@ public sealed class CompositeHidDeviceDriverTests
     public void Controls_WhenInnerDriversCarryInterfaceKeys_SuffixesEveryControlIdAndName(
         DeviceIdentity identity,
         IHidTransport firstTransport,
-        IHidTransport secondTransport)
+        IHidTransport secondTransport,
+        ILogger<HidDeviceDriver> logger)
     {
         // Arrange
         var firstIdentity = new DeviceIdentity(identity.Kind, identity.VendorId, identity.ProductId, $"{identity.Value}@if=0");
         var secondIdentity = new DeviceIdentity(identity.Kind, identity.VendorId, identity.ProductId, $"{identity.Value}@if=1");
         var firstDriver = new HidDeviceDriver(firstIdentity, firstTransport,
-            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)));
+            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)), logger);
         var secondDriver = new HidDeviceDriver(secondIdentity, secondTransport,
-            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)));
+            new HidReportDecoder(new ReportDescriptor(TestReportDescriptor.Button)), logger);
 
         // Act
         var sut = new CompositeHidDeviceDriver(identity, [firstDriver, secondDriver]);
@@ -81,12 +84,13 @@ public sealed class CompositeHidDeviceDriverTests
         [Frozen] DeviceIdentity identity,
         ButtonControl button,
         [Frozen] IHidTransport transport,
-        [Frozen] IHidReportDecoder decoder)
+        [Frozen] IHidReportDecoder decoder,
+        ILogger<HidDeviceDriver> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
         var sut = new CompositeHidDeviceDriver(identity,
-            [new HidDeviceDriver(identity, transport, decoder)]);
+            [new HidDeviceDriver(identity, transport, decoder, logger)]);
 
         transport.MaxInputReportLength.Returns(8);
         transport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
@@ -115,7 +119,8 @@ public sealed class CompositeHidDeviceDriverTests
         [Frozen] DeviceIdentity identity,
         ButtonControl button,
         [Frozen] IHidTransport transport,
-        [Frozen] IHidReportDecoder decoder)
+        [Frozen] IHidReportDecoder decoder,
+        ILogger<HidDeviceDriver> logger)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -136,7 +141,7 @@ public sealed class CompositeHidDeviceDriverTests
             });
 
         var sut = new CompositeHidDeviceDriver(identity,
-            [new HidDeviceDriver(driverIdentity, transport, decoder)]);
+            [new HidDeviceDriver(driverIdentity, transport, decoder, logger)]);
 
         DeviceInputEvent? raised = null;
         sut.InputReceived += (_, e) => raised = e;
@@ -155,13 +160,14 @@ public sealed class CompositeHidDeviceDriverTests
         DeviceIdentity identity,
         IHidTransport firstTransport,
         IHidTransport secondTransport,
-        IHidReportDecoder decoder)
+        IHidReportDecoder decoder,
+        ILogger<HidDeviceDriver> logger)
     {
         // Arrange
         var sut = new CompositeHidDeviceDriver(identity,
         [
-            new HidDeviceDriver(identity, firstTransport, decoder),
-            new HidDeviceDriver(identity, secondTransport, decoder)
+            new HidDeviceDriver(identity, firstTransport, decoder, logger),
+            new HidDeviceDriver(identity, secondTransport, decoder, logger)
         ]);
 
         // Act
