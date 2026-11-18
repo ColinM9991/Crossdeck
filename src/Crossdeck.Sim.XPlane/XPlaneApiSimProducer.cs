@@ -271,10 +271,11 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         SimValue simValue,
         CancellationToken cancellationToken)
     {
-        var datarefId = await ResolveDataRefIdAsync(simRef.Key, session.DataRefCache, cancellationToken);
-        if (datarefId is null) return new CommandResult.Failure();
+        var (dataRef, index) = FetchDataRefAndIndex();
+        var dataRefId = await ResolveDataRefIdAsync(dataRef, session.DataRefCache, cancellationToken);
+        if (dataRefId is null) return new CommandResult.Failure();
 
-        object? value = simValue switch
+        object value = simValue switch
         {
             SimValue.Number number => number.Value,
             SimValue.String str => Convert.ToBase64String(Encoding.UTF8.GetBytes(str.Value)),
@@ -282,10 +283,22 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         };
 
         await EnqueueAsync(session, XPlaneConstants.DatarefSetValues,
-            new DatarefSetValueParams { Datarefs = [new DatarefSetValue { Id = datarefId.Value, Value = value }] },
+            new DatarefSetValueParams
+                { Datarefs = [new DatarefSetValue { Id = dataRefId.Value, Value = value, Index = index }] },
             cancellationToken);
 
         return new CommandResult.Success();
+
+        (string, int?) FetchDataRefAndIndex()
+        {
+            var refSpan = simRef.Key.AsSpan();
+            var firstIndexer = refSpan.IndexOf('[');
+            if (firstIndexer == -1)
+                return (simRef.Key, null);
+
+            var lastIndexer = refSpan.LastIndexOf(']');
+            return (refSpan[..firstIndexer].ToString(), int.Parse(refSpan[(firstIndexer + 1)..lastIndexer]));
+        }
     }
 
     private async Task RunSessionAsync(CancellationToken cancellationToken)
@@ -424,7 +437,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
-    private Task EnqueueAsync(SessionState session, string type, object? parameters, CancellationToken cancellationToken)
+    private Task EnqueueAsync(SessionState session, string type, object? parameters,
+        CancellationToken cancellationToken)
     {
         var message = new ClientMessage
         {

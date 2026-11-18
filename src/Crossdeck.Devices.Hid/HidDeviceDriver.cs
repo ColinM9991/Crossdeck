@@ -55,7 +55,6 @@ public sealed class HidDeviceDriver : IDeviceDriver
                     if (!ShouldRepeat(change))
                         continue;
 
-                    Console.WriteLine($"Change: {change.DeviceControl.Id}, Value: {change.Value}");
                     var inputEventKind = GetInputEventKind(change.DeviceControl, change.Value);
                     var inputEvent = new DeviceInputEvent(
                         Identity,
