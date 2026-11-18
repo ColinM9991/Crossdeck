@@ -1,6 +1,6 @@
-﻿using Crossdeck.Core.Mapping;
+﻿using Crossdeck.Core.Mapping.Output;
 
-namespace Crossdeck.Application.Routing;
+namespace Crossdeck.Application.Routing.Output;
 
 internal sealed class OutputBinding
 {

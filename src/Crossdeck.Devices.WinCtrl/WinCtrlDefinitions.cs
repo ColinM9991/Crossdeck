@@ -1,3 +1,4 @@
+using Crossdeck.Core.Devices.Display;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Devices.WinCtrl.Models;
 
@@ -8,13 +9,6 @@ public enum WinCtrlKind
     Cdu,
     Segment,
     Indicator
-}
-
-public enum DisplayRole
-{
-    Captain,
-    FirstOfficer,
-    Observer
 }
 
 public sealed record CduScreenSettings(ushort Left, ushort Top, uint LargeFontId, uint SmallFontId);

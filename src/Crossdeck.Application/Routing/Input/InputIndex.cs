@@ -3,7 +3,7 @@ using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Mapping.Input;
 using Crossdeck.Core.Simulators.Models;
 
-namespace Crossdeck.Application.Routing;
+namespace Crossdeck.Application.Routing.Input;
 
 internal sealed record InputIndex
 {

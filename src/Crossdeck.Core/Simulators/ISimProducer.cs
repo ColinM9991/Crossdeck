@@ -1,4 +1,5 @@
-﻿using Crossdeck.Core.Simulators.Models;
+﻿using Crossdeck.Core.Models;
+using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Core.Simulators;
 
@@ -7,6 +8,11 @@ namespace Crossdeck.Core.Simulators;
 /// </summary>
 public interface ISimProducer : IAsyncDisposable
 {
+    /// <summary>
+    /// Gets the simulator that this producer is responsible for.
+    /// </summary>
+    Simulator Simulator { get; }
+
     /// <summary>
     /// Occurs when the simulator becomes ready.
     /// </summary>

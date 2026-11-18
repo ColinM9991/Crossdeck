@@ -1,16 +1,18 @@
 ﻿using System.Collections.Frozen;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices;
+using Crossdeck.Core.Devices.Display;
 using Crossdeck.Core.Devices.Models;
-using Crossdeck.Core.Mapping;
+using Crossdeck.Core.Mapping.Output;
 using Crossdeck.Core.Routing;
+using Crossdeck.Core.Routing.Adapters;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Crossdeck.Application.Routing;
+namespace Crossdeck.Application.Routing.Output;
 
 /*
  * TODO: Logic to handle
@@ -33,7 +35,7 @@ public sealed class SimValueRouter : ISimValueRouter
     private readonly IDeviceRegistry _deviceRegistry;
     private readonly ISimValueCache _simValueCache;
     private readonly ISubscriptionAggregator _subscriptionAggregator;
-    private readonly TimeProvider _timeProvider;
+    private readonly IAircraftScreenAdapterFactory _aircraftScreenAdapterFactory;
     private readonly ILogger<SimValueRouter> _logger;
 
     private readonly Channel<RouterCommand> _commands = Channel.CreateUnbounded<RouterCommand>(
@@ -44,6 +46,8 @@ public sealed class SimValueRouter : ISimValueRouter
         });
 
     private volatile OutputIndex _outputIndex = OutputIndex.Empty;
+    private volatile ScreenIndex _screenIndex = ScreenIndex.Empty;
+
     private CancellationTokenSource? _simulatorEventsCancellationTokenSource;
     private Task? _simulatorEventsTask;
     private ISimProducer? _currentProducer;
@@ -53,7 +57,7 @@ public sealed class SimValueRouter : ISimValueRouter
         IDeviceRegistry deviceRegistry,
         ISimValueCache simValueCache,
         ISubscriptionAggregator subscriptionAggregator,
-        TimeProvider timeProvider,
+        IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
         ILogger<SimValueRouter> logger)
     {
         _activeSim = activeSim ?? throw new ArgumentNullException(nameof(activeSim));
@@ -61,22 +65,27 @@ public sealed class SimValueRouter : ISimValueRouter
         _simValueCache = simValueCache ?? throw new ArgumentNullException(nameof(simValueCache));
         _subscriptionAggregator =
             subscriptionAggregator ?? throw new ArgumentNullException(nameof(subscriptionAggregator));
-        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        _aircraftScreenAdapterFactory = aircraftScreenAdapterFactory ??
+                                        throw new ArgumentNullException(nameof(aircraftScreenAdapterFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _activeSim.Changing += ActiveSimOnChanging;
         _activeSim.Changed += ActiveSimOnChanged;
+
+        deviceRegistry.DriverAdded += DeviceRegistryOnDriverAdded;
+        deviceRegistry.DriverRemoved += DeviceRegistryOnDriverRemoved;
     }
 
     public event EventHandler<string?>? AircraftChanged;
+    public event EventHandler<ScreenRenderedEventArgs>? ScreenRendered;
 
     public void SetBindings(IReadOnlyList<OutputMapping> bindings)
     {
-        var bindingIndex = BuildIndex(bindings);
+        var bindingIndex = BuildOutputIndex(bindings);
 
         _outputIndex = bindingIndex;
         _logger.LogInformation("Output bindings set {Count}", bindings.Count);
-        _subscriptionAggregator.SetOutputRefs(_outputIndex.RequiredRefs);
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -96,7 +105,17 @@ public sealed class SimValueRouter : ISimValueRouter
                     case RouterCommand.SimChanged p:
                         HandleSimulatorChanged(p, cancellationToken);
                         break;
-                    case RouterCommand.SimReady:
+                    case RouterCommand.AircraftChanged ac:
+                        HandleAircraftChanged(ac);
+                        break;
+                    case RouterCommand.ScreenDriverAdded driver:
+                        HandleScreenDriverAdded(driver);
+                        break;
+                    case RouterCommand.ScreenDriverRemoved removed:
+                        HandleScreenDriverRemoved(removed.Identity);
+                        break;
+                    case RouterCommand.BindingsUpdated:
+                        RebuildScreenIndex();
                         break;
                 }
             }
@@ -107,10 +126,110 @@ public sealed class SimValueRouter : ISimValueRouter
         }
     }
 
-    private static OutputIndex BuildIndex(IReadOnlyList<OutputMapping> mappings)
+    private void HandleScreenDriverAdded(RouterCommand.ScreenDriverAdded driver)
+    {
+        if (driver.Device is not ITextDisplayOutput screen)
+            return;
+
+        var screenRoles = _screenIndex.ScreenRoles.ToDictionary();
+        screenRoles[driver.Device.Identity] = screen.Role;
+
+        _screenIndex = _screenIndex with
+        {
+            ScreenRoles = screenRoles.ToFrozenDictionary(),
+        };
+
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
+    }
+
+    private void PublishRequiredRefs()
+    {
+        var requiredRefs = _outputIndex
+            .RequiredRefs
+            .Union(_screenIndex.RequiredRefs)
+            .ToFrozenSet();
+
+        _subscriptionAggregator.SetOutputRefs(requiredRefs);
+    }
+
+    private void HandleAircraftChanged(RouterCommand.AircraftChanged ac)
+    {
+        if (string.IsNullOrWhiteSpace(ac.Aircraft) || _currentProducer is null)
+            return;
+
+        if (!_aircraftScreenAdapterFactory.TryGet(
+                _currentProducer.Simulator,
+                new SimulatorAircraft(ac.Aircraft),
+                out var aircraftAdapter))
+            return;
+
+        _screenIndex = _screenIndex with { Adapter = aircraftAdapter };
+
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
+    }
+
+    private void HandleScreenDriverRemoved(DeviceIdentity identity)
+    {
+        if (!_screenIndex.ScreenRoles.ContainsKey(identity))
+            return;
+
+        var screenRoles = _screenIndex.ScreenRoles.ToDictionary();
+        screenRoles.Remove(identity);
+
+        _screenIndex = _screenIndex with { ScreenRoles = screenRoles.ToFrozenDictionary() };
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
+    }
+
+    private void RebuildScreenIndex()
+    {
+        var requiredRefs = new HashSet<SimRef>();
+        var byRef = new Dictionary<SimRef, HashSet<DisplayRole>>();
+
+        if (_screenIndex.Adapter is { } adapter)
+        {
+            foreach (var role in _screenIndex.ScreenRoles.Values.Distinct())
+            {
+                foreach (var simRef in adapter.GetRequiredRefs(role))
+                {
+                    requiredRefs.Add(simRef);
+                    byRef.TryAdd(simRef, []);
+                    byRef[simRef].Add(role);
+                }
+            }
+        }
+
+        var valueBuffers = _screenIndex.ScreenRoles.Values
+            .Distinct()
+            .ToDictionary(
+                role => role,
+                role =>
+                {
+                    var buffer = new Dictionary<SimRef, SimValue>();
+                    foreach (var simRef in _screenIndex.Adapter?.GetRequiredRefs(role) ?? Enumerable.Empty<SimRef>())
+                    {
+                        if (_simValueCache.TryGet(simRef, out var entry))
+                            buffer[simRef] = entry?.Value ?? new SimValue.None();
+                    }
+
+                    return buffer;
+                })
+            .ToFrozenDictionary();
+
+        _screenIndex = _screenIndex with
+        {
+            ValueBuffers = valueBuffers.ToFrozenDictionary(),
+            RequiredRefs = requiredRefs.ToFrozenSet(),
+            ByRef = byRef.ToFrozenDictionary(x => x.Key, x => x.Value.ToFrozenSet())
+        };
+
+        PublishRequiredRefs();
+    }
+
+    private static OutputIndex BuildOutputIndex(IReadOnlyList<OutputMapping> mappings)
     {
         var byRef = new Dictionary<SimRef, List<OutputBinding>>();
         var byDevice = new Dictionary<DeviceIdentity, List<OutputBinding>>();
+        var screenByDevice = new Dictionary<DeviceIdentity, List<OutputSink.Screen>>();
         var requiredRefs = new HashSet<SimRef>();
 
         foreach (var mapping in mappings)
@@ -129,15 +248,30 @@ public sealed class SimValueRouter : ISimValueRouter
                 requiredRefs.Add(simRef);
             }
 
-            if (mapping.Sink is not OutputSink.Indicator indicator) continue;
+            switch (mapping.Sink)
             {
-                if (!byDevice.TryGetValue(indicator.Device, out var deviceBindings))
+                case OutputSink.Indicator indicator:
                 {
-                    deviceBindings = [];
-                    byDevice[indicator.Device] = deviceBindings;
-                }
+                    if (!byDevice.TryGetValue(indicator.Device, out var deviceBindings))
+                    {
+                        deviceBindings = [];
+                        byDevice[indicator.Device] = deviceBindings;
+                    }
 
-                deviceBindings.Add(outputBinding);
+                    deviceBindings.Add(outputBinding);
+                    break;
+                }
+                case OutputSink.Screen screen:
+                {
+                    if (!screenByDevice.TryGetValue(screen.Device, out var deviceScreens))
+                    {
+                        deviceScreens = [];
+                        screenByDevice[screen.Device] = deviceScreens;
+                    }
+
+                    deviceScreens.Add(screen);
+                    break;
+                }
             }
         }
 
@@ -148,8 +282,22 @@ public sealed class SimValueRouter : ISimValueRouter
         var byDeviceFrozen = byDevice.ToFrozenDictionary(
             x => x.Key,
             x => x.Value.Distinct().ToArray());
+        var screenByDeviceFrozen = screenByDevice.ToFrozenDictionary(
+            x => x.Key,
+            x => x.Value.Distinct().ToArray());
 
-        return new OutputIndex(byRefFrozen, byDeviceFrozen, requiredRefs.ToFrozenSet());
+        return new OutputIndex(byRefFrozen, byDeviceFrozen, screenByDeviceFrozen, requiredRefs.ToFrozenSet());
+    }
+
+    private void DeviceRegistryOnDriverRemoved(object? sender, DriverRemovedEventArgs e) =>
+        _commands.Writer.TryWrite(new RouterCommand.ScreenDriverRemoved(e.Identity));
+
+    private void DeviceRegistryOnDriverAdded(object? sender, DriverAddedEventArgs e)
+    {
+        if (e.Driver is not ITextDisplayOutput)
+            return;
+
+        _commands.Writer.TryWrite(new RouterCommand.ScreenDriverAdded(e.Driver));
     }
 
     private void HandleSimulatorChanged(RouterCommand.SimChanged p, CancellationToken cancellationToken)
@@ -225,6 +373,7 @@ public sealed class SimValueRouter : ISimValueRouter
             {
                 case SimEvent.AircraftChanged ac:
                     _logger.LogDebug("Aircraft changed {Aircraft}", ac.AircraftId);
+                    _commands.Writer.TryWrite(new RouterCommand.AircraftChanged(ac.AircraftId));
                     AircraftChanged?.Invoke(this, ac.AircraftId);
                     break;
                 case SimEvent.ValueChanged v:
@@ -239,6 +388,21 @@ public sealed class SimValueRouter : ISimValueRouter
         _logger.LogDebug("Simulator value changed {SimRef}:{Value}", valueChanged.Ref, valueChanged.Value);
 
         _simValueCache.TrySet(valueChanged.Ref, valueChanged.Value);
+
+        if (_screenIndex.ByRef.TryGetValue(valueChanged.Ref, out var roles))
+        {
+            foreach (var (device, role) in _screenIndex.ScreenRoles)
+            {
+                if (!roles.Contains(role)) continue;
+                _screenIndex.ValueBuffers[role][valueChanged.Ref] = valueChanged.Value;
+
+                var screen = _screenIndex.Adapter?.BuildScreen(role, _screenIndex.ValueBuffers[role]);
+                if (screen is not null)
+                {
+                    ScreenRendered?.Invoke(this, new ScreenRenderedEventArgs(device, role, screen));
+                }
+            }
+        }
 
         if (!_outputIndex.ByRef.TryGetValue(valueChanged.Ref, out var bindings))
             return;
@@ -324,5 +488,13 @@ public sealed class SimValueRouter : ISimValueRouter
             {
             }
         }
+
+        internal sealed record ScreenDriverAdded(IDeviceDriver Device) : RouterCommand;
+
+        internal sealed record ScreenDriverRemoved(DeviceIdentity Identity) : RouterCommand;
+
+        internal sealed record AircraftChanged(string? Aircraft) : RouterCommand;
+
+        internal sealed record BindingsUpdated : RouterCommand;
     }
 }

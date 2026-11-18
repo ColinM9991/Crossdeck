@@ -13,11 +13,15 @@ public sealed class WinCtrlCduDeviceDriver :
     public WinCtrlCduDeviceDriver(
         HidDeviceDriver driver,
         WinCtrlOutputWriter writer,
-        CduFrameSource source)
+        CduFrameSource source,
+        DisplayRole role)
         : base(driver ?? throw new ArgumentNullException(nameof(driver)), writer)
     {
         _source = source ?? throw new ArgumentNullException(nameof(source));
+        Role = role;
     }
+
+    public DisplayRole Role { get; }
 
     public void Show(TextScreen screen)
     {

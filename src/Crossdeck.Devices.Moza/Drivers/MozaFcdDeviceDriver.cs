@@ -24,6 +24,8 @@ public sealed class MozaFcdDeviceDriver : IDeviceDriver, ITextDisplayOutput
 
     public IReadOnlyList<DeviceControl> Controls => _hidDeviceDriver.Controls;
 
+    public DisplayRole Role => DisplayRole.Captain;
+
     public event EventHandler<DeviceInputEvent>? InputReceived;
 
     public void Show(TextScreen screen) => _fcdSession.Show(screen);

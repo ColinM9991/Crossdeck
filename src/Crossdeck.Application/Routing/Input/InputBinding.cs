@@ -1,6 +1,6 @@
 ﻿using Crossdeck.Core.Mapping.Input;
 
-namespace Crossdeck.Application.Routing;
+namespace Crossdeck.Application.Routing.Input;
 
 internal sealed class InputBinding
 {

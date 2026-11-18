@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using Crossdeck.Core;
+using Crossdeck.Core.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
 using Crossdeck.Sim.XPlane.Messages;
@@ -76,6 +77,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
+
+    public Simulator Simulator { get; } = Simulator.XPlane;
 
     private Uri WsUri => new($"ws://{_host}:{_port}{XPlaneConstants.WebSocketPath}");
 
@@ -233,6 +236,31 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     };
 
     /// <summary>
+    /// Splits a dataref key into its registered name and element index, for example
+    /// "path/to/ref[10]" into ("path/to/ref", 10).
+    /// </summary>
+    private static bool TrySplitDataRefKey(string key, out string name, out int? index)
+    {
+        name = key;
+        index = null;
+
+        var open = key.IndexOf('[');
+        if (open == -1)
+            return true;
+
+        var close = key.LastIndexOf(']');
+        if (close <= open)
+            return false;
+
+        if (!int.TryParse(key.AsSpan(open + 1, close - open - 1), out var elementIndex))
+            return false;
+
+        name = key[..open];
+        index = elementIndex;
+        return true;
+    }
+
+    /// <summary>
     /// Publishes a simulation event to the internal event channel for subscribers to process.
     /// </summary>
     /// <param name="e">The simulation event to be published.</param>
@@ -307,31 +335,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             cancellationToken);
 
         return new CommandResult.Success();
-    }
-
-    /// <summary>
-    /// Splits a dataref key into its registered name and element index, for example
-    /// "path/to/ref[10]" into ("path/to/ref", 10).
-    /// </summary>
-    private static bool TrySplitDataRefKey(string key, out string name, out int? index)
-    {
-        name = key;
-        index = null;
-
-        var open = key.IndexOf('[');
-        if (open == -1)
-            return true;
-
-        var close = key.LastIndexOf(']');
-        if (close <= open)
-            return false;
-
-        if (!int.TryParse(key.AsSpan(open + 1, close - open - 1), out var elementIndex))
-            return false;
-
-        name = key[..open];
-        index = elementIndex;
-        return true;
     }
 
     private CommandResult Unsupported(SimCommand command)

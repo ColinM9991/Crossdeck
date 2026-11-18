@@ -1,4 +1,4 @@
-﻿using Crossdeck.Core.Mapping;
+﻿using Crossdeck.Core.Mapping.Output;
 
 namespace Crossdeck.Core.Routing;
 
@@ -11,6 +11,11 @@ public interface ISimValueRouter : IRunnable
     /// Occurs when the active aircraft changes.
     /// </summary>
     event EventHandler<string?>? AircraftChanged;
+
+    /// <summary>
+    /// Occurs when a screen is rendered.
+    /// </summary>
+    event EventHandler<ScreenRenderedEventArgs>? ScreenRendered;
 
     /// <summary>
     /// Sets the mappings used to route simulator values to device outputs.

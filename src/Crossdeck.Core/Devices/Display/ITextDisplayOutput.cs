@@ -8,6 +8,11 @@ namespace Crossdeck.Core.Devices.Display;
 public interface ITextDisplayOutput
 {
     /// <summary>
+    /// Gets the role of the display.
+    /// </summary>
+    DisplayRole Role { get; }
+
+    /// <summary>
     /// Shows a screen on the display.
     /// </summary>
     /// <param name="screen">The screen to show.</param>

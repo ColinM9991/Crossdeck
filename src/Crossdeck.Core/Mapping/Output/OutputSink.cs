@@ -1,6 +1,6 @@
 ﻿using Crossdeck.Core.Devices.Models;
 
-namespace Crossdeck.Core.Mapping;
+namespace Crossdeck.Core.Mapping.Output;
 
 public closed record OutputSink
 {

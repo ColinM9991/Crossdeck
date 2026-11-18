@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
@@ -11,7 +10,7 @@ using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Crossdeck.Application.Routing;
+namespace Crossdeck.Application.Routing.Input;
 
 public sealed class InputDispatcher :
     IInputSink,
