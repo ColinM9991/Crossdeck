@@ -7,7 +7,10 @@ permissions:
     resource: "*"
     effect: deny
   - action: edit
-    resource: "**/*.md"
+    resource: "*.md"
+    effect: allow
+  - action: edit
+    resource: "docs/plans/*.dsl"
     effect: allow
   - action: shell
     resource: "*"
@@ -26,6 +29,33 @@ permissions:
     effect: allow
   - action: shell
     resource: "git show*"
+    effect: allow
+  - action: shell
+    resource: "node*"
+    effect: allow
+  - action: shell
+    resource: "npm*"
+    effect: allow
+  - action: shell
+    resource: "mkdir*"
+    effect: allow
+  - action: shell
+    resource: "New-Item*"
+    effect: allow
+  - action: shell
+    resource: "Test-Path*"
+    effect: allow
+  - action: shell
+    resource: "where*"
+    effect: allow
+  - action: shell
+    resource: "Get-Item*"
+    effect: allow
+  - action: shell
+    resource: "structurizr*"
+    effect: allow
+  - action: shell
+    resource: "Write-Host*"
     effect: allow
   - action: webfetch
     resource: "*"
@@ -89,7 +119,7 @@ Every Mermaid block in a document you write or change must parse before you repo
 
 - Do not edit production code. Implementation belongs to `developer`.
 - Do not write unit tests. Those belong to `tester`.
-- You edit markdown only: plan documents under `docs/plans/`, `STATE.md`, and the agent and docs markdown when a design change needs it.
+- You edit markdown and C4 Structurizr DSL only: plan documents and their `.dsl` files under `docs/plans/`, `STATE.md`, and the agent and docs markdown when a design change needs it.
 - Do not write the `docs/html` explainers. Design documentation lives in `docs/plans/`.
 - Do not commit or push unless the user asks.
 
