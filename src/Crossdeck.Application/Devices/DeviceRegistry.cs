@@ -104,9 +104,7 @@ public sealed class DeviceRegistry : IDeviceRegistry
             return;
 
         var deviceCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var task = Task.Factory.StartNew(() => driver.RunAsync(deviceCancellationToken.Token),
-            deviceCancellationToken.Token,
-            TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+        var task = driver.RunAsync(deviceCancellationToken.Token);
 
         var runningDriver = new RunningDriver(deviceCancellationToken, driver, task);
         _deviceDrivers.Add(driver.Identity, runningDriver);

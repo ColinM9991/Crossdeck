@@ -8,7 +8,7 @@ namespace Crossdeck.Devices.Hid;
 
 public sealed class HidDeviceDriver : IDeviceDriver
 {
-    private readonly Dictionary<InputId, double?> _lastSentValues = [];
+    private readonly Dictionary<InputId, double> _lastSentValues = [];
     private readonly IHidTransport _transport;
     private readonly IHidReportDecoder _decoder;
     private readonly ILogger<HidDeviceDriver> _logger;
@@ -101,7 +101,7 @@ public sealed class HidDeviceDriver : IDeviceDriver
 
         var shouldRepeat = control switch
         {
-            AxisControl c => (change.Value - lastValue >= (c.Max - c.Min) * 0.5),
+            AxisControl c => Math.Abs(change.Value - lastValue) >= (c.Max - c.Min) * 0.005,
             _ => (change.Value.CompareTo(lastValue) != 0),
         };
 
