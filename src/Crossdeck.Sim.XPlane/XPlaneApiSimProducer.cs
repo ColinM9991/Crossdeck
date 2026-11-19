@@ -23,7 +23,7 @@ namespace Crossdeck.Sim.XPlane;
 /// </remarks>
 public sealed class XPlaneApiSimProducer : ISimProducer
 {
-    private static readonly SimRef AircraftRef = new(XPlaneConstants.AcfNameRefKey);
+    private static readonly SimRef AircraftRef = new SimRef.Plain(XPlaneConstants.AcfNameRefKey);
 
     /// <summary>
     /// Internal channel for managing and distributing simulation events.

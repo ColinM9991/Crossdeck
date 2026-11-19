@@ -101,13 +101,13 @@ public sealed class InputDispatcher :
         {
             byDevice[(binding.Device, binding.Control)] = binding;
 
-            foreach (var inputAction in binding.Actions.Values.SelectMany(x => x))
-            {
-                if (inputAction is not InputAction.Step set)
-                    continue;
-
-                _ = requiredRefs.Add(set.Ref);
-            }
+            // foreach (var inputAction in binding.Actions.Values.SelectMany(x => x))
+            // {
+            //     if (inputAction is not InputAction.Step set)
+            //         continue;
+            //
+            //     _ = requiredRefs.Add(set.Ref);
+            // }
         }
 
         var inputIndex = new InputIndex(
@@ -216,28 +216,28 @@ public sealed class InputDispatcher :
         if (!binding.Actions.TryGetValue(inputEvent.Kind.ToString(), out var actions))
             return;
 
-        foreach (var action in actions)
-        {
-            if (action is InputAction.Step step)
-            {
-                await ExecuteStepAsync(producer, step, cancellationToken);
-                continue;
-            }
-
-            var simCommand = action.ToSimCommand();
-            if (simCommand is null)
-                continue;
-
-            try
-            {
-                await producer.SendCommandAsync(simCommand, cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
-                    inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
-            }
-        }
+        // foreach (var action in actions)
+        // {
+        //     if (action is InputAction.Step step)
+        //     {
+        //         await ExecuteStepAsync(producer, step, cancellationToken);
+        //         continue;
+        //     }
+        //
+        //     var simCommand = action.ToSimCommand();
+        //     if (simCommand is null)
+        //         continue;
+        //
+        //     try
+        //     {
+        //         await producer.SendCommandAsync(simCommand, cancellationToken);
+        //     }
+        //     catch (Exception ex) when (ex is not OperationCanceledException)
+        //     {
+        //         _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
+        //             inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
+        //     }
+        // }
     }
 
     private async Task ExecuteStepAsync(

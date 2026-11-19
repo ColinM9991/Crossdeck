@@ -20,7 +20,9 @@ public closed record InputAction
         SimRef Ref,
         CommandPhase Phase = CommandPhase.Trigger) : InputAction;
 
-    public sealed record Set(SimRef Ref, SimValue Value) : InputAction;
+    public sealed record Set(
+        SimRef Ref,
+        SimValue Value) : InputAction;
 
     public sealed record Step(
         SimRef Ref,

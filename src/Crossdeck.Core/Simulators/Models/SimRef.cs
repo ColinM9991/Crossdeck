@@ -1,3 +1,28 @@
 ﻿namespace Crossdeck.Core.Simulators.Models;
 
-public sealed record SimRef(string Key);
+public closed record SimRef
+{
+    public string Key => this switch
+    {
+        Plain p => p.Name,
+        Variable v => $"var:{v.Name}",
+        Output o => $"out:{o.Id}",
+        Control c => $"ctrl:{c.Name}",
+    };
+
+    public static SimRef Parse(string text) => text switch
+    {
+        _ when text.StartsWith("var:") => new Variable(text[4..]),
+        _ when text.StartsWith("out:") => new Output(text[4..]),
+        _ when text.StartsWith("ctrl:") => new Control(text[5..]),
+        _ => new Plain(text)
+    };
+
+    public sealed record Plain(string Name) : SimRef;
+
+    public sealed record Variable(string Name) : SimRef;
+
+    public sealed record Output(string Id) : SimRef;
+
+    public sealed record Control(string Name) : SimRef;
+};

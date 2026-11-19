@@ -55,7 +55,7 @@ public partial class App : Avalonia.Application
             // Ignored
         }
     }
-    
+
     private async void OnMainWindowClosed(object? sender, EventArgs e)
     {
         if (!_hostStarted) return;

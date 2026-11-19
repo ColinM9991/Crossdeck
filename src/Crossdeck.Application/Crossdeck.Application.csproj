@@ -8,4 +8,8 @@
       <ProjectReference Include="..\Crossdeck.Core\Crossdeck.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="NCalc" />
+    </ItemGroup>
+
 </Project>

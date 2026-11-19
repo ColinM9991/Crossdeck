@@ -3,5 +3,9 @@
 namespace Crossdeck.Core.Mapping.Output;
 
 public sealed record OutputMapping(
+    string Id,
     IReadOnlyDictionary<string, SimRef> Sources,
-    OutputSink Sink);
+    OutputSink? Sink = null,
+    ExpressionSpec? Transform = null,
+    ExpressionSpec? When = null,
+    OutputValue? Fallback = null);

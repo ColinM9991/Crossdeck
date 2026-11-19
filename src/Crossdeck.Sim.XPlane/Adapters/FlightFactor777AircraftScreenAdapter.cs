@@ -27,10 +27,10 @@ public sealed class FlightFactor777AircraftScreenAdapter : IAircraftScreenAdapte
 
         return new HashSet<SimRef>
             {
-                new(SymbolsRef(device)),
-                new(ArrayRef(device, "symbolsSize")),
-                new(ArrayRef(device, "symbolsColor")),
-                new(ArrayRef(device, "symbolsEffects"))
+                new SimRef.Plain(SymbolsRef(device)),
+                new SimRef.Plain(ArrayRef(device, "symbolsSize")),
+                new SimRef.Plain(ArrayRef(device, "symbolsColor")),
+                new SimRef.Plain(ArrayRef(device, "symbolsEffects"))
             }
             .ToFrozenSet();
     }
@@ -40,7 +40,7 @@ public sealed class FlightFactor777AircraftScreenAdapter : IAircraftScreenAdapte
     {
         var device = GetDevice(role);
 
-        if (!simValues.TryGetValue(new SimRef(SymbolsRef(device)), out var symbolsValue) ||
+        if (!simValues.TryGetValue(new SimRef.Plain(SymbolsRef(device)), out var symbolsValue) ||
             symbolsValue is not SimValue.String symbols ||
             symbols.Value.Length < TextScreen.CellsCount)
         {
@@ -81,7 +81,7 @@ public sealed class FlightFactor777AircraftScreenAdapter : IAircraftScreenAdapte
         string key,
         out double[] values)
     {
-        if (simValues.TryGetValue(new SimRef(key), out var simValue) &&
+        if (simValues.TryGetValue(new SimRef.Plain(key), out var simValue) &&
             simValue is SimValue.NumberArray array &&
             array.Values.Count
             >= TextScreen.CellsCount)
