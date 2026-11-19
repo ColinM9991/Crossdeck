@@ -318,13 +318,20 @@ public sealed class SimValueRouter : ISimValueRouter
     {
         var screenIndex = _screenIndex;
         var dirtyRoles = new HashSet<DisplayRole>();
+        var dirtyBindings = new HashSet<OutputBinding>();
 
         foreach (var change in batch.Changes)
         {
             _simValueCache.TrySet(change.Ref, change.Value);
             BufferScreenValue(screenIndex, change, dirtyRoles);
-            DispatchBindings(change);
+
+            if (_outputIndex.ByRef.TryGetValue(change.Ref, out var bindings))
+                dirtyBindings.UnionWith(bindings);
         }
+
+
+        foreach (var binding in dirtyBindings)
+            Dispatch(binding);
 
         foreach (var role in dirtyRoles)
             ShowScreen(screenIndex, role);
@@ -363,25 +370,7 @@ public sealed class SimValueRouter : ISimValueRouter
         }
     }
 
-    private void DispatchBindings(SimEvent.ValueChanged change)
-    {
-        if (!_outputIndex.ByRef.TryGetValue(change.Ref, out var bindings))
-            return;
-
-        foreach (var binding in bindings)
-        {
-            try
-            {
-                Dispatch(binding, change.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling binding for {SimRef}:{Value}", change.Ref, change.Value);
-            }
-        }
-    }
-
-    private void Dispatch(OutputBinding binding, SimValue value)
+    private void Dispatch(OutputBinding binding)
     {
         if (binding.Mapping.Sources.Count > 1)
         {
@@ -389,7 +378,11 @@ public sealed class SimValueRouter : ISimValueRouter
             return; // TODO: Implement transformations
         }
 
-        if (value is not SimValue.Number valueNumber)
+        var change = _simValueCache.TryGet(binding.Mapping.Sources.First().Value, out var value);
+        if (!change || value is null)
+            return;
+
+        if (value.Value is not SimValue.Number valueNumber)
         {
             _logger.LogWarning("Binding {Sink} skipped: value is not a number", binding.Mapping.Sink);
             return;
