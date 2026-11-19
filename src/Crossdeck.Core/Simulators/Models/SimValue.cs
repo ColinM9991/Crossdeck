@@ -9,4 +9,6 @@ public closed record SimValue
     public sealed record Number(double Value) : SimValue;
 
     public sealed record Array(IReadOnlyList<SimValue> Values) : SimValue;
+
+    public sealed record NumberArray(IReadOnlyList<double> Values) : SimValue;
 }

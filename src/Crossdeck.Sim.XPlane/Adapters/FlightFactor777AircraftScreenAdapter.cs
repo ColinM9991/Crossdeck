@@ -68,9 +68,9 @@ public sealed class FlightFactor777AircraftScreenAdapter : IAircraftScreenAdapte
 
             cells[i] = new TextCell(
                 TranslateCharacter(character),
-                TranslateForeground(ToDouble(colors[i])),
-                TranslateBackground(ToDouble(effects[i])),
-                TranslateSize(ToDouble(sizes[i])));
+                TranslateForeground(colors[i]),
+                TranslateBackground(effects[i]),
+                TranslateSize(sizes[i]));
         }
 
         return new TextScreen(cells);
@@ -79,22 +79,20 @@ public sealed class FlightFactor777AircraftScreenAdapter : IAircraftScreenAdapte
     private static bool TryGetArray(
         IReadOnlyDictionary<SimRef, SimValue> simValues,
         string key,
-        out IReadOnlyList<SimValue> values)
+        out double[] values)
     {
         if (simValues.TryGetValue(new SimRef(key), out var simValue) &&
-            simValue is SimValue.Array array &&
-            array.Values.Count >= TextScreen.CellsCount)
+            simValue is SimValue.NumberArray array &&
+            array.Values.Count
+            >= TextScreen.CellsCount)
         {
-            values = array.Values;
+            values = [.. array.Values];
             return true;
         }
 
         values = [];
         return false;
     }
-
-    private static double ToDouble(SimValue value) =>
-        value is SimValue.Number number ? number.Value : 0;
 
     private static string GetDevice(DisplayRole role) => role switch
     {

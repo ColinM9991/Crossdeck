@@ -43,6 +43,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private readonly Signal _subscriptionsChangedSignal = new();
 
     private readonly IXPlaneApiService _api;
+    private readonly ISimVariableCache _simVariableCache;
     private readonly string _host;
     private readonly int _port;
     private readonly ILogger<XPlaneApiSimProducer> _logger;
@@ -52,7 +53,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
     private volatile bool _isReady;
 
-    private SimStatus _simStatus = new SimStatus.Disconnected();
     private SessionState? _sessionState;
 
     private string? _aircraft;
@@ -76,6 +76,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         _host = options.Host ?? throw new ArgumentNullException(nameof(options.Host));
         _port = options.Port ?? throw new ArgumentNullException(nameof(options.Port));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _simVariableCache = new WebApiSimVariableCache(_api);
     }
 
     public Simulator Simulator { get; } = Simulator.XPlane;
@@ -134,7 +135,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
         finally
         {
-            SetStatus(new SimStatus.Gone());
             _eventsChannel.Writer.TryComplete();
         }
     }
@@ -232,10 +232,25 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         JsonValueKind.String => new SimValue.String(
             Encoding.UTF8.GetString(Convert.FromBase64String(value.GetString()!))),
         JsonValueKind.Number => new SimValue.Number(value.GetDouble()),
-        JsonValueKind.Array => new SimValue.Array(
-            [.. value.EnumerateArray().Select(ToSimValue)]),
+        JsonValueKind.Array => ToArrayValue(value),
         _ => throw new ArgumentOutOfRangeException(nameof(value), value.ValueKind.ToString())
     };
+
+    private static SimValue ToArrayValue(JsonElement value)
+    {
+        var numbers = new double[value.GetArrayLength()];
+        var index = 0;
+
+        foreach (var element in value.EnumerateArray())
+        {
+            if (element.ValueKind is not JsonValueKind.Number)
+                return new SimValue.Array([.. value.EnumerateArray().Select(ToArrayValue)]);
+
+            numbers[index++] = element.GetDouble();
+        }
+
+        return new SimValue.NumberArray(numbers);
+    }
 
     /// <summary>
     /// Splits a dataref key into its registered name and element index, for example
@@ -268,15 +283,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     /// <param name="e">The simulation event to be published.</param>
     private void Publish(SimEvent e) => _eventsChannel.Writer.TryWrite(e);
 
-    /// <summary>
-    /// Updates the current simulator status.
-    /// </summary>
-    /// <param name="status">The new simulator status to be set.</param>
-    private void SetStatus(SimStatus status)
-    {
-        _simStatus = status;
-    }
-
     private async Task<CommandResult> SendCommandAsync(
         SessionState session,
         SimRef action,
@@ -284,7 +290,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         int? duration,
         CancellationToken cancellationToken)
     {
-        var commandId = await ResolveCommandIdAsync(action.Key, session.CommandCache, cancellationToken);
+        var commandId = await ResolveSimVariableIdAsync(action.Key, cancellationToken);
         if (commandId is null)
         {
             _logger.LogWarning("X-Plane command {Command} could not be resolved", action);
@@ -317,7 +323,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
             return new CommandResult.Failure();
         }
 
-        var dataRefId = await ResolveDataRefIdAsync(dataRef, session.DataRefCache, cancellationToken);
+        var dataRefId = await ResolveSimVariableIdAsync(dataRef, cancellationToken);
         if (dataRefId is null)
         {
             _logger.LogWarning("X-Plane dataref {DataRef} could not be resolved", simRef);
@@ -348,7 +354,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
     private async Task RunSessionAsync(CancellationToken cancellationToken)
     {
         _isReady = false;
-        SetStatus(new SimStatus.Disconnected());
 
         using var ws = new ClientWebSocket();
         try
@@ -364,7 +369,6 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         _logger.LogInformation("X-Plane session connected to {Host}:{Port}", _host, _port);
-        SetStatus(new SimStatus.Connected());
 
         await WaitForInitializationAsync(cancellationToken);
         await _subscriptionsChangedSignal.SetAsync(cancellationToken);
@@ -417,12 +421,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                 buffer.Advance(result.Count);
             } while (!result.EndOfMessage);
 
-            if (result.MessageType == WebSocketMessageType.Close)
-            {
-                break;
-            }
+            if (result.MessageType == WebSocketMessageType.Close) break;
 
-            Dispatch(buffer.WrittenMemory, session);
+            await DispatchAsync(buffer.WrittenMemory, session, cancellationToken);
         }
     }
 
@@ -457,7 +458,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                     continue;
                 }
 
-                var id = await ResolveDataRefIdAsync(name, session.DataRefCache, cancellationToken);
+                var id = await ResolveSimVariableIdAsync(name, cancellationToken);
                 if (id is null)
                 {
                     _logger.LogWarning("X-Plane dataref {DataRef} could not be subscribed; not found", add.Key);
@@ -525,65 +526,33 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         return session.Outgoing.Writer.WriteAsync(bytes, cancellationToken).AsTask();
     }
 
-    private async Task<long?> ResolveDataRefIdAsync(
-        string key,
-        ConcurrentDictionary<string, long> cache,
-        CancellationToken cancellationToken)
+    private async Task<long?> ResolveSimVariableIdAsync(string key, CancellationToken cancellationToken)
     {
-        try
+        var runs = 0;
+        while (runs < 2)
         {
-            if (cache.TryGetValue(key, out var cachedId))
-            {
-                return cachedId;
-            }
+            if (_simVariableCache.TryGetId(key, out var id)) return id;
+            await _simVariableCache.RefreshAsync(cancellationToken);
 
-            var response = await _api.GetDatarefsAsync(key, null, null, null, cancellationToken);
-            var dataref = response?.Data.FirstOrDefault();
-            if (dataref is null)
-            {
-                return null;
-            }
+            runs++;
+        }
 
-            cache.TryAdd(key, dataref.Id);
-            return dataref.Id;
-        }
-        catch
-        {
-            return null;
-        }
+        return null;
     }
 
-    private async Task<long?> ResolveCommandIdAsync(
-        string key,
-        ConcurrentDictionary<string, long> cache,
+    private async Task DispatchAsync(
+        ReadOnlyMemory<byte> data,
+        SessionState session,
         CancellationToken cancellationToken)
     {
-        if (cache.TryGetValue(key, out var cachedId))
-        {
-            return cachedId;
-        }
-
-        var response = await _api.GetCommandsAsync(key, null, null, null, cancellationToken);
-        var command = response?.Data.FirstOrDefault();
-        if (command is null)
-        {
-            return null;
-        }
-
-        cache.TryAdd(key, command.Id);
-        return command.Id;
-    }
-
-    private void Dispatch(ReadOnlyMemory<byte> data, SessionState session)
-    {
-        var json = JsonDocument.Parse(data);
+        using var json = JsonDocument.Parse(data);
         var root = json.RootElement;
         var type = root.GetProperty("type").GetString();
 
         switch (type)
         {
             case XPlaneConstants.DatarefUpdateValues:
-                PublishValues(root.GetProperty("data"), session);
+                await PublishValues(root.GetProperty("data"), session, cancellationToken);
                 break;
             case XPlaneConstants.ResultMessage:
             {
@@ -593,7 +562,10 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         }
     }
 
-    private void PublishValues(JsonElement data, SessionState session)
+    private async Task PublishValues(
+        JsonElement data,
+        SessionState session,
+        CancellationToken cancellationToken)
     {
         var changes = new List<SimEvent.ValueChanged>();
 
@@ -604,7 +576,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
 
             if (simRef == AircraftRef)
             {
-                PublishAircraftIfChanged(ToSimValue(entry.Value));
+                await PublishAircraftIfChangedAsync(ToSimValue(entry.Value), cancellationToken);
                 continue;
             }
 
@@ -630,7 +602,9 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         return true;
     }
 
-    private void PublishAircraftIfChanged(SimValue value)
+    private async Task PublishAircraftIfChangedAsync(
+        SimValue value,
+        CancellationToken cancellationToken)
     {
         var path = value switch
         {
@@ -639,6 +613,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         };
 
         if (path is null || path == _aircraft) return;
+
+        await _simVariableCache.RefreshAsync(cancellationToken);
 
         _aircraft = path;
         Publish(new SimEvent.AircraftChanged(path));
@@ -669,7 +645,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                         _isReady = true;
                         _logger.LogInformation("X-Plane session ready");
                         Ready?.Invoke(this, new SimReady());
-                        SetStatus(new SimStatus.Ready());
+
+                        await _simVariableCache.RefreshAsync(cancellationToken);
                         return;
                     }
 
@@ -697,11 +674,5 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         public readonly ConcurrentDictionary<SimRef, long> RefToId = new();
 
         public readonly ConcurrentDictionary<SimRef, int?> RefToIndex = new();
-
-        public readonly HashSet<long> WholeArrayWarned = new();
-
-        public readonly ConcurrentDictionary<string, long> DataRefCache = new();
-
-        public readonly ConcurrentDictionary<string, long> CommandCache = new();
     }
 }
