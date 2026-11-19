@@ -61,6 +61,10 @@ public static class XPlaneConstants
     /// </summary>
     public const string AircraftRefKey = "sim/aircraft/view/acf_relative_path";
 
+    public const string AcfNameRefKey = "sim/aircraft/view/acf_ui_name";
+
+    public const string AcfAuthorRefKey = "sim/aircraft/view/acf_author";
+
     /// <summary>
     /// WebSocket client message type: add datarefs to the subscription list.
     /// </summary>

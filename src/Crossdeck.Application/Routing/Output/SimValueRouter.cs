@@ -126,22 +126,6 @@ public sealed class SimValueRouter : ISimValueRouter
         }
     }
 
-    private void HandleScreenDriverAdded(RouterCommand.ScreenDriverAdded driver)
-    {
-        if (driver.Device is not ITextDisplayOutput screen)
-            return;
-
-        var screenRoles = _screenIndex.ScreenRoles.ToDictionary();
-        screenRoles[driver.Device.Identity] = screen.Role;
-
-        _screenIndex = _screenIndex with
-        {
-            ScreenRoles = screenRoles.ToFrozenDictionary(),
-        };
-
-        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
-    }
-
     private void PublishRequiredRefs()
     {
         var requiredRefs = _outputIndex
@@ -150,34 +134,6 @@ public sealed class SimValueRouter : ISimValueRouter
             .ToFrozenSet();
 
         _subscriptionAggregator.SetOutputRefs(requiredRefs);
-    }
-
-    private void HandleAircraftChanged(RouterCommand.AircraftChanged ac)
-    {
-        if (string.IsNullOrWhiteSpace(ac.Aircraft) || _currentProducer is null)
-            return;
-
-        if (!_aircraftScreenAdapterFactory.TryGet(
-                _currentProducer.Simulator,
-                new SimulatorAircraft(ac.Aircraft),
-                out var aircraftAdapter))
-            return;
-
-        _screenIndex = _screenIndex with { Adapter = aircraftAdapter };
-
-        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
-    }
-
-    private void HandleScreenDriverRemoved(DeviceIdentity identity)
-    {
-        if (!_screenIndex.ScreenRoles.ContainsKey(identity))
-            return;
-
-        var screenRoles = _screenIndex.ScreenRoles.ToDictionary();
-        screenRoles.Remove(identity);
-
-        _screenIndex = _screenIndex with { ScreenRoles = screenRoles.ToFrozenDictionary() };
-        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
     }
 
     private void RebuildScreenIndex()
@@ -289,15 +245,48 @@ public sealed class SimValueRouter : ISimValueRouter
         return new OutputIndex(byRefFrozen, byDeviceFrozen, screenByDeviceFrozen, requiredRefs.ToFrozenSet());
     }
 
-    private void DeviceRegistryOnDriverRemoved(object? sender, DriverRemovedEventArgs e) =>
-        _commands.Writer.TryWrite(new RouterCommand.ScreenDriverRemoved(e.Identity));
-
-    private void DeviceRegistryOnDriverAdded(object? sender, DriverAddedEventArgs e)
+    private void HandleScreenDriverAdded(RouterCommand.ScreenDriverAdded driver)
     {
-        if (e.Driver is not ITextDisplayOutput)
+        if (driver.Device is not ITextDisplayOutput screen)
             return;
 
-        _commands.Writer.TryWrite(new RouterCommand.ScreenDriverAdded(e.Driver));
+        var screenRoles = _screenIndex.ScreenRoles.ToDictionary();
+        screenRoles[driver.Device.Identity] = screen.Role;
+
+        _screenIndex = _screenIndex with
+        {
+            ScreenRoles = screenRoles.ToFrozenDictionary(),
+        };
+
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
+    }
+
+    private void HandleAircraftChanged(RouterCommand.AircraftChanged ac)
+    {
+        if (string.IsNullOrWhiteSpace(ac.Aircraft) || _currentProducer is null)
+            return;
+
+        if (!_aircraftScreenAdapterFactory.TryGet(
+                _currentProducer.Simulator,
+                new SimulatorAircraft(ac.Aircraft),
+                out var aircraftAdapter))
+            return;
+
+        _screenIndex = _screenIndex with { Adapter = aircraftAdapter };
+
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
+    }
+
+    private void HandleScreenDriverRemoved(DeviceIdentity identity)
+    {
+        if (!_screenIndex.ScreenRoles.ContainsKey(identity))
+            return;
+
+        var screenRoles = _screenIndex.ScreenRoles.ToDictionary();
+        screenRoles.Remove(identity);
+
+        _screenIndex = _screenIndex with { ScreenRoles = screenRoles.ToFrozenDictionary() };
+        _commands.Writer.TryWrite(new RouterCommand.BindingsUpdated());
     }
 
     private void HandleSimulatorChanged(RouterCommand.SimChanged p, CancellationToken cancellationToken)
@@ -323,6 +312,93 @@ public sealed class SimValueRouter : ISimValueRouter
 
         _logger.LogInformation("Simulator changing");
         await StopSimEventLoopAsync();
+    }
+
+    private void HandleValuesChanged(SimEvent.ValuesChanged batch)
+    {
+        var screenIndex = _screenIndex;
+        var dirtyRoles = new HashSet<DisplayRole>();
+
+        foreach (var change in batch.Changes)
+        {
+            _simValueCache.TrySet(change.Ref, change.Value);
+            BufferScreenValue(screenIndex, change, dirtyRoles);
+            DispatchBindings(change);
+        }
+
+        foreach (var role in dirtyRoles)
+            ShowScreen(screenIndex, role);
+    }
+
+    private static void BufferScreenValue(
+        ScreenIndex screenIndex,
+        SimEvent.ValueChanged change,
+        HashSet<DisplayRole> dirtyRoles)
+    {
+        if (!screenIndex.ByRef.TryGetValue(change.Ref, out var roles))
+            return;
+
+        foreach (var role in roles)
+        {
+            if (!screenIndex.ValueBuffers.TryGetValue(role, out var buffer))
+                continue;
+
+            buffer[change.Ref] = change.Value;
+            dirtyRoles.Add(role);
+        }
+    }
+
+    private void ShowScreen(ScreenIndex screenIndex, DisplayRole role)
+    {
+        if (screenIndex.Adapter?.BuildScreen(role, screenIndex.ValueBuffers[role]) is not { } screen)
+            return;
+
+        foreach (var (identity, screenRole) in screenIndex.ScreenRoles)
+        {
+            if (screenRole != role || !_deviceRegistry.TryGet(identity, out var driver) ||
+                driver is not ITextDisplayOutput output)
+                continue;
+
+            output.Show(screen);
+        }
+    }
+
+    private void DispatchBindings(SimEvent.ValueChanged change)
+    {
+        if (!_outputIndex.ByRef.TryGetValue(change.Ref, out var bindings))
+            return;
+
+        foreach (var binding in bindings)
+        {
+            try
+            {
+                Dispatch(binding, change.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling binding for {SimRef}:{Value}", change.Ref, change.Value);
+            }
+        }
+    }
+
+    private void Dispatch(OutputBinding binding, SimValue value)
+    {
+        if (binding.Mapping.Sources.Count > 1)
+        {
+            _logger.LogWarning("Binding {Sink} has multiple sources; skipping", binding.Mapping.Sink);
+            return; // TODO: Implement transformations
+        }
+
+        if (value is not SimValue.Number valueNumber)
+        {
+            _logger.LogWarning("Binding {Sink} skipped: value is not a number", binding.Mapping.Sink);
+            return;
+        }
+
+        if (binding.Mapping.Sink is OutputSink.Indicator indicator
+            && _deviceRegistry.TryGet(indicator.Device, out var driver)
+            && driver is IIndicatorOutput output)
+            output.Set(indicator.Output, (int)valueNumber.Value);
     }
 
     private async Task StopSimEventLoopAsync()
@@ -373,72 +449,26 @@ public sealed class SimValueRouter : ISimValueRouter
             {
                 case SimEvent.AircraftChanged ac:
                     _logger.LogDebug("Aircraft changed {Aircraft}", ac.AircraftId);
+
                     _commands.Writer.TryWrite(new RouterCommand.AircraftChanged(ac.AircraftId));
                     AircraftChanged?.Invoke(this, ac.AircraftId);
                     break;
-                case SimEvent.ValueChanged v:
-                    HandleValueChanged(v);
+                case SimEvent.ValuesChanged batch:
+                    HandleValuesChanged(batch);
                     break;
             }
         }
     }
 
-    private void HandleValueChanged(SimEvent.ValueChanged valueChanged)
+    private void DeviceRegistryOnDriverRemoved(object? sender, DriverRemovedEventArgs e) =>
+        _commands.Writer.TryWrite(new RouterCommand.ScreenDriverRemoved(e.Identity));
+
+    private void DeviceRegistryOnDriverAdded(object? sender, DriverAddedEventArgs e)
     {
-        _logger.LogDebug("Simulator value changed {SimRef}:{Value}", valueChanged.Ref, valueChanged.Value);
-
-        _simValueCache.TrySet(valueChanged.Ref, valueChanged.Value);
-
-        if (_screenIndex.ByRef.TryGetValue(valueChanged.Ref, out var roles))
-        {
-            foreach (var (device, role) in _screenIndex.ScreenRoles)
-            {
-                if (!roles.Contains(role)) continue;
-                _screenIndex.ValueBuffers[role][valueChanged.Ref] = valueChanged.Value;
-
-                var screen = _screenIndex.Adapter?.BuildScreen(role, _screenIndex.ValueBuffers[role]);
-                if (screen is not null)
-                {
-                    ScreenRendered?.Invoke(this, new ScreenRenderedEventArgs(device, role, screen));
-                }
-            }
-        }
-
-        if (!_outputIndex.ByRef.TryGetValue(valueChanged.Ref, out var bindings))
+        if (e.Driver is not ITextDisplayOutput)
             return;
 
-        foreach (var binding in bindings)
-        {
-            try
-            {
-                Dispatch(binding, valueChanged.Value);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling binding for {SimRef}:{Value}", valueChanged.Ref,
-                    valueChanged.Value);
-            }
-        }
-    }
-
-    private void Dispatch(OutputBinding binding, SimValue value)
-    {
-        if (binding.Mapping.Sources.Count > 1)
-        {
-            _logger.LogWarning("Binding {Sink} has multiple sources; skipping", binding.Mapping.Sink);
-            return; // TODO: Implement transformations
-        }
-
-        if (value is not SimValue.Number valueNumber)
-        {
-            _logger.LogWarning("Binding {Sink} skipped: value is not a number", binding.Mapping.Sink);
-            return;
-        }
-
-        if (binding.Mapping.Sink is OutputSink.Indicator indicator
-            && _deviceRegistry.TryGet(indicator.Device, out var driver)
-            && driver is IIndicatorOutput output)
-            output.Set(indicator.Output, (int)valueNumber.Value);
+        _commands.Writer.TryWrite(new RouterCommand.ScreenDriverAdded(e.Driver));
     }
 
     private void ActiveSimOnChanged(object? sender, ActiveSimChangedEventArgs e)

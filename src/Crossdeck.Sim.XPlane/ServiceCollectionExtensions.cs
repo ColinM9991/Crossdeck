@@ -1,5 +1,7 @@
-﻿using Crossdeck.Core.Session;
+﻿using Crossdeck.Core.Routing.Adapters;
+using Crossdeck.Core.Session;
 using Crossdeck.Core.Simulators;
+using Crossdeck.Sim.XPlane.Adapters;
 using Crossdeck.Sim.XPlane.Models;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +27,8 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddHttpClient<IXPlaneApiService, XPlaneApiService>(XPlaneConstants.HttpClientName);
+
+        services.AddTransient<IAircraftScreenAdapter, FlightFactor777AircraftScreenAdapter>();
 
         return services;
     }

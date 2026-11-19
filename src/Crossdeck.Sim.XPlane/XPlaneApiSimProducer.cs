@@ -23,7 +23,7 @@ namespace Crossdeck.Sim.XPlane;
 /// </remarks>
 public sealed class XPlaneApiSimProducer : ISimProducer
 {
-    private static readonly SimRef AircraftRef = new(XPlaneConstants.AircraftRefKey);
+    private static readonly SimRef AircraftRef = new(XPlaneConstants.AcfNameRefKey);
 
     /// <summary>
     /// Internal channel for managing and distributing simulation events.
@@ -232,6 +232,8 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         JsonValueKind.String => new SimValue.String(
             Encoding.UTF8.GetString(Convert.FromBase64String(value.GetString()!))),
         JsonValueKind.Number => new SimValue.Number(value.GetDouble()),
+        JsonValueKind.Array => new SimValue.Array(
+            [.. value.EnumerateArray().Select(ToSimValue)]),
         _ => throw new ArgumentOutOfRangeException(nameof(value), value.ValueKind.ToString())
     };
 
@@ -528,20 +530,27 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         ConcurrentDictionary<string, long> cache,
         CancellationToken cancellationToken)
     {
-        if (cache.TryGetValue(key, out var cachedId))
+        try
         {
-            return cachedId;
-        }
+            if (cache.TryGetValue(key, out var cachedId))
+            {
+                return cachedId;
+            }
 
-        var response = await _api.GetDatarefsAsync(key, null, null, null, cancellationToken);
-        var dataref = response?.Data.FirstOrDefault();
-        if (dataref is null)
+            var response = await _api.GetDatarefsAsync(key, null, null, null, cancellationToken);
+            var dataref = response?.Data.FirstOrDefault();
+            if (dataref is null)
+            {
+                return null;
+            }
+
+            cache.TryAdd(key, dataref.Id);
+            return dataref.Id;
+        }
+        catch
         {
             return null;
         }
-
-        cache.TryAdd(key, dataref.Id);
-        return dataref.Id;
     }
 
     private async Task<long?> ResolveCommandIdAsync(
@@ -574,41 +583,7 @@ public sealed class XPlaneApiSimProducer : ISimProducer
         switch (type)
         {
             case XPlaneConstants.DatarefUpdateValues:
-                foreach (var entry in root.GetProperty("data").EnumerateObject())
-                {
-                    if (!long.TryParse(entry.Name, out var id) ||
-                        !session.IdToRef.TryGetValue(id, out var simRef))
-                    {
-                        continue;
-                    }
-
-                    if (simRef == AircraftRef)
-                    {
-                        PublishAircraftIfChanged(ToSimValue(entry.Value));
-                        continue;
-                    }
-
-                    var element = entry.Value;
-                    if (element.ValueKind == JsonValueKind.Array)
-                    {
-                        var elementIndex = session.RefToIndex.GetValueOrDefault(simRef);
-                        if (elementIndex is null)
-                        {
-                            if (session.WholeArrayWarned.Add(id))
-                                _logger.LogWarning("X-Plane dataref id {Id} ({Ref}) is an array subscribed without an index; values skipped", id, simRef);
-                            continue;
-                        }
-
-                        var values = element.EnumerateArray();
-                        if (!values.MoveNext())
-                            continue;
-
-                        element = values.Current;
-                    }
-
-                    Publish(new SimEvent.ValueChanged(simRef, ToSimValue(element)));
-                }
-
+                PublishValues(root.GetProperty("data"), session);
                 break;
             case XPlaneConstants.ResultMessage:
             {
@@ -616,6 +591,43 @@ public sealed class XPlaneApiSimProducer : ISimProducer
                 break;
             }
         }
+    }
+
+    private void PublishValues(JsonElement data, SessionState session)
+    {
+        var changes = new List<SimEvent.ValueChanged>();
+
+        foreach (var entry in data.EnumerateObject())
+        {
+            if (!long.TryParse(entry.Name, out var id) || !session.IdToRef.TryGetValue(id, out var simRef))
+                continue;
+
+            if (simRef == AircraftRef)
+            {
+                PublishAircraftIfChanged(ToSimValue(entry.Value));
+                continue;
+            }
+
+            if (TryReadElement(entry.Value, session.RefToIndex.GetValueOrDefault(simRef), out var element))
+                changes.Add(new SimEvent.ValueChanged(simRef, ToSimValue(element)));
+        }
+
+        if (changes.Count > 0)
+            Publish(new SimEvent.ValuesChanged(changes));
+    }
+
+    private static bool TryReadElement(JsonElement value, int? index, out JsonElement element)
+    {
+        element = value;
+        if (value.ValueKind is not JsonValueKind.Array || index is null)
+            return true;
+
+        var values = value.EnumerateArray();
+        if (!values.MoveNext())
+            return false;
+
+        element = values.Current;
+        return true;
     }
 
     private void PublishAircraftIfChanged(SimValue value)
