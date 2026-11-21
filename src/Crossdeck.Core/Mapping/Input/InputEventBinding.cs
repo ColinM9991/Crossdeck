@@ -2,5 +2,4 @@
 
 public sealed record InputEventBinding(
     IReadOnlyList<InputAction> Actions,
-    ExpressionSpec? Expr = null,
     ExpressionSpec? When = null);

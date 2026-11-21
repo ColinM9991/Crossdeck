@@ -329,7 +329,6 @@ public sealed class SimValueRouter : ISimValueRouter
                 dirtyBindings.UnionWith(bindings);
         }
 
-
         foreach (var binding in dirtyBindings)
             Dispatch(binding);
 

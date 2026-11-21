@@ -1,14 +1,16 @@
-﻿using Crossdeck.Core.Mapping.Input;
+﻿using System.Collections.Frozen;
+using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Application.Routing.Input;
 
-internal sealed class InputBinding
+internal sealed record InputBinding(
+    FrozenDictionary<string, SimRef> Sources,
+    FrozenDictionary<string, EventBinding> Events)
 {
-    public InputBinding(
-        InputMapping mapping)
-    {
-        Mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
-    }
-
-    public InputMapping Mapping { get; }
+    public IEnumerable<SimRef> RequiredRefs
+        => Sources
+            .Values
+            .Concat(Events.Values
+                .SelectMany(e => e.Actions)
+                .SelectMany(a => a.ReadRefs()));
 }

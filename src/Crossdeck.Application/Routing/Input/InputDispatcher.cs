@@ -2,6 +2,8 @@
 using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
+using Crossdeck.Core.Mapping;
+using Crossdeck.Core.Mapping.Expressions;
 using Crossdeck.Core.Mapping.Input;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Session;
@@ -31,6 +33,7 @@ public sealed class InputDispatcher :
     private readonly ISubscriptionAggregator _subscriptionAggregator;
     private readonly ISimValueCache _simValueCache;
     private readonly ILogger<InputDispatcher> _logger;
+    private readonly InputBindingFactory _inputBindingFactory;
 
     private ISimProducer? _currentProducer;
     private CancellationTokenSource? _inputEventsCancellationTokenSource;
@@ -42,6 +45,7 @@ public sealed class InputDispatcher :
     public InputDispatcher(
         IActiveSim activeSim,
         ISubscriptionAggregator subscriptionAggregator,
+        IExpressionCompiler expressionCompiler,
         ISimValueCache simValueCache,
         ILogger<InputDispatcher> logger)
     {
@@ -50,6 +54,8 @@ public sealed class InputDispatcher :
             subscriptionAggregator ?? throw new ArgumentNullException(nameof(subscriptionAggregator));
         _simValueCache = simValueCache ?? throw new ArgumentNullException(nameof(simValueCache));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        _inputBindingFactory = new InputBindingFactory(expressionCompiler);
         _activeSim.Changing += ActiveSimOnChanging;
         _activeSim.Changed += ActiveSimOnChanged;
     }
@@ -95,24 +101,16 @@ public sealed class InputDispatcher :
 
     public void SetBindings(IReadOnlyList<InputMapping> bindings)
     {
-        var byDevice = new Dictionary<(DeviceIdentity, InputId), InputMapping>();
-        var requiredRefs = new HashSet<SimRef>();
-        foreach (var binding in bindings)
-        {
-            byDevice[(binding.Device, binding.Control)] = binding;
+        var byDevice = bindings.ToFrozenDictionary(
+            b => (b.Device, b.Control),
+            _inputBindingFactory.Create);
 
-            // foreach (var inputAction in binding.Actions.Values.SelectMany(x => x))
-            // {
-            //     if (inputAction is not InputAction.Step set)
-            //         continue;
-            //
-            //     _ = requiredRefs.Add(set.Ref);
-            // }
-        }
+        var requiredRefs = byDevice.Values
+            .SelectMany(b => b.RequiredRefs)
+            .Where(r => r is SimRef.Plain)
+            .ToFrozenSet();
 
-        var inputIndex = new InputIndex(
-            byDevice.ToFrozenDictionary(),
-            requiredRefs.ToFrozenSet());
+        var inputIndex = new InputIndex(byDevice, requiredRefs);
 
         _inputIndex = inputIndex;
         _logger.LogInformation("Input bindings set {Count}", bindings.Count);
@@ -210,60 +208,41 @@ public sealed class InputDispatcher :
     private async Task DispatchInputEventAsync(
         ISimProducer producer,
         DeviceInputEvent inputEvent,
-        InputMapping binding,
+        InputBinding binding,
         CancellationToken cancellationToken)
     {
-        if (!binding.Actions.TryGetValue(inputEvent.Kind.ToString(), out var actions))
+        if (!binding.Events.TryGetValue(inputEvent.Kind.ToString(), out var eventBinding))
             return;
 
-        // foreach (var action in actions)
-        // {
-        //     if (action is InputAction.Step step)
-        //     {
-        //         await ExecuteStepAsync(producer, step, cancellationToken);
-        //         continue;
-        //     }
-        //
-        //     var simCommand = action.ToSimCommand();
-        //     if (simCommand is null)
-        //         continue;
-        //
-        //     try
-        //     {
-        //         await producer.SendCommandAsync(simCommand, cancellationToken);
-        //     }
-        //     catch (Exception ex) when (ex is not OperationCanceledException)
-        //     {
-        //         _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
-        //             inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
-        //     }
-        // }
-    }
+        Dictionary<string, SimValue?> sources = [];
 
-    private async Task ExecuteStepAsync(
-        ISimProducer producer,
-        InputAction.Step step,
-        CancellationToken cancellationToken)
-    {
-        var baseValue = double.NaN;
-
-        if (_simValueCache.TryGet(step.Ref, out var entry)
-            && entry?.Value is SimValue.Number number)
+        foreach (var (key, simRef) in binding.Sources)
         {
-            baseValue = number.Value;
+            if (!_simValueCache.TryGet(simRef, out var value))
+                continue;
+
+            sources[key] = value?.Value;
         }
 
-        if (double.IsNaN(baseValue))
+        if (eventBinding.Guard is { } guard)
         {
-            _logger.LogInformation("Step on {Ref} skipped: no current value", step.Ref);
-            return;
+            var outputValue = guard.Apply(sources);
+
+            if (outputValue is OutputValue.Boolean { Value: false }) return;
         }
 
-        var result = Math.Clamp(baseValue + step.Amount, step.Min, step.Max);
-
-        await producer.SendCommandAsync(
-            new SimCommand.Set(step.Ref, new SimValue.Number(result)),
-            cancellationToken);
+        foreach (var action in eventBinding.Actions)
+        {
+            try
+            {
+                //await producer.SendCommandAsync(simCommand, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
+                    inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
+            }
+        }
     }
 
     private void CurrentProducerOnReady(object? sender, SimReady e)

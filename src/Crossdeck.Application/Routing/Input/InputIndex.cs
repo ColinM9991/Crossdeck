@@ -8,18 +8,18 @@ namespace Crossdeck.Application.Routing.Input;
 internal sealed record InputIndex
 {
     public static readonly InputIndex Empty = new InputIndex(
-        FrozenDictionary<(DeviceIdentity Device, InputId Control), InputMapping>.Empty,
+        FrozenDictionary<(DeviceIdentity Device, InputId Control), InputBinding>.Empty,
         FrozenSet<SimRef>.Empty);
 
     public InputIndex(
-        FrozenDictionary<(DeviceIdentity Device, InputId Control), InputMapping> byDevice,
+        FrozenDictionary<(DeviceIdentity Device, InputId Control), InputBinding> byDevice,
         FrozenSet<SimRef> requiredRefs)
     {
         ByDevice = byDevice ?? throw new ArgumentNullException(nameof(byDevice));
         RequiredRefs = requiredRefs ?? throw new ArgumentNullException(nameof(requiredRefs));
     }
 
-    public FrozenDictionary<(DeviceIdentity Device, InputId Control), InputMapping> ByDevice { get; }
+    public FrozenDictionary<(DeviceIdentity Device, InputId Control), InputBinding> ByDevice { get; }
 
     public FrozenSet<SimRef> RequiredRefs { get; }
 }

@@ -1,12 +1,14 @@
 ﻿using Crossdeck.Core.Devices;
 using Crossdeck.Core.Session;
 using Crossdeck.Application.Devices;
+using Crossdeck.Application.Expressions;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Routing.Adapters;
 using Crossdeck.Application.Routing.Input;
 using Crossdeck.Application.Routing.Output;
 using Crossdeck.Application.Session;
 using Crossdeck.Core.Devices.Inputs;
+using Crossdeck.Core.Mapping.Expressions;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Routing.Adapters;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISubscriptionAggregator>(sp => sp.GetRequiredService<SubscriptionAggregator>());
 
         services.AddSingleton<IAircraftScreenAdapterFactory, AircraftScreenAdapterFactory>();
+        services.AddSingleton<IExpressionCompiler, NCalcExpressionCompiler>();
 
         return services;
     }
