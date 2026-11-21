@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
@@ -10,6 +11,7 @@ using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
+using Microsoft.Extensions.Diagnostics.Tracing;
 using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Application.Routing.Input;
@@ -205,15 +207,8 @@ public sealed class InputDispatcher :
         }
     }
 
-    private async Task DispatchInputEventAsync(
-        ISimProducer producer,
-        DeviceInputEvent inputEvent,
-        InputBinding binding,
-        CancellationToken cancellationToken)
+    private Dictionary<string, SimValue?> ReadSources(InputBinding binding)
     {
-        if (!binding.Events.TryGetValue(inputEvent.Kind.ToString(), out var eventBinding))
-            return;
-
         Dictionary<string, SimValue?> sources = [];
 
         foreach (var (key, simRef) in binding.Sources)
@@ -224,25 +219,101 @@ public sealed class InputDispatcher :
             sources[key] = value?.Value;
         }
 
-        if (eventBinding.Guard is { } guard)
-        {
-            var outputValue = guard.Apply(sources);
+        return sources;
+    }
 
-            if (outputValue is OutputValue.Boolean { Value: false }) return;
+    private bool CheckGuard(EventBinding binding, Dictionary<string, SimValue?> sources)
+    {
+        if (binding.Guard is null)
+            return true;
+
+        try
+        {
+            return binding.Guard.Apply(sources) is OutputValue.Boolean { Value: true };
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to evaluate guard expression for input binding");
+            return false;
+        }
+    }
+
+    private async Task DispatchInputEventAsync(
+        ISimProducer producer,
+        DeviceInputEvent inputEvent,
+        InputBinding binding,
+        CancellationToken cancellationToken)
+    {
+        if (!binding.Events.TryGetValue(inputEvent.Kind.ToString(), out var eventBinding))
+            return;
+
+        var sources = ReadSources(binding);
+        var guardPassed = CheckGuard(eventBinding, sources);
 
         foreach (var action in eventBinding.Actions)
         {
-            try
-            {
-                //await producer.SendCommandAsync(simCommand, cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
-                    inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
-            }
+            if (!guardPassed && action is not BoundAction.Command { Phase: CommandPhase.End })
+                continue;
+
+            await ExecuteAsync(producer, inputEvent, action, sources, cancellationToken);
         }
+    }
+
+    private async Task ExecuteAsync(
+        ISimProducer producer,
+        DeviceInputEvent inputEvent,
+        BoundAction action,
+        Dictionary<string, SimValue?> sources,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var simCommand = action switch
+            {
+                BoundAction.SetExpr expr => ToExprSimCommand(expr, sources),
+                BoundAction.SetRef refAction => ToRefSimCommand(refAction),
+                _ => action.ToSimCommand()
+            };
+
+            if (simCommand is null)
+                return;
+
+            await producer.SendCommandAsync(simCommand, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Error sending command for {Identity} {Control} {Kind}",
+                inputEvent.Identity, inputEvent.Control.Id, inputEvent.Kind);
+        }
+    }
+
+    private SimCommand.Set? ToExprSimCommand(BoundAction.SetExpr expr, Dictionary<string, SimValue?> sources)
+    {
+        var localSources = sources;
+        if (_simValueCache.TryGet(expr.Ref, out var cacheEntry) && cacheEntry is not null)
+        {
+            localSources = sources.ToDictionary(); // TODO: reuse a shared dictionary
+            localSources["self"] = cacheEntry.Value;
+        }
+
+        var transformed = expr.Transform.Apply(localSources);
+        SimValue? value = transformed switch
+        {
+            OutputValue.Boolean boolean => new SimValue.Number(boolean.Value ? 1 : 0),
+            OutputValue.Number number => new SimValue.Number(number.Value),
+            OutputValue.Text str => new SimValue.String(str.Value),
+            _ => null,
+        };
+
+        return value is null ? null : new SimCommand.Set(expr.Ref, value);
+    }
+
+    private SimCommand.Set? ToRefSimCommand(BoundAction.SetRef refAction)
+    {
+        if (!_simValueCache.TryGet(refAction.Source, out var cacheEntry) || cacheEntry is null)
+            return null;
+
+        return new SimCommand.Set(refAction.Ref, cacheEntry.Value);
     }
 
     private void CurrentProducerOnReady(object? sender, SimReady e)
