@@ -1,5 +1,4 @@
 ﻿using System.Collections.Frozen;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Channels;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Devices.Models;
@@ -11,7 +10,6 @@ using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
 using Crossdeck.Core.Simulators.Models;
-using Microsoft.Extensions.Diagnostics.Tracing;
 using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Application.Routing.Input;
@@ -34,6 +32,7 @@ public sealed class InputDispatcher :
     private readonly IActiveSim _activeSim;
     private readonly ISubscriptionAggregator _subscriptionAggregator;
     private readonly ISimValueCache _simValueCache;
+    private readonly IVariableStore _variableStore;
     private readonly ILogger<InputDispatcher> _logger;
     private readonly InputBindingFactory _inputBindingFactory;
 
@@ -49,12 +48,14 @@ public sealed class InputDispatcher :
         ISubscriptionAggregator subscriptionAggregator,
         IExpressionCompiler expressionCompiler,
         ISimValueCache simValueCache,
+        IVariableStore variableStore,
         ILogger<InputDispatcher> logger)
     {
         _activeSim = activeSim ?? throw new ArgumentNullException(nameof(activeSim));
         _subscriptionAggregator =
             subscriptionAggregator ?? throw new ArgumentNullException(nameof(subscriptionAggregator));
         _simValueCache = simValueCache ?? throw new ArgumentNullException(nameof(simValueCache));
+        _variableStore = variableStore ?? throw new ArgumentNullException(nameof(variableStore));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _inputBindingFactory = new InputBindingFactory(expressionCompiler);
@@ -207,7 +208,7 @@ public sealed class InputDispatcher :
         }
     }
 
-    private Dictionary<string, SimValue?> ReadSources(InputBinding binding)
+    private Dictionary<string, SimValue?> ReadSources(CompiledInputBinding binding)
     {
         Dictionary<string, SimValue?> sources = [];
 
@@ -241,7 +242,7 @@ public sealed class InputDispatcher :
     private async Task DispatchInputEventAsync(
         ISimProducer producer,
         DeviceInputEvent inputEvent,
-        InputBinding binding,
+        CompiledInputBinding binding,
         CancellationToken cancellationToken)
     {
         if (!binding.Events.TryGetValue(inputEvent.Kind.ToString(), out var eventBinding))
@@ -278,7 +279,15 @@ public sealed class InputDispatcher :
             if (simCommand is null)
                 return;
 
-            await producer.SendCommandAsync(simCommand, cancellationToken);
+            switch (simCommand)
+            {
+                case SimCommand.Set { Target: SimRef.Variable var } target:
+                    _variableStore.Set(var, target.Value);
+                    break;
+                default:
+                    await producer.SendCommandAsync(simCommand, cancellationToken);
+                    break;
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -287,15 +296,22 @@ public sealed class InputDispatcher :
         }
     }
 
-    private SimCommand.Set? ToExprSimCommand(BoundAction.SetExpr expr, Dictionary<string, SimValue?> sources)
+    private Dictionary<string, SimValue?> GetSources(
+        BoundAction.SetExpr expr,
+        Dictionary<string, SimValue?> sources)
     {
         var localSources = sources;
-        if (_simValueCache.TryGet(expr.Ref, out var cacheEntry) && cacheEntry is not null)
-        {
-            localSources = sources.ToDictionary(); // TODO: reuse a shared dictionary
-            localSources["self"] = cacheEntry.Value;
-        }
+        if (!_simValueCache.TryGet(expr.Ref, out var cacheEntry) || cacheEntry is null) return localSources;
 
+        localSources = sources.ToDictionary(); // TODO: reuse a shared dictionary
+        localSources["self"] = cacheEntry.Value;
+
+        return localSources;
+    }
+
+    private SimCommand.Set? ToExprSimCommand(BoundAction.SetExpr expr, Dictionary<string, SimValue?> sources)
+    {
+        var localSources = GetSources(expr, sources);
         var transformed = expr.Transform.Apply(localSources);
         SimValue? value = transformed switch
         {

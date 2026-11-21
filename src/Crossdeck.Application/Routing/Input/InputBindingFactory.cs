@@ -6,7 +6,7 @@ namespace Crossdeck.Application.Routing.Input;
 
 internal sealed class InputBindingFactory(IExpressionCompiler compiler)
 {
-    public InputBinding Create(InputMapping mapping)
+    public CompiledInputBinding Create(InputMapping mapping)
     {
         var guardScope = new ExpressionScope([.. mapping.Sources.Keys], ExpressionKind.Guard);
         var valueScope = new ExpressionScope([.. mapping.Sources.Keys, "self"], ExpressionKind.Value);
@@ -15,7 +15,7 @@ internal sealed class InputBindingFactory(IExpressionCompiler compiler)
             e => e.Key,
             e => CreateEvent(e.Value, guardScope, valueScope));
 
-        return new InputBinding(
+        return new CompiledInputBinding(
             mapping.Sources.ToFrozenDictionary(),
             events);
     }

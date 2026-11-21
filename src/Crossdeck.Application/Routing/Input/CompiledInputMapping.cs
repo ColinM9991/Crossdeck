@@ -3,7 +3,7 @@ using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Application.Routing.Input;
 
-internal sealed record InputBinding(
+internal sealed record CompiledInputBinding(
     FrozenDictionary<string, SimRef> Sources,
     FrozenDictionary<string, EventBinding> Events)
 {
