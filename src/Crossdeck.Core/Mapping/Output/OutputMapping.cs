@@ -1,10 +1,11 @@
-﻿using Crossdeck.Core.Simulators.Models;
+﻿using System.Collections.Immutable;
+using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Core.Mapping.Output;
 
 public sealed record OutputMapping(
     string Id,
-    IReadOnlyDictionary<string, SimRef> Sources,
+    ImmutableDictionary<string, SimRef> Sources,
     OutputSink? Sink = null,
     ExpressionSpec? Transform = null,
     ExpressionSpec? When = null,

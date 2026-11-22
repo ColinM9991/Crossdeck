@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using Crossdeck.Application.Expressions;
 using Crossdeck.Core.Mapping.Expressions;
 using Crossdeck.Core.Mapping.Input;
 
@@ -8,8 +9,8 @@ internal sealed class InputBindingFactory(IExpressionCompiler compiler)
 {
     public CompiledInputBinding Create(InputMapping mapping)
     {
-        var guardScope = new ExpressionScope([.. mapping.Sources.Keys], ExpressionKind.Guard);
-        var valueScope = new ExpressionScope([.. mapping.Sources.Keys, "self"], ExpressionKind.Value);
+        var guardScope = ExpressionScopes.InputGuard(mapping.Sources.Keys);
+        var valueScope = ExpressionScopes.InputValue(mapping.Sources.Keys);
 
         var events = mapping.Actions.ToFrozenDictionary(
             e => e.Key,

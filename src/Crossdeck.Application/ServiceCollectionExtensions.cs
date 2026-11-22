@@ -2,6 +2,8 @@
 using Crossdeck.Core.Session;
 using Crossdeck.Application.Devices;
 using Crossdeck.Application.Expressions;
+using Crossdeck.Application.Profiles;
+using Crossdeck.Application.Profiles.Validation;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Routing.Adapters;
 using Crossdeck.Application.Routing.Input;
@@ -9,8 +11,11 @@ using Crossdeck.Application.Routing.Output;
 using Crossdeck.Application.Session;
 using Crossdeck.Core.Devices.Inputs;
 using Crossdeck.Core.Mapping.Expressions;
+using Crossdeck.Core.Profiles;
+using Crossdeck.Core.Profiles.Models;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Routing.Adapters;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -18,34 +23,72 @@ namespace Crossdeck.Application;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSimulationServices(this IServiceCollection services)
+    extension(IServiceCollection services)
     {
-        services.TryAddSingleton(TimeProvider.System);
+        public IServiceCollection AddSimulationServices()
+        {
+            services.TryAddSingleton(TimeProvider.System);
 
-        services.AddSingleton<SimSessionSupervisor>();
-        services.AddSingleton<IActiveSim>(sp => sp.GetRequiredService<SimSessionSupervisor>());
-        services.AddSingleton<ISimSessionSupervisor>(sp => sp.GetRequiredService<SimSessionSupervisor>());
+            services.AddProfileServices()
+                .AddSimSupervisorServices()
+                .AddDeviceServices()
+                .AddInputServices()
+                .AddOutputServices()
+                .AddCommonServices()
+                .AddAggregatorServices();
 
-        services.AddSingleton<DeviceRegistry>();
-        services.AddSingleton<IDeviceRegistry>(sp => sp.GetRequiredService<DeviceRegistry>());
+            return services;
+        }
 
-        services.AddSingleton<InputDispatcher>();
-        services.AddSingleton<IInputSink>(sp => sp.GetRequiredService<InputDispatcher>());
-        services.AddSingleton<IInputDispatcher>(sp => sp.GetRequiredService<InputDispatcher>());
-        services.AddSingleton<IInputMonitor>(sp => sp.GetRequiredService<InputDispatcher>());
+        private IServiceCollection AddProfileServices()
+        {
+            return services.AddSingleton<IProfileRuntime, ProfileRuntime>()
+                .AddSingleton<IProfileSerializer, ProfileSerializer>()
+                .AddSingleton<IProfileStore, ProfileStore>()
+                .AddSingleton<IValidator<Profile>, ProfileRootValidator>()
+                .AddSingleton<IProfileValidator, ProfileValidator>();
+        }
 
-        services.AddSingleton<SimValueRouter>();
-        services.AddSingleton<ISimValueRouter>(sp => sp.GetRequiredService<SimValueRouter>());
-        services.AddSingleton<ISimValueCache, SimValueCache>();
+        private IServiceCollection AddSimSupervisorServices()
+        {
+            return services.AddSingleton<SimSessionSupervisor>()
+                .AddSingleton<IActiveSim>(sp => sp.GetRequiredService<SimSessionSupervisor>())
+                .AddSingleton<ISimSessionSupervisor>(sp => sp.GetRequiredService<SimSessionSupervisor>());
+        }
 
-        services.AddSingleton<SubscriptionAggregator>();
-        services.AddSingleton<ISubscriptionAggregator>(sp => sp.GetRequiredService<SubscriptionAggregator>());
+        private IServiceCollection AddDeviceServices()
+        {
+            return services.AddSingleton<DeviceRegistry>()
+                .AddSingleton<IDeviceRegistry>(sp => sp.GetRequiredService<DeviceRegistry>());
+        }
 
-        services.AddSingleton<IAircraftScreenAdapterFactory, AircraftScreenAdapterFactory>();
-        services.AddSingleton<IExpressionCompiler, NCalcExpressionCompiler>();
+        private IServiceCollection AddInputServices()
+        {
+            return services.AddSingleton<InputDispatcher>()
+                .AddSingleton<IInputSink>(sp => sp.GetRequiredService<InputDispatcher>())
+                .AddSingleton<IInputDispatcher>(sp => sp.GetRequiredService<InputDispatcher>())
+                .AddSingleton<IInputMonitor>(sp => sp.GetRequiredService<InputDispatcher>());
+        }
 
-        services.AddSingleton<IVariableStore, VariableStore>();
+        private IServiceCollection AddOutputServices()
+        {
+            return services.AddSingleton<SimValueRouter>()
+                .AddSingleton<ISimValueRouter>(sp => sp.GetRequiredService<SimValueRouter>());
+        }
 
-        return services;
+        private IServiceCollection AddCommonServices()
+        {
+            return
+                services.AddSingleton<ISimValueCache, SimValueCache>()
+                    .AddSingleton<IVariableStore, VariableStore>()
+                    .AddSingleton<IExpressionCompiler, NCalcExpressionCompiler>()
+                    .AddSingleton<IAircraftScreenAdapterFactory, AircraftScreenAdapterFactory>();
+        }
+
+        private IServiceCollection AddAggregatorServices()
+        {
+            return services.AddSingleton<SubscriptionAggregator>()
+                .AddSingleton<ISubscriptionAggregator>(sp => sp.GetRequiredService<SubscriptionAggregator>());
+        }
     }
 }

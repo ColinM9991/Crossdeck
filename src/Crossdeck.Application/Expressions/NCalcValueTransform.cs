@@ -9,14 +9,11 @@ namespace Crossdeck.Application.Expressions;
 internal sealed class NCalcValueTransform : IValueTransform
 {
     private readonly Expression _expression;
-    private readonly ExpressionScope _scope;
 
     public NCalcValueTransform(
-        Expression expression,
-        ExpressionScope scope)
+        Expression expression)
     {
         _expression = expression ?? throw new ArgumentNullException(nameof(expression));
-        _scope = scope ?? throw new ArgumentNullException(nameof(scope));
     }
 
     public OutputValue? Apply(IReadOnlyDictionary<string, SimValue?> sources)

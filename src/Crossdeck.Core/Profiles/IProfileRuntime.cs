@@ -6,8 +6,6 @@ public interface IProfileRuntime
 {
     Profile? Active { get; }
 
-    IReadOnlyList<ProfileProblem> Problems { get; }
-
     event EventHandler<Profile?>? ActiveChanged;
 
     IReadOnlyList<ProfileProblem> Activate(Profile profile);
