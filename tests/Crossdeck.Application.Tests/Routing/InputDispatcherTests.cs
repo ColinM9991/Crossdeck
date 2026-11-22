@@ -1,4 +1,4 @@
-using Crossdeck.Application.Routing;
+using Crossdeck.Application.Routing.Input;
 using Crossdeck.Core.Devices.Models;
 using Crossdeck.Core.Mapping.Input;
 using Crossdeck.Core.Session;
@@ -59,9 +59,10 @@ public sealed class InputDispatcherTests
         sut.SetBindings([new InputMapping(
             inputEvent.Identity,
             inputEvent.Control.Id,
-            new Dictionary<string, IReadOnlyList<InputAction>>
+            new Dictionary<string, SimRef>(),
+            new Dictionary<string, InputEventBinding>
             {
-                ["Pressed"] = [new InputAction.Command(new SimRef("begin.test"), CommandPhase.Begin)]
+                ["Pressed"] = new InputEventBinding([new InputAction.Command(new SimRef.Plain("begin.test"), CommandPhase.Begin)])
             })]);
         var (simulatorChanged, simulatorReady) = WireSimulator(activeSim, producer, logger);
 
@@ -98,9 +99,10 @@ public sealed class InputDispatcherTests
         sut.SetBindings([new InputMapping(
             inputEvent.Identity,
             inputEvent.Control.Id,
-            new Dictionary<string, IReadOnlyList<InputAction>>
+            new Dictionary<string, SimRef>(),
+            new Dictionary<string, InputEventBinding>
             {
-                ["Released"] = [new InputAction.Command(new SimRef("end.test"), CommandPhase.End)]
+                ["Released"] = new InputEventBinding([new InputAction.Command(new SimRef.Plain("end.test"), CommandPhase.End)])
             })]);
         var (simulatorChanged, simulatorReady) = WireSimulator(activeSim, producer, logger);
 
@@ -131,9 +133,10 @@ public sealed class InputDispatcherTests
         sut.SetBindings([new InputMapping(
             inputEvent.Identity,
             inputEvent.Control.Id,
-            new Dictionary<string, IReadOnlyList<InputAction>>
+            new Dictionary<string, SimRef>(),
+            new Dictionary<string, InputEventBinding>
             {
-                ["Pressed"] = [new InputAction.Command(new SimRef("begin.test"), CommandPhase.Begin)]
+                ["Pressed"] = new InputEventBinding([new InputAction.Command(new SimRef.Plain("begin.test"), CommandPhase.Begin)])
             })]);
         var (simulatorChanged, simulatorReady) = WireSimulator(activeSim, producer, logger);
 
@@ -231,9 +234,10 @@ public sealed class InputDispatcherTests
         sut.SetBindings([new InputMapping(
             inputEvent.Identity,
             inputEvent.Control.Id,
-            new Dictionary<string, IReadOnlyList<InputAction>>
+            new Dictionary<string, SimRef>(),
+            new Dictionary<string, InputEventBinding>
             {
-                ["Pressed"] = [new InputAction.Command(new SimRef("disconnect.test"), CommandPhase.Begin)]
+                ["Pressed"] = new InputEventBinding([new InputAction.Command(new SimRef.Plain("disconnect.test"), CommandPhase.Begin)])
             })]);
         var (simulatorChanged, _) = WireSimulator(activeSim, producer, logger);
 

@@ -11,10 +11,12 @@ public sealed class StreamMuxTests
     private const long Timeout = 100_000_000;
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenSyn1IsForUnknownService_IgnoresIt(ILogger logger)
+    public void OnTunnel_WhenSyn1IsForUnknownService_IgnoresIt(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var outgoing = new List<byte[]>();
         var payload = Syn1Payload(StreamMux.TelemetryService + 1, 9090);
 
@@ -27,10 +29,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenSyn1IsForKnownService_RespondsWithSyn2ForTheAnnouncedPort(ILogger logger)
+    public void OnTunnel_WhenSyn1IsForKnownService_RespondsWithSyn2ForTheAnnouncedPort(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var outgoing = new List<byte[]>();
         var payload = Syn1Payload(StreamMux.TelemetryService, 9090);
 
@@ -46,10 +50,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenPreferredPortIsReserved_AllocatesTheNextFreePort(ILogger logger)
+    public void OnTunnel_WhenPreferredPortIsReserved_AllocatesTheNextFreePort(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var outgoing = new List<byte[]>();
         var payload = Syn1Payload(StreamMux.McduService, StreamMux.McduService + 1);
 
@@ -62,10 +68,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenSyn1VersionIsUnsupported_IgnoresIt(ILogger logger)
+    public void OnTunnel_WhenSyn1VersionIsUnsupported_IgnoresIt(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var outgoing = new List<byte[]>();
         var payload = Syn1Payload(StreamMux.TelemetryService, 9090, version: 1);
 
@@ -78,10 +86,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenMuxIsClosing_IgnoresSyn1(ILogger logger)
+    public void OnTunnel_WhenMuxIsClosing_IgnoresSyn1(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         sut.Closing = true;
         var outgoing = new List<byte[]>();
         var payload = Syn1Payload(StreamMux.TelemetryService, 9090);
@@ -95,10 +105,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenSyn1IsRepeated_ResendsExistingSyn2WithoutNewConnection(ILogger logger)
+    public void OnTunnel_WhenSyn1IsRepeated_ResendsExistingSyn2WithoutNewConnection(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var outgoing = new List<byte[]>();
         var payload = Syn1Payload(StreamMux.TelemetryService, 9090);
         sut.OnTunnel(payload, Now, outgoing);
@@ -115,10 +127,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenTransHasBadCrc_DropsItWithoutForwarding(ILogger logger)
+    public void OnTunnel_WhenTransHasBadCrc_DropsItWithoutForwarding(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var connection = OpenConnection(sut, StreamMux.TelemetryService);
         var body = Wire.WithCrc([0x42]);
         body[^1] ^= 0xFF;
@@ -132,10 +146,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenTransHasValidCrc_ReturnsAckForTheChunk(ILogger logger)
+    public void OnTunnel_WhenTransHasValidCrc_ReturnsAckForTheChunk(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var connection = OpenConnection(sut, StreamMux.TelemetryService);
         var outgoing = new List<byte[]>();
 
@@ -149,10 +165,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenAckArrives_RaisesOpenedEventWhenTheConnectionOpens(ILogger logger)
+    public void OnTunnel_WhenAckArrives_RaisesOpenedEventWhenTheConnectionOpens(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var outgoing = new List<byte[]>();
         sut.OnTunnel(Syn1Payload(StreamMux.TelemetryService, 9090), Now, outgoing);
         var (_, syn2Isn, _) = StreamHarness.DecodeWire(outgoing[0]);
@@ -169,10 +187,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void OnTunnel_WhenBothSidesFinished_RemovesTheConnection(ILogger logger)
+    public void OnTunnel_WhenBothSidesFinished_RemovesTheConnection(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var connection = OpenConnection(sut, StreamMux.TelemetryService);
 
         sut.OnTunnel(FinPayload(connection.LocalPort, 2), Now, new List<byte[]>());
@@ -188,10 +208,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void Next_WhenConnectionHasQueuedData_ForwardsTheFrame(ILogger logger)
+    public void Next_WhenConnectionHasQueuedData_ForwardsTheFrame(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         var connection = OpenConnection(sut, StreamMux.TelemetryService);
         connection.Send([0x42]);
         var outgoing = new List<byte[]>();
@@ -206,10 +228,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void CheckTimeouts_WhenConnectionIsSilentForTenSeconds_Throws(ILogger logger)
+    public void CheckTimeouts_WhenConnectionIsSilentForTenSeconds_Throws(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         OpenConnection(sut, StreamMux.TelemetryService);
 
         // Act
@@ -220,10 +244,12 @@ public sealed class StreamMuxTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void FinishAll_WhenCalled_QueuesFinOnEveryConnection(ILogger logger)
+    public void FinishAll_WhenCalled_QueuesFinOnEveryConnection(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateMux(logger);
+        var sut = CreateMux(timeProvider, logger);
         OpenConnection(sut, StreamMux.TelemetryService);
         var outgoing = new List<byte[]>();
 
@@ -236,7 +262,7 @@ public sealed class StreamMuxTests
         Assert.Equal(Magic.Fin, magic);
     }
 
-    private static StreamMux CreateMux(ILogger logger) => new(TimeProvider.System, logger);
+    private static StreamMux CreateMux(TimeProvider timeProvider, ILogger logger) => new(timeProvider, logger);
 
     private static StreamConnection OpenConnection(StreamMux sut, ushort service)
     {

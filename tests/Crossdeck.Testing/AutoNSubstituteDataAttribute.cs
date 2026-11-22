@@ -10,7 +10,10 @@ public sealed class AutoNSubstituteDataAttribute() : AutoDataAttribute(CreateFix
     {
         var fixture = new Fixture { OmitAutoProperties = true }
             .Customize(new AutoNSubstituteCustomization { ConfigureMembers = false })
-            .Customize(new ReportDescriptorCustomization());
+            .Customize(new ReportDescriptorCustomization())
+            .Customize(new TimeProviderCustomization())
+            .Customize(new SimValueRouterCollaboratorCustomization())
+            .Customize(new ImmutableDictionaryCustomization());
 
         fixture.Behaviors
             .OfType<ThrowingRecursionBehavior>()

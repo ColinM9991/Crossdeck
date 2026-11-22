@@ -6,11 +6,11 @@ public sealed class SerialLinkTests
 {
     private const long TicksPerSecond = TimeSpan.TicksPerSecond;
 
-    [Fact]
-    public void Start_WhenCalled_ReturnsRootRequestAndEntersRootSent()
+    [Theory, AutoNSubstituteData]
+    public void Start_WhenCalled_ReturnsRootRequestAndEntersRootSent(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
 
         // Act
         var result = sut.Start(0);
@@ -20,11 +20,11 @@ public sealed class SerialLinkTests
         Assert.Equal(LinkState.RootSent, sut.State);
     }
 
-    [Fact]
-    public void OnFrame_WhenRootReplyArrives_ReturnsInitRequestAndEntersInitSent()
+    [Theory, AutoNSubstituteData]
+    public void OnFrame_WhenRootReplyArrives_ReturnsInitRequestAndEntersInitSent(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
         sut.Start(0);
         var rootReply = new SerialLinkFrame(0x80, 0x21, []);
 
@@ -36,11 +36,11 @@ public sealed class SerialLinkTests
         Assert.Equal(LinkState.InitSent, sut.State);
     }
 
-    [Fact]
-    public void OnFrame_WhenInitReplyArrives_ReturnsNullAndEntersLinked()
+    [Theory, AutoNSubstituteData]
+    public void OnFrame_WhenInitReplyArrives_ReturnsNullAndEntersLinked(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
         sut.Start(0);
         sut.OnFrame(new SerialLinkFrame(0x80, 0x21, []), 10);
         var initReply = new SerialLinkFrame(0x43, 0x21, [0x00]);
@@ -53,11 +53,11 @@ public sealed class SerialLinkTests
         Assert.Equal(LinkState.Linked, sut.State);
     }
 
-    [Fact]
-    public void OnFrame_WhenFramePairIsNotDeviceToHost_ReturnsNullAndKeepsState()
+    [Theory, AutoNSubstituteData]
+    public void OnFrame_WhenFramePairIsNotDeviceToHost_ReturnsNullAndKeepsState(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
         sut.Start(0);
         sut.OnFrame(new SerialLinkFrame(0x80, 0x21, []), 10);
         var foreign = new SerialLinkFrame(0x43, 0x12, [0x00]);
@@ -70,11 +70,11 @@ public sealed class SerialLinkTests
         Assert.Equal(LinkState.InitSent, sut.State);
     }
 
-    [Fact]
-    public void OnFrame_WhenLinkIsIdle_ReturnsNull()
+    [Theory, AutoNSubstituteData]
+    public void OnFrame_WhenLinkIsIdle_ReturnsNull(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
         var frame = new SerialLinkFrame(0x80, 0x21, []);
 
         // Act
@@ -85,11 +85,11 @@ public sealed class SerialLinkTests
         Assert.Equal(LinkState.Idle, sut.State);
     }
 
-    [Fact]
-    public void OnTick_WhenRootSentAndTimeoutElapsed_MovesToLost()
+    [Theory, AutoNSubstituteData]
+    public void OnTick_WhenRootSentAndTimeoutElapsed_MovesToLost(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
         sut.Start(0);
 
         // Act
@@ -99,11 +99,11 @@ public sealed class SerialLinkTests
         Assert.Equal(LinkState.Lost, result);
     }
 
-    [Fact]
-    public void OnTick_WhenTimeoutHasNotElapsed_KeepsCurrentState()
+    [Theory, AutoNSubstituteData]
+    public void OnTick_WhenTimeoutHasNotElapsed_KeepsCurrentState(TimeProvider timeProvider)
     {
         // Arrange
-        var sut = new SerialLink(TimeProvider.System);
+        var sut = new SerialLink(timeProvider);
         sut.Start(0);
 
         // Act

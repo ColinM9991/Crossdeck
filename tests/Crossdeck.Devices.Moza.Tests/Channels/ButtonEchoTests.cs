@@ -13,8 +13,8 @@ public sealed class ButtonEchoTests
     private const byte UpdatePackage = 0x05;
     private const long RetransmitStep = 6_000_000;
 
-    [Fact]
-    public void Poll_WhenPrologueIsPresent_SkipsItBeforeReadingPackages()
+    [Theory, AutoNSubstituteData]
+    public void Poll_WhenPrologueIsPresent_SkipsItBeforeReadingPackages(TimeProvider timeProvider)
     {
         // Arrange
         var (sut, connection) = CreateSut();
@@ -23,15 +23,15 @@ public sealed class ButtonEchoTests
 
         // Act
         sut.Poll();
-        var packages = SentPackages(connection);
+        var packages = SentPackages(timeProvider, connection);
 
         // Assert
         var (id, _) = Assert.Single(packages);
         Assert.Equal(ServerVersionPackage, id);
     }
 
-    [Fact]
-    public void Poll_WhenClientVersionArrives_RespondsWithServerVersion()
+    [Theory, AutoNSubstituteData]
+    public void Poll_WhenClientVersionArrives_RespondsWithServerVersion(TimeProvider timeProvider)
     {
         // Arrange
         var (sut, connection) = CreateSut();
@@ -39,7 +39,7 @@ public sealed class ButtonEchoTests
 
         // Act
         sut.Poll();
-        var packages = SentPackages(connection);
+        var packages = SentPackages(timeProvider, connection);
 
         // Assert
         var (id, payload) = Assert.Single(packages);
@@ -47,8 +47,8 @@ public sealed class ButtonEchoTests
         Assert.Equal([0x00, 0x00, 0x00, 0x00], payload);
     }
 
-    [Fact]
-    public void Poll_WhenRegistrationArrives_StoresTheButtonIndexMapping()
+    [Theory, AutoNSubstituteData]
+    public void Poll_WhenRegistrationArrives_StoresTheButtonIndexMapping(TimeProvider timeProvider)
     {
         // Arrange
         var (sut, connection) = CreateSut();
@@ -58,15 +58,15 @@ public sealed class ButtonEchoTests
         // Act
         sut.Poll();
         sut.OnButton(12, pressed: true);
-        var packages = SentPackages(connection);
+        var packages = SentPackages(timeProvider, connection);
 
         // Assert
         var update = packages.Last(p => p.Id == UpdatePackage);
         Assert.Equal([3, 0x00, 0x01], update.Payload);
     }
 
-    [Fact]
-    public void Poll_WhenTokenArrives_MakesChannelLiveAndReplaysPressedButtons()
+    [Theory, AutoNSubstituteData]
+    public void Poll_WhenTokenArrives_MakesChannelLiveAndReplaysPressedButtons(TimeProvider timeProvider)
     {
         // Arrange
         var (sut, connection) = CreateSut();
@@ -76,7 +76,7 @@ public sealed class ButtonEchoTests
         // Act
         connection.Inbound.Append(NetworkPackage.Encode(TokenPackage, [0x01, 0x02, 0x03, 0x04]));
         sut.Poll();
-        var packages = SentPackages(connection);
+        var packages = SentPackages(timeProvider, connection);
 
         // Assert
         var tokenEcho = packages.Single(p => p.Id == TokenPackage);
@@ -86,25 +86,25 @@ public sealed class ButtonEchoTests
         Assert.Equal([3, 0x00, 0x01], update.Payload);
     }
 
-    [Fact]
-    public void OnButton_WhenButtonIsNotRegistered_SendsNothing()
+    [Theory, AutoNSubstituteData]
+    public void OnButton_WhenButtonIsNotRegistered_SendsNothing(TimeProvider timeProvider)
     {
         // Arrange
         var (sut, connection) = CreateSut();
         connection.Inbound.Append(NetworkPackage.Encode(TokenPackage, [0x01, 0x02, 0x03, 0x04]));
         sut.Poll();
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
 
         // Act
         sut.OnButton(99, pressed: true);
-        var packages = SentPackages(connection);
+        var packages = SentPackages(timeProvider, connection);
 
         // Assert
         Assert.DoesNotContain(packages, p => p.Id == UpdatePackage);
     }
 
-    [Fact]
-    public void ReleaseAll_WhenButtonsAreDown_SendsReleaseUpdatesForEach()
+    [Theory, AutoNSubstituteData]
+    public void ReleaseAll_WhenButtonsAreDown_SendsReleaseUpdatesForEach(TimeProvider timeProvider)
     {
         // Arrange
         var (sut, connection) = CreateSut();
@@ -114,11 +114,11 @@ public sealed class ButtonEchoTests
         sut.Poll();
         sut.OnButton(12, pressed: true);
         sut.OnButton(13, pressed: true);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
 
         // Act
         sut.ReleaseAll();
-        var packages = SentPackages(connection);
+        var packages = SentPackages(timeProvider, connection);
 
         // Assert
         var releases = packages.Where(p => p.Id == UpdatePackage).OrderBy(p => p.Payload[0]).ToArray();
@@ -135,10 +135,10 @@ public sealed class ButtonEchoTests
         return (sut, connection);
     }
 
-    private static List<(byte Id, byte[] Payload)> SentPackages(StreamConnection connection)
+    private static List<(byte Id, byte[] Payload)> SentPackages(TimeProvider timeProvider, StreamConnection connection)
     {
         var packages = new List<(byte, byte[])>();
-        foreach (var wire in StreamHarness.Outgoing(connection, RetransmitStep))
+        foreach (var wire in StreamHarness.Outgoing(connection, RetransmitStep, timeProvider))
         {
             var inner = StreamHarness.DecodeWire(wire).Inner;
             var queue = new ByteQueue();

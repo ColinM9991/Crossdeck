@@ -46,7 +46,6 @@ public sealed class ProfileEditor : IProfileEditor
             return; // TODO Union Result
 
         var deviceSlot = new DeviceSlot(model,
-            null,
             ImmutableDictionary<InputId, InputDefinition>.Empty,
             ImmutableDictionary<OutputId, OutputDefinition>.Empty);
 

@@ -4,7 +4,6 @@ using Crossdeck.Devices.Hid;
 using Crossdeck.Devices.WinCtrl.Drivers;
 using Crossdeck.Devices.WinCtrl.Encoders;
 using Crossdeck.Devices.WinCtrl.Frames;
-using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.WinCtrl.Tests.Drivers;
 
@@ -24,19 +23,11 @@ public sealed class WinCtrlCduDeviceDriverTests
     [Theory, AutoNSubstituteData]
     public void Show_WhenCalled_ForwardsTheScreenToTheFrameSource(
         TextScreen screen,
-        [Frozen] DeviceIdentity identity,
-        [Frozen] IHidTransport transport,
-        [Frozen] IHidReportDecoder decoder,
         [Frozen] IWinCtrlDisplayEncoder encoder,
-        [Frozen] IHidReportEncoder ledEncoder,
-        ILogger<HidDeviceDriver> hidLogger,
-        ILogger<WinCtrlOutputWriter> writerLogger)
+        [Frozen] CduFrameSource source,
+        WinCtrlCduDeviceDriver sut)
     {
         // Arrange
-        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
-        var source = new CduFrameSource(encoder);
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
-        var sut = new WinCtrlCduDeviceDriver(hid, writer, source);
         byte[] frame = [0x01, 0x02, 0x03];
         encoder.EncodeFrame(screen).Returns([frame]);
 
@@ -52,26 +43,19 @@ public sealed class WinCtrlCduDeviceDriverTests
     [Theory, AutoNSubstituteData]
     public async Task Show_WhenTheWriterIsRunning_WritesTheEncodedFrame(
         TextScreen screen,
-        [Frozen] DeviceIdentity identity,
         [Frozen] IHidTransport transport,
-        [Frozen] IHidReportDecoder decoder,
-        [Frozen] IWinCtrlDisplayEncoder encoder,
         [Frozen] IHidReportEncoder ledEncoder,
-        ILogger<HidDeviceDriver> hidLogger,
-        ILogger<WinCtrlOutputWriter> writerLogger)
+        [Frozen] IWinCtrlFrameSource frames,
+        [Frozen] WinCtrlOutputWriter writer,
+        WinCtrlCduDeviceDriver sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var hid = new HidDeviceDriver(identity, transport, decoder, hidLogger);
-        var source = new CduFrameSource(encoder);
-        var writer = new WinCtrlOutputWriter(transport, ledEncoder, source, writerLogger);
-        var sut = new WinCtrlCduDeviceDriver(hid, writer, source);
-
         byte[] frame = [0x01, 0x02, 0x03];
         ledEncoder.Encode(Arg.Any<IReadOnlyDictionary<OutputId, int>>()).Returns([]);
-        encoder.EncodeInit().Returns([]);
-        encoder.EncodeFrame(screen).Returns([frame]);
+        frames.EncodeInit().Returns([]);
+        frames.TakeFrame().Returns([frame], null);
         transport.WriteAsync(frame, Arg.Any<CancellationToken>())
             .Returns(async _ => await cts.CancelAsync());
 

@@ -42,27 +42,27 @@ public sealed class StreamConnectionTests
         Assert.Equal(StreamConnection.HostVersion, inner[9]);
     }
 
-    [Fact]
-    public void Next_WhenSyn2IsNotYetDue_ReturnsNull()
+    [Theory, AutoNSubstituteData]
+    public void Next_WhenSyn2IsNotYetDue_ReturnsNull(TimeProvider timeProvider)
     {
         // Arrange
         var sut = new StreamConnection(9010, 9060, new Syn(1, 9090, StreamConnection.HostVersion), 0);
 
         // Act
-        var result = sut.Next(0, TimeProvider.System);
+        var result = sut.Next(0, timeProvider);
 
         // Assert
         Assert.Null(result);
     }
 
-    [Fact]
-    public void Next_WhenRetransmitIsDue_ResendsSyn2()
+    [Theory, AutoNSubstituteData]
+    public void Next_WhenRetransmitIsDue_ResendsSyn2(TimeProvider timeProvider)
     {
         // Arrange
         var sut = new StreamConnection(9010, 9060, new Syn(1, 9090, StreamConnection.HostVersion), 0);
 
         // Act
-        var wire = sut.Next(Retransmit, TimeProvider.System);
+        var wire = sut.Next(Retransmit, timeProvider);
 
         // Assert
         var (magic, isn, _) = StreamHarness.DecodeWire(wire!);
@@ -70,8 +70,8 @@ public sealed class StreamConnectionTests
         Assert.Equal(9060, isn);
     }
 
-    [Fact]
-    public void Next_WhenRetriesAreExhausted_ThrowsFcdSessionLostException()
+    [Theory, AutoNSubstituteData]
+    public void Next_WhenRetriesAreExhausted_ThrowsFcdSessionLostException(TimeProvider timeProvider)
     {
         // Arrange
         var sut = new StreamConnection(9010, 9060, new Syn(1, 9090, StreamConnection.HostVersion), 0);
@@ -81,12 +81,12 @@ public sealed class StreamConnectionTests
         for (var i = 0; i < 8; i++)
         {
             now += Retransmit;
-            sut.Next(now, TimeProvider.System);
+            sut.Next(now, timeProvider);
         }
 
         // Assert
         now += Retransmit;
-        Assert.Throws<FcdSessionLostException>(() => sut.Next(now, TimeProvider.System));
+        Assert.Throws<FcdSessionLostException>(() => sut.Next(now, timeProvider));
     }
 
     [Fact]
@@ -102,8 +102,8 @@ public sealed class StreamConnectionTests
         Assert.Equal(StreamState.Open, sut.State);
     }
 
-    [Fact]
-    public void Send_WhenDataExceedsChunkSize_SplitsIntoChunks()
+    [Theory, AutoNSubstituteData]
+    public void Send_WhenDataExceedsChunkSize_SplitsIntoChunks(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
@@ -111,7 +111,7 @@ public sealed class StreamConnectionTests
 
         // Act
         sut.Send(data);
-        var frames = StreamHarness.Outgoing(sut, Retransmit);
+        var frames = StreamHarness.Outgoing(sut, Retransmit, timeProvider);
 
         // Assert
         Assert.Equal(2, frames.Count);
@@ -158,15 +158,15 @@ public sealed class StreamConnectionTests
         Assert.Equal(0, sut.Inbound.Length);
     }
 
-    [Fact]
-    public void OnRequest_WhenFinArrives_MarksPeerFinishedAndQueuesOwnFin()
+    [Theory, AutoNSubstituteData]
+    public void OnRequest_WhenFinArrives_MarksPeerFinishedAndQueuesOwnFin(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
 
         // Act
         sut.OnRequest(Magic.Fin, 2, [], Retransmit);
-        var frames = StreamHarness.Outgoing(sut, 2 * Retransmit);
+        var frames = StreamHarness.Outgoing(sut, 2 * Retransmit, timeProvider);
 
         // Assert
         Assert.True(sut.PeerFinished);
@@ -175,8 +175,8 @@ public sealed class StreamConnectionTests
         Assert.Equal(Magic.Fin, magic);
     }
 
-    [Fact]
-    public void IsClosed_WhenBothSidesFinishedAndFinIsAcked_ReturnsTrue()
+    [Theory, AutoNSubstituteData]
+    public void IsClosed_WhenBothSidesFinishedAndFinIsAcked_ReturnsTrue(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
@@ -185,21 +185,21 @@ public sealed class StreamConnectionTests
         sut.Finish();
 
         // Act
-        var frames = StreamHarness.Outgoing(sut, 2 * Retransmit);
+        var frames = StreamHarness.Outgoing(sut, 2 * Retransmit, timeProvider);
 
         // Assert
         Assert.True(sut.IsClosed);
         Assert.NotEmpty(frames);
     }
 
-    [Fact]
-    public void Next_WhenIdleForHeartbeatInterval_SendsEmptyTrans()
+    [Theory, AutoNSubstituteData]
+    public void Next_WhenIdleForHeartbeatInterval_SendsEmptyTrans(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
 
         // Act
-        var wire = sut.Next(Heartbeat + Retransmit, TimeProvider.System);
+        var wire = sut.Next(Heartbeat + Retransmit, timeProvider);
 
         // Assert
         var (magic, _, inner) = StreamHarness.DecodeWire(wire!);
@@ -207,34 +207,34 @@ public sealed class StreamConnectionTests
         Assert.Equal(Wire.CrcSize, inner.Length - 6);
     }
 
-    [Fact]
-    public void TimedOut_WhenLastAckIsOlderThanTimeout_ReturnsTrue()
+    [Theory, AutoNSubstituteData]
+    public void TimedOut_WhenLastAckIsOlderThanTimeout_ReturnsTrue(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
 
         // Act
-        var result = sut.TimedOut(Timeout, TimeProvider.System);
+        var result = sut.TimedOut(Timeout, timeProvider);
 
         // Assert
         Assert.True(result);
     }
 
-    [Fact]
-    public void TimedOut_WhenTimeoutHasNotElapsed_ReturnsFalse()
+    [Theory, AutoNSubstituteData]
+    public void TimedOut_WhenTimeoutHasNotElapsed_ReturnsFalse(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
 
         // Act
-        var result = sut.TimedOut(Timeout - 1, TimeProvider.System);
+        var result = sut.TimedOut(Timeout - 1, timeProvider);
 
         // Assert
         Assert.False(result);
     }
 
-    [Fact]
-    public void Finish_WhenCalledTwice_QueuesSingleFinFrame()
+    [Theory, AutoNSubstituteData]
+    public void Finish_WhenCalledTwice_QueuesSingleFinFrame(TimeProvider timeProvider)
     {
         // Arrange
         var sut = StreamHarness.OpenedConnection(9010, 9060, 0);
@@ -242,7 +242,7 @@ public sealed class StreamConnectionTests
         // Act
         sut.Finish();
         sut.Finish();
-        var frames = StreamHarness.Outgoing(sut, Retransmit);
+        var frames = StreamHarness.Outgoing(sut, Retransmit, timeProvider);
 
         // Assert
         var finFrames = frames.Count(wire => StreamHarness.DecodeWire(wire).Magic == Magic.Fin);

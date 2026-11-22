@@ -10,38 +10,42 @@ public sealed class McduChannelTests
     private const long RetransmitStep = 6_000_000;
     private const long TicksPerSecond = 10_000_000;
 
-    [Fact]
-    public void Attach_WhenCalled_SendsInitConfig()
+    [Theory, AutoNSubstituteData]
+    public void Attach_WhenCalled_SendsInitConfig(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateSut();
+        var sut = CreateSut(timeProvider, logger);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
 
         // Act
         sut.Attach(connection);
-        var wires = StreamHarness.Outgoing(connection, RetransmitStep);
+        var wires = StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
 
         // Assert
         var (id, _) = Assert.Single(ReadPackages(wires));
         Assert.Equal(McduFrameEncoder.ClientCapabilityPackage - 1, id);
     }
 
-    [Fact]
-    public void TrySend_WhenItIsTheFirstFrame_SendsKeyframeWithoutShowingThePage()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenItIsTheFirstFrame_SendsKeyframeWithoutShowingThePage(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var (settings, settingsConnection) = ReadySettingsChannel();
+        var (settings, settingsConnection) = ReadySettingsChannel(timeProvider, logger);
         var sut = new McduChannel(settings);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
         SendClientCapability(connection, pageIndex: 7);
         sut.Poll();
 
         // Act
         sut.TrySend(Screen('A'));
-        var wires = StreamHarness.Outgoing(connection, 2 * RetransmitStep);
-        var settingWires = StreamHarness.Outgoing(settingsConnection, 3 * RetransmitStep);
+        var wires = StreamHarness.Outgoing(connection, 2 * RetransmitStep, timeProvider);
+        var settingWires = StreamHarness.Outgoing(settingsConnection, 3 * RetransmitStep, timeProvider);
 
         // Assert
         var (id, payload) = Assert.Single(ReadPackages(wires));
@@ -50,27 +54,29 @@ public sealed class McduChannelTests
         Assert.Empty(ReadSettingFrames(settingWires));
     }
 
-    [Fact]
-    public void TrySend_WhenSecondFrameArrives_SendsDeltaAndShowsMcduPage()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenSecondFrameArrives_SendsDeltaAndShowsMcduPage(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var (settings, settingsConnection) = ReadySettingsChannel();
+        var (settings, settingsConnection) = ReadySettingsChannel(timeProvider, logger);
         var sut = new McduChannel(settings);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
         SendClientCapability(connection, pageIndex: 7);
         sut.Poll();
         var previous = Screen('A');
         sut.TrySend(previous);
-        StreamHarness.Outgoing(connection, 2 * RetransmitStep);
+        StreamHarness.Outgoing(connection, 2 * RetransmitStep, timeProvider);
         var current = Screen('A');
         SetRow(current, 5, 'X');
 
         // Act
         sut.TrySend(current);
-        var wires = StreamHarness.Outgoing(connection, 3 * RetransmitStep);
-        var settingWires = StreamHarness.Outgoing(settingsConnection, 4 * RetransmitStep);
+        var wires = StreamHarness.Outgoing(connection, 3 * RetransmitStep, timeProvider);
+        var settingWires = StreamHarness.Outgoing(settingsConnection, 4 * RetransmitStep, timeProvider);
 
         // Assert
         var (id, payload) = Assert.Single(ReadPackages(wires));
@@ -83,25 +89,27 @@ public sealed class McduChannelTests
         Assert.Equal([SettingsChannel.McduDisplayMode], setting.Data);
     }
 
-    [Fact]
-    public void TrySend_WhenSecondFrameIsTheSameScreen_ShowsPageWithoutSending()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenSecondFrameIsTheSameScreen_ShowsPageWithoutSending(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var (settings, settingsConnection) = ReadySettingsChannel();
+        var (settings, settingsConnection) = ReadySettingsChannel(timeProvider, logger);
         var sut = new McduChannel(settings);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
         SendClientCapability(connection, pageIndex: 7);
         sut.Poll();
         var screen = Screen('A');
         sut.TrySend(screen);
-        StreamHarness.Outgoing(connection, 2 * RetransmitStep);
+        StreamHarness.Outgoing(connection, 2 * RetransmitStep, timeProvider);
 
         // Act
         sut.TrySend(screen);
-        var wires = StreamHarness.Outgoing(connection, 3 * RetransmitStep);
-        var settingWires = StreamHarness.Outgoing(settingsConnection, 4 * RetransmitStep);
+        var wires = StreamHarness.Outgoing(connection, 3 * RetransmitStep, timeProvider);
+        var settingWires = StreamHarness.Outgoing(settingsConnection, 4 * RetransmitStep, timeProvider);
 
         // Assert
         Assert.Empty(ReadPackages(wires));
@@ -111,104 +119,114 @@ public sealed class McduChannelTests
         Assert.Equal([SettingsChannel.McduDisplayMode], setting.Data);
     }
 
-    [Fact]
-    public void TrySend_WhenScreenIsUnchanged_SendsNothing()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenScreenIsUnchanged_SendsNothing(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateSut();
+        var sut = CreateSut(timeProvider, logger);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
         SendClientCapability(connection, pageIndex: 7);
         sut.Poll();
         var screen = Screen('A');
         sut.TrySend(screen);
-        StreamHarness.Outgoing(connection, 2 * RetransmitStep);
+        StreamHarness.Outgoing(connection, 2 * RetransmitStep, timeProvider);
 
         // Act
         sut.TrySend(screen);
-        var frames = StreamHarness.Outgoing(connection, 3 * RetransmitStep);
+        var frames = StreamHarness.Outgoing(connection, 3 * RetransmitStep, timeProvider);
 
         // Assert
         Assert.Empty(frames);
     }
 
-    [Fact]
-    public void TrySend_WhenMoreThanSixRowsChanged_SendsKeyframe()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenMoreThanSixRowsChanged_SendsKeyframe(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateSut();
+        var sut = CreateSut(timeProvider, logger);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
         SendClientCapability(connection, pageIndex: 7);
         sut.Poll();
         var previous = Screen('A');
         sut.TrySend(previous);
-        StreamHarness.Outgoing(connection, 2 * RetransmitStep);
+        StreamHarness.Outgoing(connection, 2 * RetransmitStep, timeProvider);
         var current = Screen('A');
         for (var row = 0; row < 7; row++)
             SetRow(current, row, 'X');
 
         // Act
         sut.TrySend(current);
-        var wires = StreamHarness.Outgoing(connection, 3 * RetransmitStep);
+        var wires = StreamHarness.Outgoing(connection, 3 * RetransmitStep, timeProvider);
 
         // Assert
         var (id, _) = Assert.Single(ReadPackages(wires));
         Assert.Equal(McduFrameEncoder.ClientCapabilityPackage - 3, id);
     }
 
-    [Fact]
-    public void TrySend_WhenPageIndexIsNotKnown_DoesNotSend()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenPageIndexIsNotKnown_DoesNotSend(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateSut();
+        var sut = CreateSut(timeProvider, logger);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
 
         // Act
         sut.TrySend(Screen('A'));
-        var frames = StreamHarness.Outgoing(connection, 2 * RetransmitStep);
+        var frames = StreamHarness.Outgoing(connection, 2 * RetransmitStep, timeProvider);
 
         // Assert
         Assert.Empty(frames);
     }
 
-    [Fact]
-    public void TrySend_WhenConnectionIsNotIdle_DoesNotSend()
+    [Theory, AutoNSubstituteData]
+    public void TrySend_WhenConnectionIsNotIdle_DoesNotSend(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
         // Arrange
-        var sut = CreateSut();
+        var sut = CreateSut(timeProvider, logger);
         var connection = StreamHarness.OpenedConnection(StreamMux.McduService, 9060, 0);
         sut.Attach(connection);
         SendClientCapability(connection, pageIndex: 7);
 
         // Act
         sut.TrySend(Screen('A'));
-        var wires = StreamHarness.Outgoing(connection, RetransmitStep);
+        var wires = StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
 
         // Assert
         var (id, _) = Assert.Single(ReadPackages(wires));
         Assert.Equal(McduFrameEncoder.ClientCapabilityPackage - 1, id);
     }
 
-    private static McduChannel CreateSut()
+    private static McduChannel CreateSut(TimeProvider timeProvider, ILogger logger)
     {
-        var settings = new SettingsChannel(TimeProvider.System, Substitute.For<ILogger>());
+        var settings = new SettingsChannel(timeProvider, logger);
         return new McduChannel(settings);
     }
 
-    private static (SettingsChannel Settings, StreamConnection Connection) ReadySettingsChannel()
+    private static (SettingsChannel Settings, StreamConnection Connection) ReadySettingsChannel(
+        TimeProvider timeProvider,
+        ILogger logger)
     {
-        var settings = new SettingsChannel(TimeProvider.System, Substitute.For<ILogger>());
+        var settings = new SettingsChannel(timeProvider, logger);
         var connection = StreamHarness.OpenedConnection(StreamMux.SettingsService, 9060, 0);
         settings.Attach(connection);
         connection.Inbound.Append([0x07, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         settings.Poll(0);
         settings.OnTick(4 * TicksPerSecond);
-        StreamHarness.Outgoing(connection, RetransmitStep);
+        StreamHarness.Outgoing(connection, RetransmitStep, timeProvider);
         return (settings, connection);
     }
 

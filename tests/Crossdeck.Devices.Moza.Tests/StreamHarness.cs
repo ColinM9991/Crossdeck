@@ -20,18 +20,19 @@ internal static class StreamHarness
 
     public static List<byte[]> Outgoing(
         StreamConnection connection,
-        long start)
+        long start,
+        TimeProvider timeProvider)
     {
         var frames = new List<byte[]>();
         var now = start;
 
         for (var i = 0; i < MaxFrames; i++)
         {
-            var wire = connection.Next(now, TimeProvider.System);
+            var wire = connection.Next(now, timeProvider);
             if (wire is null)
             {
                 now += RetransmitStep;
-                wire = connection.Next(now, TimeProvider.System);
+                wire = connection.Next(now, timeProvider);
                 if (wire is null)
                     break;
             }

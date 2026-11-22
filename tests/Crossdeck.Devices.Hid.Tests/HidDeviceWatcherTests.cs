@@ -1,4 +1,3 @@
-using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
 
 namespace Crossdeck.Devices.Hid.Tests;

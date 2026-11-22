@@ -1,5 +1,6 @@
 using Crossdeck.Application.Devices;
 using Crossdeck.Application.Routing;
+using Crossdeck.Application.Routing.Input;
 using Crossdeck.Application.Session;
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Inputs;
@@ -13,12 +14,13 @@ namespace Crossdeck.Application.Tests;
 
 public sealed class ServiceCollectionExtensionsTests
 {
-    [Fact]
-    public void AddSimulationServices_Always_ResolvesSameSimSessionSupervisorInstanceForAllItsInterfaces()
+    [Theory, AutoNSubstituteData]
+    public void AddSimulationServices_Always_ResolvesSameSimSessionSupervisorInstanceForAllItsInterfaces(
+        TimeProvider timeProvider)
     {
         // Arrange
         var services = new ServiceCollection();
-        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton(timeProvider);
         services.AddSingleton<ILogger<SimSessionSupervisor>>(NullLogger<SimSessionSupervisor>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
@@ -33,15 +35,17 @@ public sealed class ServiceCollectionExtensionsTests
         Assert.Same(concrete, supervisor);
     }
 
-    [Fact]
-    public void AddSimulationServices_Always_ResolvesSameDeviceRegistryInstanceForIDeviceRegistry()
+    [Theory, AutoNSubstituteData]
+    public void AddSimulationServices_Always_ResolvesSameDeviceRegistryInstanceForIDeviceRegistry(
+        TimeProvider timeProvider)
     {
         // Arrange
         var services = new ServiceCollection();
-        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton(timeProvider);
         services.AddSingleton<ILogger<DeviceRegistry>>(NullLogger<DeviceRegistry>.Instance);
         services.AddSingleton<ILogger<SimSessionSupervisor>>(NullLogger<SimSessionSupervisor>.Instance);
         services.AddSingleton<ILogger<InputDispatcher>>(NullLogger<InputDispatcher>.Instance);
+        services.AddSingleton<ILogger<SubscriptionAggregator>>(NullLogger<SubscriptionAggregator>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
 
@@ -53,14 +57,16 @@ public sealed class ServiceCollectionExtensionsTests
         Assert.Same(concrete, registry);
     }
 
-    [Fact]
-    public void AddSimulationServices_Always_ResolvesSameInputDispatcherInstanceForAllItsInterfaces()
+    [Theory, AutoNSubstituteData]
+    public void AddSimulationServices_Always_ResolvesSameInputDispatcherInstanceForAllItsInterfaces(
+        TimeProvider timeProvider)
     {
         // Arrange
         var services = new ServiceCollection();
-        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton(timeProvider);
         services.AddSingleton<ILogger<SimSessionSupervisor>>(NullLogger<SimSessionSupervisor>.Instance);
         services.AddSingleton<ILogger<InputDispatcher>>(NullLogger<InputDispatcher>.Instance);
+        services.AddSingleton<ILogger<SubscriptionAggregator>>(NullLogger<SubscriptionAggregator>.Instance);
 
         var provider = services.AddSimulationServices().BuildServiceProvider();
 

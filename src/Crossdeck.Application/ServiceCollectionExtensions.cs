@@ -44,6 +44,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAircraftScreenAdapterFactory, AircraftScreenAdapterFactory>();
         services.AddSingleton<IExpressionCompiler, NCalcExpressionCompiler>();
 
+        services.AddSingleton<IVariableStore, VariableStore>();
+
         return services;
     }
 }

@@ -1,5 +1,4 @@
 using Crossdeck.Devices.Serial;
-using Microsoft.Extensions.Logging;
 
 namespace Crossdeck.Devices.Moza.Tests;
 
@@ -9,29 +8,30 @@ public sealed class FcdSessionTests
     public void Constructors_VerifyGuardClauses()
     {
         // Arrange
-        var fixture = new Fixture().Customize(new AutoNSubstituteCustomization());
-        fixture.Register(() => TimeProvider.System);
+        var fixture = new Fixture()
+            .Customize(new AutoNSubstituteCustomization())
+            .Customize(new TimeProviderCustomization());
         var assertion = new GuardClauseAssertion(fixture);
 
         // Act / Assert
         assertion.Verify(typeof(FcdSession).GetConstructors());
     }
 
-    [Fact]
-    public async Task RunAsync_WhenCancelled_CompletesAndDisposesTheTransport()
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenCancelled_CompletesAndDisposesTheTransport(
+        [Frozen] ISerialTransport transport,
+        TimeProvider timeProvider,
+        FcdSession sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var transport = Substitute.For<ISerialTransport>();
         transport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 var token = call.ArgAt<CancellationToken>(1);
                 return Task.Delay(Timeout.Infinite, token).ContinueWith(_ => 0, TaskScheduler.Default);
             });
-
-        var sut = CreateSut(transport);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
@@ -43,15 +43,15 @@ public sealed class FcdSessionTests
         await transport.Received(1).DisposeAsync();
     }
 
-    [Fact]
-    public async Task RunAsync_WhenReadReturnsZero_ThrowsFcdSessionLostException()
+    [Theory, AutoNSubstituteData]
+    public async Task RunAsync_WhenReadReturnsZero_ThrowsFcdSessionLostException(
+        [Frozen] ISerialTransport transport,
+        TimeProvider timeProvider,
+        FcdSession sut)
     {
         // Arrange
-        var transport = Substitute.For<ISerialTransport>();
         transport.ReadAsync(Arg.Any<Memory<byte>>(), Arg.Any<CancellationToken>())
             .Returns(0);
-
-        var sut = CreateSut(transport);
 
         // Act
         var exception = await Assert.ThrowsAsync<FcdSessionLostException>(
@@ -61,20 +61,16 @@ public sealed class FcdSessionTests
         Assert.IsType<EndOfStreamException>(exception.InnerException);
     }
 
-    [Fact]
-    public async Task DisposeAsync_WhenCalled_DisposesTheTransport()
+    [Theory, AutoNSubstituteData]
+    public async Task DisposeAsync_WhenCalled_DisposesTheTransport(
+        [Frozen] ISerialTransport transport,
+        TimeProvider timeProvider,
+        FcdSession sut)
     {
-        // Arrange
-        var transport = Substitute.For<ISerialTransport>();
-        var sut = CreateSut(transport);
-
         // Act
         await sut.DisposeAsync();
 
         // Assert
         await transport.Received(1).DisposeAsync();
     }
-
-    private static FcdSession CreateSut(ISerialTransport transport) =>
-        new(transport, TimeProvider.System, Substitute.For<ILogger<FcdSession>>());
 }

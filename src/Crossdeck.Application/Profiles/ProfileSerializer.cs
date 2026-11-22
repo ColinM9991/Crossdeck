@@ -27,20 +27,24 @@ internal sealed class ProfileSerializer : IProfileSerializer
         {
             return Invalid(e.Path ?? string.Empty, e.Message);
         }
+        if (!root.TryGetPropertyValue(SchemaVersionKey, out var schemaVersionNode) || schemaVersionNode is null)
+            return Invalid($"/{SchemaVersionKey}", "Missing schema version");
 
-        var schemaVersion = root[SchemaVersionKey]?.GetValue<int?>();
+        var versionNodeValue = schemaVersionNode.AsValue();
+
+        if (!versionNodeValue.TryGetValue(out int schemaVersion) || schemaVersion < 0)
+            return Invalid($"/{SchemaVersionKey}", "Invalid schema version");
+
         switch (schemaVersion)
         {
-            case null:
-                return Invalid($"/{SchemaVersionKey}", "Missing schema version");
             case > CurrentSchemaVersion:
-                return new ProfileLoadResult.TooNew(schemaVersion.Value, CurrentSchemaVersion);
+                return new ProfileLoadResult.TooNew(schemaVersion, CurrentSchemaVersion);
             default:
                 root.Remove(SchemaVersionKey);
                 try
                 {
                     var profile = root.Deserialize<Profile>(SerializerOptions)!;
-                    return new ProfileLoadResult.Loaded(new ProfileDocument(profile, schemaVersion.Value, false));
+                    return new ProfileLoadResult.Loaded(new ProfileDocument(profile, schemaVersion, false));
                 }
                 catch (JsonException ex)
                 {

@@ -4,6 +4,12 @@ root = true
 indent_style = space
 trim_trailing_whitespace = true
 
+# Fixture-injected SUT and collaborator parameters are unused in the test body by design
+# (agents/unit-testing.md: dependencies as [Frozen] parameters, SUT last, constructed by the fixture),
+# so xUnit1026 does not apply to the house test style.
+[tests/**/*.cs]
+dotnet_diagnostic.xUnit1026.severity = none
+
 [*.cs]
 indent_size = 4
 charset = utf-8-bom

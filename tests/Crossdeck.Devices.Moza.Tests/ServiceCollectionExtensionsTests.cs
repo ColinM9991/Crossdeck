@@ -1,21 +1,12 @@
 using Crossdeck.Core.Devices;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Crossdeck.Devices.Moza.Tests;
 
 public sealed class ServiceCollectionExtensionsTests
 {
-    public static TheoryData<Type, ServiceLifetime, object?> ExpectedRegistrations => new()
-    {
-        { typeof(IDeviceDriverFactory), ServiceLifetime.Singleton, typeof(MozaDeviceDriverFactory) },
-        { typeof(TimeProvider), ServiceLifetime.Singleton, TimeProvider.System },
-    };
-
-    [Theory]
-    [MemberData(nameof(ExpectedRegistrations))]
-    public void AddMozaServices_Always_RegistersExpectedServiceAsSingleton(
-        Type serviceType,
-        ServiceLifetime lifetime,
-        object? expectedImplementation)
+    [Fact]
+    public void AddMozaServices_Always_RegistersMozaDeviceDriverFactoryAsSingleton()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -24,9 +15,26 @@ public sealed class ServiceCollectionExtensionsTests
         services.AddMozaServices();
 
         // Assert
-        var descriptor = Assert.Single(services, d => d.ServiceType == serviceType);
+        var descriptor = Assert.Single(services, d => d.ServiceType == typeof(IDeviceDriverFactory));
         var actualImplementation = descriptor.ImplementationType ?? descriptor.ImplementationInstance;
-        Assert.Equal(lifetime, descriptor.Lifetime);
-        Assert.Equal(expectedImplementation, actualImplementation);
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+        Assert.Equal(typeof(MozaDeviceDriverFactory), actualImplementation);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void AddMozaServices_Always_RegistersTimeProviderAsSingleton(
+        TimeProvider timeProvider)
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.TryAddSingleton(timeProvider);
+
+        // Act
+        services.AddMozaServices();
+
+        // Assert
+        var descriptor = Assert.Single(services, d => d.ServiceType == typeof(TimeProvider));
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+        Assert.Same(timeProvider, descriptor.ImplementationInstance);
     }
 }

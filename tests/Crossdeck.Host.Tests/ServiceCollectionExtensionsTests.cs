@@ -1,5 +1,6 @@
 using Crossdeck.Application.Devices;
-using Crossdeck.Application.Routing;
+using Crossdeck.Application.Routing.Input;
+using Crossdeck.Application.Routing.Output;
 using Crossdeck.Application.Session;
 using Crossdeck.Core.Devices;
 using Crossdeck.Devices.WinCtrl;

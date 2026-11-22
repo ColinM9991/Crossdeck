@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Crossdeck.Core.Profiles;
+﻿using Crossdeck.Core.Profiles;
 using Crossdeck.Core.Profiles.Models;
 
 namespace Crossdeck.Application.Profiles;
@@ -8,29 +7,21 @@ internal sealed class ProfileStore : IProfileStore
 {
     private readonly string _profilesPath;
     private readonly IProfileSerializer _profileSerializer;
-    private ImmutableArray<ProfileSummary> _profileSummaries;
 
 
     public ProfileStore(
         IProfileSerializer profileSerializer)
     {
         _profileSerializer = profileSerializer ?? throw new ArgumentNullException(nameof(profileSerializer));
-        _profileSummaries = ImmutableArray<ProfileSummary>.Empty;
 
         var applicationPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "Crossdeck");
 
         _profilesPath = Path.Combine(applicationPath, "Profiles");
     }
 
-    public async Task<IReadOnlyList<ProfileSummary>> ListAsync(CancellationToken cancellationToken)
-    {
-        if (_profileSummaries.IsEmpty)
-            await LoadAllProfiles(cancellationToken);
-
-        return _profileSummaries;
-    }
+    public async Task<IReadOnlyList<ProfileSummary>> ListAsync(CancellationToken cancellationToken) => await LoadAllProfiles(cancellationToken);
 
     public async Task<ProfileLoadResult> LoadAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -46,12 +37,10 @@ internal sealed class ProfileStore : IProfileStore
 
     public async Task SaveAsync(Profile profile, CancellationToken cancellationToken)
     {
-        var tempFilePath = Path.Combine(_profilesPath, $"{profile.Id}.tmp.json");
-        var fileMode = File.Exists(tempFilePath) ? FileMode.Truncate : FileMode.OpenOrCreate;
+        var tempFilePath = Path.Combine(_profilesPath, $"{profile.Id}.json.tmp");
 
-        await using var fileStream = File.Open(tempFilePath, fileMode);
-
-        await _profileSerializer.WriteAsync(profile, fileStream, cancellationToken);
+        await using (var fileStream = File.Create(tempFilePath))
+            await _profileSerializer.WriteAsync(profile, fileStream, cancellationToken);
 
         var targetFilePath = Path.Combine(_profilesPath, $"{profile.Id}.json");
         File.Move(tempFilePath, targetFilePath, overwrite: true);
@@ -68,20 +57,30 @@ internal sealed class ProfileStore : IProfileStore
         return Task.CompletedTask;
     }
 
-    private async Task LoadAllProfiles(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ProfileSummary>> LoadAllProfiles(CancellationToken cancellationToken)
     {
+        var profileSummaries = new List<ProfileSummary>();
         foreach (var file in Directory.EnumerateFiles(_profilesPath, "*.json"))
         {
-            await using var fileStream = File.Open(file, FileMode.Open);
-            var profile = await _profileSerializer.ReadAsync(fileStream, cancellationToken);
-            if (profile is not ProfileLoadResult.Loaded res)
-                continue;
+            try
+            {
+                await using var fileStream = File.OpenRead(file);
+                var profile = await _profileSerializer.ReadAsync(fileStream, cancellationToken);
+                if (profile is not ProfileLoadResult.Loaded res)
+                    continue;
 
-            _profileSummaries = _profileSummaries.Add(new ProfileSummary(
-                res.Document.Profile.Id,
-                res.Document.Profile.Name,
-                res.Document.Profile.Simulator,
-                res.Document.Profile.Aircraft));
+                profileSummaries.Add(new ProfileSummary(
+                    res.Document.Profile.Id,
+                    res.Document.Profile.Name,
+                    res.Document.Profile.Simulator,
+                    res.Document.Profile.Aircraft));
+            }
+            catch (IOException)
+            {
+                continue;
+            }
         }
+
+        return profileSummaries;
     }
 }

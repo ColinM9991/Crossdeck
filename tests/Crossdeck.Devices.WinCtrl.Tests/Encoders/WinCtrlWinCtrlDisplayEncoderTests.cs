@@ -5,22 +5,25 @@ namespace Crossdeck.Devices.WinCtrl.Tests.Encoders;
 
 public sealed class WinCtrlWinCtrlDisplayEncoderTests
 {
-    [Fact]
-    public void Constructor_WithDefinitionMissingCduSettings_ThrowsArgumentException()
+    [Theory, AutoNSubstituteData]
+    public void Constructor_WithDefinitionMissingCduSettings_ThrowsArgumentException(
+        WinCtrlDefinition definition,
+        TextPalette palette)
     {
         // Arrange
-        var definition = new WinCtrlDefinition("test", 1, new HashSet<ushort>(), [], WinCtrlKind.Segment,
-            new Dictionary<ushort, DisplayRole>(), Displays: []);
+        var missing = definition with { Cdu = null };
 
         // Act / Assert
-        Assert.Throws<ArgumentException>(() => new WinCtrlWinCtrlDisplayEncoder(definition, TextPalette.Default));
+        Assert.Throws<ArgumentException>(() => new WinCtrlWinCtrlDisplayEncoder(missing, palette));
     }
 
-    [Fact]
-    public void EncodeInit_Always_ProducesSixtyFourByteSetupReportPackets()
+    [Theory, AutoNSubstituteData]
+    public void EncodeInit_Always_ProducesSixtyFourByteSetupReportPackets(
+        WinCtrlDefinition definition,
+        TextPalette palette)
     {
         // Arrange
-        var sut = new WinCtrlWinCtrlDisplayEncoder(CreateCduDefinition(), TextPalette.Default);
+        var sut = new WinCtrlWinCtrlDisplayEncoder(definition, palette);
 
         // Act
         var packets = sut.EncodeInit();
@@ -31,11 +34,13 @@ public sealed class WinCtrlWinCtrlDisplayEncoderTests
         Assert.All(packets, p => Assert.Equal(0xF0, p[0]));
     }
 
-    [Fact]
-    public void EncodeFrame_Always_ProducesSixtyFourByteScreenReportPackets()
+    [Theory, AutoNSubstituteData]
+    public void EncodeFrame_Always_ProducesSixtyFourByteScreenReportPackets(
+        WinCtrlDefinition definition,
+        TextPalette palette)
     {
         // Arrange
-        var sut = new WinCtrlWinCtrlDisplayEncoder(CreateCduDefinition(), TextPalette.Default);
+        var sut = new WinCtrlWinCtrlDisplayEncoder(definition, palette);
 
         // Act
         var packets = sut.EncodeFrame(TextScreen.WaitingForData);
@@ -46,11 +51,13 @@ public sealed class WinCtrlWinCtrlDisplayEncoderTests
         Assert.All(packets, p => Assert.Equal(0xF2, p[0]));
     }
 
-    [Fact]
-    public void Reset_Always_RestartsThePacketSequence()
+    [Theory, AutoNSubstituteData]
+    public void Reset_Always_RestartsThePacketSequence(
+        WinCtrlDefinition definition,
+        TextPalette palette)
     {
         // Arrange
-        var sut = new WinCtrlWinCtrlDisplayEncoder(CreateCduDefinition(), TextPalette.Default);
+        var sut = new WinCtrlWinCtrlDisplayEncoder(definition, palette);
         sut.EncodeInit();
 
         // Act
@@ -60,8 +67,4 @@ public sealed class WinCtrlWinCtrlDisplayEncoderTests
         // Assert
         Assert.Equal(1, packets[0][2]);
     }
-
-    private static WinCtrlDefinition CreateCduDefinition() =>
-        new("test", 1, new HashSet<ushort>(), [], WinCtrlKind.Cdu, new Dictionary<ushort, DisplayRole>(),
-            Cdu: new CduScreenSettings(Left: 0, Top: 0, LargeFontId: 1, SmallFontId: 2), Displays: []);
 }

@@ -1,8 +1,10 @@
 using System.Threading.Channels;
-using Crossdeck.Application.Routing;
+using Crossdeck.Application.Routing.Output;
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Models;
-using Crossdeck.Core.Mapping;
+using Crossdeck.Core.Mapping.Output;
+using Crossdeck.Core.Routing;
+using Crossdeck.Core.Routing.Adapters;
 using Crossdeck.Core.Session;
 using Crossdeck.Core.Session.Models;
 using Crossdeck.Core.Simulators;
@@ -18,7 +20,6 @@ public sealed class SimValueRouterTests
     {
         // Arrange
         var fixture = new Fixture().Customize(new AutoNSubstituteCustomization());
-        fixture.Register(() => TimeProvider.System);
         var assertion = new GuardClauseAssertion(fixture);
 
         // Act / Assert
@@ -28,15 +29,17 @@ public sealed class SimValueRouterTests
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenThereIsNoActiveSimulator_CompletesWhenCancelled(
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         activeSim.Current.Returns((ISimProducer?)null);
 
         using var cts = new CancellationTokenSource();
-
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
@@ -49,14 +52,17 @@ public sealed class SimValueRouterTests
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheSimulatorIsReadyAndTheAircraftChanges_RaisesAircraftChanged(
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
 
@@ -75,20 +81,31 @@ public sealed class SimValueRouterTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void TryGet_WhenNoValuesHaveChanged_ReturnsFalse(
+    public async Task RunAsync_WhenNoValuesHaveChanged_LeavesTheCacheEmpty(
         SimRef reference,
-        IActiveSim activeSim,
-        IDeviceRegistry deviceRegistry,
-        ILogger<SimValueRouter> logger)
+        [Frozen] IActiveSim activeSim,
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
+        using var cts = new CancellationTokenSource();
+
+        var (_, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
-        var found = sut.TryGet(reference, out var entry);
+        var runTask = sut.RunAsync(cts.Token);
+        await simulatorChanged;
+
+        await cts.CancelAsync();
 
         // Assert
-        Assert.False(found);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+        Assert.False(simValueCache.TryGet(reference, out var entry));
         Assert.Null(entry);
     }
 
@@ -97,21 +114,24 @@ public sealed class SimValueRouterTests
         SimRef reference,
         SimValue value,
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, value));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, value)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -119,44 +139,52 @@ public sealed class SimValueRouterTests
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
-        Assert.True(sut.TryGet(reference, out var entry));
+        Assert.True(simValueCache.TryGet(reference, out var entry));
         Assert.Equal(value, entry!.Value);
     }
 
     [Theory, AutoNSubstituteData]
-    public async Task GetSnapshot_WhenMultipleValuesHaveChanged_ReturnsAllCachedEntries(
+    public async Task RunAsync_WhenMultipleValuesHaveChanged_CachesEachEntry(
         SimRef firstReference,
         SimValue firstValue,
         SimRef secondReference,
         SimValue secondValue,
+        TestTimeProvider timeProvider,
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        var startedAt = TimeProvider.System.GetTimestamp();
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(firstReference, firstValue));
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(secondReference, secondValue));
+        var startedAt = timeProvider.GetTimestamp();
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged(
+            [
+                new SimEvent.ValueChanged(firstReference, firstValue),
+                new SimEvent.ValueChanged(secondReference, secondValue),
+            ]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
-        var finishedAt = TimeProvider.System.GetTimestamp();
+        timeProvider.Advance(TimeSpan.FromMilliseconds(1));
+        var finishedAt = timeProvider.GetTimestamp();
 
         await cts.CancelAsync();
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
 
-        var snapshot = sut.GetSnapshot();
+        var snapshot = simValueCache.GetSnapshot();
         Assert.Equal(2, snapshot.Count);
         Assert.Equal(firstValue, snapshot[firstReference].Value);
         Assert.InRange(snapshot[firstReference].UpdatedAt, startedAt, finishedAt);
@@ -169,23 +197,48 @@ public sealed class SimValueRouterTests
         SimRef reference,
         SimValue firstValue,
         SimValue secondValue,
+        TestTimeProvider timeProvider,
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
+
+        var firstSet = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondSet = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var setCount = 0;
+        simValueCache.EntryCached += () =>
+        {
+            switch (Interlocked.Increment(ref setCount))
+            {
+                case 1:
+                    firstSet.TrySetResult();
+                    break;
+                case 2:
+                    secondSet.TrySetResult();
+                    break;
+            }
+        };
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, firstValue));
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, secondValue));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, firstValue)]));
+        await firstSet.Task;
+
+        timeProvider.Advance(TimeSpan.FromMilliseconds(1));
+
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, secondValue)]));
+        await secondSet.Task;
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -193,41 +246,43 @@ public sealed class SimValueRouterTests
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
-        Assert.True(sut.TryGet(reference, out var entry));
+        Assert.True(simValueCache.TryGet(reference, out var entry));
         Assert.Equal(secondValue, entry!.Value);
     }
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenAValueChangesOnABoundReference_SetsTheIndicator(
+        string id,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
-
-        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var indicator = (IIndicatorOutput)driver;
-        registry.Add(device, driver);
-
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = reference },
             new OutputSink.Indicator(device, output))]);
+        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
         var (calls, completed) = WatchSets(indicator);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         await completed;
 
         await cts.CancelAsync();
@@ -239,34 +294,36 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheValueIsAString_DoesNotSetTheIndicator(
+        string id,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
         SimValue.String value,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var indicator = (IIndicatorOutput)driver;
-        registry.Add(device, driver);
-
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = reference },
             new OutputSink.Indicator(device, output))]);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, value));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, value)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -275,44 +332,46 @@ public sealed class SimValueRouterTests
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
         indicator.DidNotReceive().Set(Arg.Any<OutputId>(), Arg.Any<int>());
-        Assert.True(sut.TryGet(reference, out _));
+        Assert.True(simValueCache.TryGet(reference, out _));
     }
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheBindingHasMultipleSources_DoesNotSetTheIndicator(
+        string id,
         SimRef firstReference,
         SimRef secondReference,
         DeviceIdentity device,
         OutputId output,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var indicator = (IIndicatorOutput)driver;
-        registry.Add(device, driver);
-
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef>
             {
                 ["deploy"] = firstReference,
                 ["power"] = secondReference,
             },
             new OutputSink.Indicator(device, output))]);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(firstReference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(firstReference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -321,37 +380,40 @@ public sealed class SimValueRouterTests
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
         indicator.DidNotReceive().Set(Arg.Any<OutputId>(), Arg.Any<int>());
-        Assert.True(sut.TryGet(firstReference, out _));
+        Assert.True(simValueCache.TryGet(firstReference, out _));
     }
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheDeviceIsNotConnected_DoesNotSetTheIndicator(
+        string id,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var indicator = (IIndicatorOutput)Substitute.For<IDeviceDriver, IIndicatorOutput>();
-
+        var (indicator, _) = NewIndicatorDriver();
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = reference },
             new OutputSink.Indicator(device, output))]);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -364,33 +426,35 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheSinkIsNotAnIndicator_DoesNotSetTheIndicator(
+        string id,
         SimRef reference,
         DeviceIdentity device,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var indicator = (IIndicatorOutput)driver;
-        registry.Add(device, driver);
-
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = reference },
             new OutputSink.Screen(device))]);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -403,6 +467,7 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTwoBindingsShareAReference_BothIndicatorsAreSet(
+        string id,
         SimRef reference,
         DeviceIdentity firstDevice,
         OutputId firstOutput,
@@ -410,32 +475,32 @@ public sealed class SimValueRouterTests
         OutputId secondOutput,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
-
-        var firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var firstIndicator = (IIndicatorOutput)firstDriver;
-        registry.Add(firstDevice, firstDriver);
-
-        var secondDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var secondIndicator = (IIndicatorOutput)secondDriver;
-        registry.Add(secondDevice, secondDriver);
-
+        var (firstIndicator, firstDriver) = NewIndicatorDriver();
+        var (secondIndicator, secondDriver) = NewIndicatorDriver();
+        deviceRegistry.Add(firstDevice, firstDriver);
+        deviceRegistry.Add(secondDevice, secondDriver);
         sut.SetBindings([
             new OutputMapping(
+                id,
                 new Dictionary<string, SimRef> { ["deploy"] = reference },
                 new OutputSink.Indicator(firstDevice, firstOutput)),
             new OutputMapping(
+                id,
                 new Dictionary<string, SimRef> { ["deploy"] = reference },
                 new OutputSink.Indicator(secondDevice, secondOutput)),
         ]);
+        var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
         var (firstCalls, firstCompleted) = WatchSets(firstIndicator);
         var (secondCalls, secondCompleted) = WatchSets(secondIndicator);
 
@@ -443,7 +508,7 @@ public sealed class SimValueRouterTests
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         await Task.WhenAll(firstCompleted, secondCompleted);
 
         await cts.CancelAsync();
@@ -455,56 +520,53 @@ public sealed class SimValueRouterTests
     }
 
     [Theory, AutoNSubstituteData]
-    public async Task RunAsync_WhenOneIndicatorThrows_TheOtherBindingIsStillDispatched(
+    public async Task RunAsync_WhenAnIndicatorThrows_SubsequentSimEventsAreNotProcessed(
+        string id,
         SimRef reference,
-        DeviceIdentity firstDevice,
-        OutputId firstOutput,
-        DeviceIdentity secondDevice,
-        OutputId secondOutput,
         SimValue.Number number,
+        SimRef secondReference,
+        SimValue secondValue,
+        DeviceIdentity device,
+        OutputId output,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
+        sut.SetBindings([new OutputMapping(
+            id,
+            new Dictionary<string, SimRef> { ["deploy"] = reference },
+            new OutputSink.Indicator(device, output))]);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
-        var firstDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var firstIndicator = (IIndicatorOutput)firstDriver;
-        registry.Add(firstDevice, firstDriver);
-        firstIndicator.When(i => i.Set(Arg.Any<OutputId>(), Arg.Any<int>())).Throw(new InvalidOperationException());
-
-        var secondDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var secondIndicator = (IIndicatorOutput)secondDriver;
-        registry.Add(secondDevice, secondDriver);
-
-        sut.SetBindings([
-            new OutputMapping(
-                new Dictionary<string, SimRef> { ["deploy"] = reference },
-                new OutputSink.Indicator(firstDevice, firstOutput)),
-            new OutputMapping(
-                new Dictionary<string, SimRef> { ["deploy"] = reference },
-                new OutputSink.Indicator(secondDevice, secondOutput)),
-        ]);
-        var (secondCalls, secondCompleted) = WatchSets(secondIndicator);
+        var indicatorFaulted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var call = indicator.When(i => i.Set(Arg.Any<OutputId>(), Arg.Any<int>()));
+        call.Do(_ => indicatorFaulted.TrySetResult());
+        call.Throw(new InvalidOperationException());
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
-        await secondCompleted;
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
+        await indicatorFaulted.Task;
 
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(secondReference, secondValue)]));
         await cts.CancelAsync();
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
-        firstIndicator.Received(1).Set(Arg.Any<OutputId>(), Arg.Any<int>());
-        Assert.Contains((secondOutput, (int)number.Value), secondCalls);
+        Assert.True(simValueCache.TryGet(reference, out _));
+        Assert.False(simValueCache.TryGet(secondReference, out _));
     }
 
     [Theory, AutoNSubstituteData]
@@ -513,25 +575,26 @@ public sealed class SimValueRouterTests
         DeviceIdentity device,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var indicator = (IIndicatorOutput)driver;
-        registry.Add(device, driver);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -540,11 +603,12 @@ public sealed class SimValueRouterTests
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
         indicator.DidNotReceive().Set(Arg.Any<OutputId>(), Arg.Any<int>());
-        Assert.True(sut.TryGet(reference, out _));
+        Assert.True(simValueCache.TryGet(reference, out _));
     }
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenBindingsAreReplaced_DispatchFollowsTheNewBinding(
+        string id,
         SimRef oldReference,
         DeviceIdentity oldDevice,
         OutputId oldOutput,
@@ -553,27 +617,26 @@ public sealed class SimValueRouterTests
         OutputId newOutput,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var oldDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var oldIndicator = (IIndicatorOutput)oldDriver;
-        registry.Add(oldDevice, oldDriver);
-
-        var newDriver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var newIndicator = (IIndicatorOutput)newDriver;
-        registry.Add(newDevice, newDriver);
-
+        var (oldIndicator, oldDriver) = NewIndicatorDriver();
+        var (newIndicator, newDriver) = NewIndicatorDriver();
+        deviceRegistry.Add(oldDevice, oldDriver);
+        deviceRegistry.Add(newDevice, newDriver);
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = oldReference },
             new OutputSink.Indicator(oldDevice, oldOutput))]);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         var (oldCalls, oldCompleted) = WatchSets(oldIndicator);
         var (newCalls, newCompleted) = WatchSets(newIndicator);
 
@@ -581,17 +644,18 @@ public sealed class SimValueRouterTests
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(oldReference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(oldReference, number)]));
         await oldCompleted;
 
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = newReference },
             new OutputSink.Indicator(newDevice, newOutput))]);
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(oldReference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(oldReference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(newReference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(newReference, number)]));
         await newCompleted;
 
         await cts.CancelAsync();
@@ -604,39 +668,41 @@ public sealed class SimValueRouterTests
 
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenBindingsAreClearedWithAnEmptyList_DoesNotSetTheIndicator(
+        string id,
         SimRef reference,
         DeviceIdentity device,
         OutputId output,
         SimValue.Number number,
         [Frozen] IActiveSim activeSim,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var registry = new FakeDeviceRegistry();
-        var sut = new SimValueRouter(activeSim, registry, TimeProvider.System, logger);
-        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
-
-        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
-        var indicator = (IIndicatorOutput)driver;
-        registry.Add(device, driver);
-
+        var (indicator, driver) = NewIndicatorDriver();
+        deviceRegistry.Add(device, driver);
         sut.SetBindings([new OutputMapping(
+            id,
             new Dictionary<string, SimRef> { ["deploy"] = reference },
             new OutputSink.Indicator(device, output))]);
+        var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         var (calls, completed) = WatchSets(indicator);
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         await completed;
 
         sut.SetBindings([]);
-        simEvents.Writer.TryWrite(new SimEvent.ValueChanged(reference, number));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
 
@@ -650,15 +716,18 @@ public sealed class SimValueRouterTests
     [Theory, AutoNSubstituteData]
     public async Task RunAsync_WhenTheSimulatorIsDisconnected_RecoversWhenANewSimulatorConnects(
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
         var secondProducer = Substitute.For<ISimProducer>();
 
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
         var (_, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         activeSim.Current.Returns((ISimProducer?)null);
 
@@ -697,41 +766,52 @@ public sealed class SimValueRouterTests
     }
 
     [Theory, AutoNSubstituteData]
-    public async Task RunAsync_WhenSettingSubscriptionsFails_ContinuesProcessingCommands(
-        SimRef firstReference,
-        SimRef secondReference,
+    public async Task RunAsync_WhenBindingsAreSet_PublishesTheRequiredRefsToTheAggregator(
+        string id,
+        SimRef reference,
         DeviceIdentity device,
         OutputId output,
-        InvalidOperationException fault,
         [Frozen] IActiveSim activeSim,
-        [Frozen] IDeviceRegistry deviceRegistry,
-        [Frozen] ISimProducer producer,
-        [Frozen] ILogger<SimValueRouter> logger)
+        [Frozen] FakeDeviceRegistry deviceRegistry,
+        [Frozen] NotifyingSimValueCache simValueCache,
+        [Frozen] ISubscriptionAggregator subscriptionAggregator,
+        [Frozen] IAircraftScreenAdapterFactory aircraftScreenAdapterFactory,
+        ISimProducer producer,
+        [Frozen] ILogger<SimValueRouter> logger,
+        SimValueRouter sut)
     {
         // Arrange
         using var cts = new CancellationTokenSource();
 
-        var sut = new SimValueRouter(activeSim, deviceRegistry, TimeProvider.System, logger);
         var (_, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
-        producer.SetSubscriptionsAsync(Arg.Any<IReadOnlySet<SimRef>>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromException(fault));
+        var requiredRefsPublished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        subscriptionAggregator
+            .When(a => a.SetOutputRefs(Arg.Any<IReadOnlySet<SimRef>>()))
+            .Do(_ => requiredRefsPublished.TrySetResult());
 
         // Act
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
         sut.SetBindings([new OutputMapping(
-            new Dictionary<string, SimRef> { ["deploy"] = firstReference },
+            id,
+            new Dictionary<string, SimRef> { ["deploy"] = reference },
             new OutputSink.Indicator(device, output))]);
-        sut.SetBindings([new OutputMapping(
-            new Dictionary<string, SimRef> { ["deploy"] = secondReference },
-            new OutputSink.Indicator(device, output))]);
+        await requiredRefsPublished.Task;
+
         await cts.CancelAsync();
 
         // Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
-        await producer.Received(2).SetSubscriptionsAsync(Arg.Any<IReadOnlySet<SimRef>>(), Arg.Any<CancellationToken>());
+        subscriptionAggregator.Received(1).SetOutputRefs(
+            Arg.Is<IReadOnlySet<SimRef>>(refs => refs.Count == 1 && refs.Contains(reference)));
+    }
+
+    private static (IIndicatorOutput Indicator, IDeviceDriver Driver) NewIndicatorDriver()
+    {
+        var driver = Substitute.For<IDeviceDriver, IIndicatorOutput>();
+        return ((IIndicatorOutput)driver, driver);
     }
 
     private static (List<(OutputId Output, int Value)> Calls, Task Completed) WatchSets(IIndicatorOutput indicator)
@@ -771,21 +851,4 @@ public sealed class SimValueRouterTests
 
         return (events, simulatorChanged.Task, aircraftChanged.Task);
     }
-
-#pragma warning disable CS0067
-    private sealed class FakeDeviceRegistry : IDeviceRegistry
-    {
-        private readonly Dictionary<DeviceIdentity, IDeviceDriver> _drivers = new();
-
-        public event EventHandler<DriverAddedEventArgs>? DriverAdded;
-        public event EventHandler<DriverRemovedEventArgs>? DriverRemoved;
-
-        public void Add(DeviceIdentity identity, IDeviceDriver driver) => _drivers[identity] = driver;
-
-        public bool TryGet(DeviceIdentity identity, out IDeviceDriver? driver) =>
-            _drivers.TryGetValue(identity, out driver);
-
-        public Task RunAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-#pragma warning restore CS0067
 }
