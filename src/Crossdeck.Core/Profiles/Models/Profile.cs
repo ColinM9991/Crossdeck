@@ -1,4 +1,5 @@
-﻿using Crossdeck.Core.Models;
+﻿using System.Collections.Immutable;
+using Crossdeck.Core.Models;
 
 namespace Crossdeck.Core.Profiles.Models;
 
@@ -7,6 +8,6 @@ public sealed record Profile(
     string Name,
     Simulator Simulator,
     AircraftMatch Aircraft,
-    IReadOnlyDictionary<string, VariableDefinition> Variables,
-    IReadOnlyDictionary<string, DeviceSlot> Devices,
-    IReadOnlyDictionary<string, OutputDefinition> Outputs);
+    ImmutableDictionary<string, VariableDefinition> Variables,
+    ImmutableDictionary<string, DeviceSlot> Devices,
+    ImmutableDictionary<string, OutputDefinition> Outputs);

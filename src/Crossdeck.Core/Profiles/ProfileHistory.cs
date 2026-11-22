@@ -23,6 +23,10 @@ public sealed class ProfileHistory(int capacity = 100)
         if (_undo.Count > capacity) _undo.RemoveFirst();
     }
 
+    public bool CanRedo => _redo.Count > 0;
+
+    public bool CanUndo => _undo.Count > 1;
+
     /// <summary>
     /// Undoes a profile change.
     /// </summary>
@@ -48,5 +52,14 @@ public sealed class ProfileHistory(int capacity = 100)
         _undo.AddLast(current);
 
         return _redo.Pop();
+    }
+
+    /// <summary>
+    /// Clears the history.
+    /// </summary>
+    public void Clear()
+    {
+        _undo.Clear();
+        _redo.Clear();
     }
 }

@@ -16,7 +16,7 @@ public interface IProfileEditor
 
     event EventHandler? Changed;
 
-    void SetAircraftDetails(string name, AircraftMatch aircraftDetails);
+    void SetProfileDetails(string name, AircraftMatch aircraftDetails);
 
     void AddDevice(string slot, DeviceModel model);
 
@@ -28,9 +28,9 @@ public interface IProfileEditor
 
     void RemoveInput(string slot, InputId control);
 
-    void SetOutput(string? slot, OutputId output, OutputDefinition definition);
+    void SetOutput(string slot, OutputId output, OutputDefinition definition);
 
-    void RemoveOutput(string? slot, OutputId output);
+    void RemoveOutput(string slot, OutputId output);
 
     void AddVariable(string name, SimValue initial);
 

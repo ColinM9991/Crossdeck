@@ -1,5 +1,7 @@
-﻿namespace Crossdeck.Core.Mapping.Input;
+﻿using System.Collections.Immutable;
+
+namespace Crossdeck.Core.Mapping.Input;
 
 public sealed record InputEventBinding(
-    IReadOnlyList<InputAction> Actions,
+    ImmutableList<InputAction> Actions,
     ExpressionSpec? When = null);
