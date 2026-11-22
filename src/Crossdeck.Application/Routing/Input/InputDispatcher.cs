@@ -58,7 +58,7 @@ public sealed class InputDispatcher :
         _variableStore = variableStore ?? throw new ArgumentNullException(nameof(variableStore));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        _inputBindingFactory = new InputBindingFactory(expressionCompiler);
+        _inputBindingFactory = new InputBindingFactory(expressionCompiler ?? throw new ArgumentNullException(nameof(expressionCompiler)));
         _activeSim.Changing += ActiveSimOnChanging;
         _activeSim.Changed += ActiveSimOnChanged;
     }

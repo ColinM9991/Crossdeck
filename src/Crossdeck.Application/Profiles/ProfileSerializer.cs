@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using Crossdeck.Application.Profiles.Json;
 using Crossdeck.Core.Profiles;
 using Crossdeck.Core.Profiles.Models;
 
@@ -10,7 +11,7 @@ internal sealed class ProfileSerializer : IProfileSerializer
     private const string SchemaVersionKey = "$schemaVersion";
     private const int CurrentSchemaVersion = 1;
 
-    private readonly JsonSerializerOptions _serializerOptions = new();
+    private static readonly JsonSerializerOptions SerializerOptions = ProfileJsonOptions.Create();
 
     public async Task<ProfileLoadResult> ReadAsync(Stream stream, CancellationToken cancellationToken)
     {
@@ -38,7 +39,7 @@ internal sealed class ProfileSerializer : IProfileSerializer
                 root.Remove(SchemaVersionKey);
                 try
                 {
-                    var profile = root.Deserialize<Profile>(_serializerOptions)!;
+                    var profile = root.Deserialize<Profile>(SerializerOptions)!;
                     return new ProfileLoadResult.Loaded(new ProfileDocument(profile, schemaVersion.Value, false));
                 }
                 catch (JsonException ex)
@@ -50,7 +51,7 @@ internal sealed class ProfileSerializer : IProfileSerializer
 
     public async Task WriteAsync(Profile profile, Stream stream, CancellationToken cancellationToken)
     {
-        var node = JsonSerializer.SerializeToNode(profile, _serializerOptions)!.AsObject();
+        var node = JsonSerializer.SerializeToNode(profile, SerializerOptions)!.AsObject();
 
         node.Insert(0, SchemaVersionKey, CurrentSchemaVersion);
 
