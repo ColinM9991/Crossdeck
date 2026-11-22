@@ -4,7 +4,7 @@ namespace Crossdeck.Core.Profiles;
 
 public interface IProfileSerializer
 {
-    Task<ProfileLoadResult> LoadAsync(Stream stream, CancellationToken cancellationToken);
+    Task<ProfileLoadResult> ReadAsync(Stream stream, CancellationToken cancellationToken);
 
-    Task SaveAsync(Profile profile, Stream stream, CancellationToken cancellationToken);
+    Task WriteAsync(Profile profile, Stream stream, CancellationToken cancellationToken);
 }
