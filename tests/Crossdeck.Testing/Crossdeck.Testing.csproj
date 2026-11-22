@@ -10,6 +10,7 @@
       <PackageReference Include="AutoFixture.Xunit2" />
       <PackageReference Include="AutoFixture.AutoNSubstitute" />
       <PackageReference Include="HidSharp" />
+      <PackageReference Include="NSubstitute" />
     </ItemGroup>
 
     <ItemGroup>

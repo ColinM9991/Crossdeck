@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Threading.Channels;
 using Crossdeck.Application.Routing.Output;
 using Crossdeck.Core.Devices;
@@ -170,10 +171,10 @@ public sealed class SimValueRouterTests
 
         var startedAt = timeProvider.GetTimestamp();
         simEvents.Writer.TryWrite(new SimEvent.ValuesChanged(
-            [
-                new SimEvent.ValueChanged(firstReference, firstValue),
-                new SimEvent.ValueChanged(secondReference, secondValue),
-            ]));
+        [
+            new SimEvent.ValueChanged(firstReference, firstValue),
+            new SimEvent.ValueChanged(secondReference, secondValue),
+        ]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
         timeProvider.Advance(TimeSpan.FromMilliseconds(1));
@@ -271,10 +272,12 @@ public sealed class SimValueRouterTests
 
         var (indicator, driver) = NewIndicatorDriver();
         deviceRegistry.Add(device, driver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
         var (calls, completed) = WatchSets(indicator);
 
@@ -313,10 +316,12 @@ public sealed class SimValueRouterTests
 
         var (indicator, driver) = NewIndicatorDriver();
         deviceRegistry.Add(device, driver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
@@ -357,14 +362,16 @@ public sealed class SimValueRouterTests
 
         var (indicator, driver) = NewIndicatorDriver();
         deviceRegistry.Add(device, driver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef>
-            {
-                ["deploy"] = firstReference,
-                ["power"] = secondReference,
-            },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef>
+                {
+                    ["deploy"] = firstReference,
+                    ["power"] = secondReference,
+                }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
@@ -403,10 +410,12 @@ public sealed class SimValueRouterTests
         using var cts = new CancellationTokenSource();
 
         var (indicator, _) = NewIndicatorDriver();
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
@@ -444,10 +453,12 @@ public sealed class SimValueRouterTests
 
         var (indicator, driver) = NewIndicatorDriver();
         deviceRegistry.Add(device, driver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Screen(device))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Screen(device))
+        ]);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
 
         // Act
@@ -493,11 +504,11 @@ public sealed class SimValueRouterTests
         sut.SetBindings([
             new OutputMapping(
                 id,
-                new Dictionary<string, SimRef> { ["deploy"] = reference },
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
                 new OutputSink.Indicator(firstDevice, firstOutput)),
             new OutputMapping(
                 id,
-                new Dictionary<string, SimRef> { ["deploy"] = reference },
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
                 new OutputSink.Indicator(secondDevice, secondOutput)),
         ]);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
@@ -542,10 +553,12 @@ public sealed class SimValueRouterTests
 
         var (indicator, driver) = NewIndicatorDriver();
         deviceRegistry.Add(device, driver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         var (simEvents, simulatorChanged, _) = ConnectSimulator(sut, activeSim, producer);
 
         var indicatorFaulted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -560,7 +573,9 @@ public sealed class SimValueRouterTests
         simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(reference, number)]));
         await indicatorFaulted.Task;
 
-        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(secondReference, secondValue)]));
+        simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([
+            new SimEvent.ValueChanged(secondReference, secondValue)
+        ]));
         await cts.CancelAsync();
 
         // Assert
@@ -632,10 +647,12 @@ public sealed class SimValueRouterTests
         var (newIndicator, newDriver) = NewIndicatorDriver();
         deviceRegistry.Add(oldDevice, oldDriver);
         deviceRegistry.Add(newDevice, newDriver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = oldReference },
-            new OutputSink.Indicator(oldDevice, oldOutput))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = oldReference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(oldDevice, oldOutput))
+        ]);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         var (oldCalls, oldCompleted) = WatchSets(oldIndicator);
         var (newCalls, newCompleted) = WatchSets(newIndicator);
@@ -647,10 +664,12 @@ public sealed class SimValueRouterTests
         simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(oldReference, number)]));
         await oldCompleted;
 
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = newReference },
-            new OutputSink.Indicator(newDevice, newOutput))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = newReference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(newDevice, newOutput))
+        ]);
         simEvents.Writer.TryWrite(new SimEvent.ValuesChanged([new SimEvent.ValueChanged(oldReference, number)]));
         simEvents.Writer.TryWrite(new SimEvent.AircraftChanged("A320"));
         await aircraftChanged;
@@ -687,10 +706,12 @@ public sealed class SimValueRouterTests
 
         var (indicator, driver) = NewIndicatorDriver();
         deviceRegistry.Add(device, driver);
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         var (simEvents, simulatorChanged, aircraftChanged) = ConnectSimulator(sut, activeSim, producer);
         var (calls, completed) = WatchSets(indicator);
 
@@ -794,10 +815,12 @@ public sealed class SimValueRouterTests
         var runTask = sut.RunAsync(cts.Token);
         await simulatorChanged;
 
-        sut.SetBindings([new OutputMapping(
-            id,
-            new Dictionary<string, SimRef> { ["deploy"] = reference },
-            new OutputSink.Indicator(device, output))]);
+        sut.SetBindings([
+            new OutputMapping(
+                id,
+                new Dictionary<string, SimRef> { ["deploy"] = reference }.ToImmutableDictionary(),
+                new OutputSink.Indicator(device, output))
+        ]);
         await requiredRefsPublished.Task;
 
         await cts.CancelAsync();
@@ -847,7 +870,8 @@ public sealed class SimValueRouterTests
         sut.AircraftChanged += (_, aircraft) => aircraftChanged.TrySetResult(aircraft);
 
         activeSim.Current.Returns(producer);
-        activeSim.Changed += Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
+        activeSim.Changed +=
+            Raise.Event<EventHandler<ActiveSimChangedEventArgs>>(activeSim, new ActiveSimChangedEventArgs(producer));
 
         return (events, simulatorChanged.Task, aircraftChanged.Task);
     }

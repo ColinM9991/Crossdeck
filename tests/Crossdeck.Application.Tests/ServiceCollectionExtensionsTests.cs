@@ -1,11 +1,15 @@
 using Crossdeck.Application.Devices;
+using Crossdeck.Application.Profiles.Validation;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Routing.Input;
 using Crossdeck.Application.Session;
 using Crossdeck.Core.Devices;
 using Crossdeck.Core.Devices.Inputs;
+using Crossdeck.Core.Profiles;
+using Crossdeck.Core.Profiles.Models;
 using Crossdeck.Core.Routing;
 using Crossdeck.Core.Session;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -80,5 +84,39 @@ public sealed class ServiceCollectionExtensionsTests
         Assert.Same(concrete, inputSink);
         Assert.Same(concrete, inputMonitor);
         Assert.Same(concrete, dispatcher);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void AddSimulationServices_Always_ResolvesTheProfileRootValidatorForIValidatorOfProfile(
+        TimeProvider timeProvider)
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.TryAddSingleton(timeProvider);
+
+        var provider = services.AddSimulationServices().BuildServiceProvider();
+
+        // Act
+        var validator = provider.GetRequiredService<IValidator<Profile>>();
+
+        // Assert
+        Assert.IsType<ProfileRootValidator>(validator);
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void AddSimulationServices_Always_ResolvesTheProfileValidatorForIProfileValidator(
+        TimeProvider timeProvider)
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.TryAddSingleton(timeProvider);
+
+        var provider = services.AddSimulationServices().BuildServiceProvider();
+
+        // Act
+        var validator = provider.GetRequiredService<IProfileValidator>();
+
+        // Assert
+        Assert.IsType<ProfileValidator>(validator);
     }
 }

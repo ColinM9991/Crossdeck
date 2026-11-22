@@ -8,17 +8,20 @@ using Crossdeck.Core.Simulators.Models;
 
 namespace Crossdeck.Application.Profiles;
 
-internal sealed class ProfileRuntime : IProfileRuntime
+public sealed class ProfileRuntime : IProfileRuntime
 {
     private readonly ISimValueRouter _simValueRouter;
     private readonly IInputDispatcher _inputDispatcher;
+    private readonly IProfileValidator _profileValidator;
 
     public ProfileRuntime(
         ISimValueRouter simValueRouter,
-        IInputDispatcher inputDispatcher)
+        IInputDispatcher inputDispatcher,
+        IProfileValidator profileValidator)
     {
         _simValueRouter = simValueRouter ?? throw new ArgumentNullException(nameof(simValueRouter));
         _inputDispatcher = inputDispatcher ?? throw new ArgumentNullException(nameof(inputDispatcher));
+        _profileValidator = profileValidator ?? throw new ArgumentNullException(nameof(profileValidator));
     }
 
     public Profile? Active { get; private set; }
@@ -27,8 +30,14 @@ internal sealed class ProfileRuntime : IProfileRuntime
 
     public IReadOnlyList<ProfileProblem> Activate(Profile profile)
     {
-        var outputMappings = GetOutputMappings(profile);
-        var inputMappings = GetInputMappings(profile);
+        var problems = _profileValidator.Validate(profile);
+        var skipped = problems
+            .Where(problem => problem is { Severity: ProblemSeverity.Error, BindingId: not null })
+            .Select(problem => problem.BindingId!)
+            .ToHashSet();
+
+        var outputMappings = GetOutputMappings(profile, skipped);
+        var inputMappings = GetInputMappings(profile, skipped);
 
         _inputDispatcher.SetBindings(inputMappings);
         _simValueRouter.SetBindings(outputMappings);
@@ -36,7 +45,7 @@ internal sealed class ProfileRuntime : IProfileRuntime
         Active = profile;
         ActiveChanged?.Invoke(this, profile);
 
-        return [];
+        return problems;
     }
 
     public void Deactivate()
@@ -49,7 +58,7 @@ internal sealed class ProfileRuntime : IProfileRuntime
         ActiveChanged?.Invoke(this, null);
     }
 
-    private static List<InputMapping> GetInputMappings(Profile profile)
+    private static List<InputMapping> GetInputMappings(Profile profile, HashSet<string> skipped)
     {
         var inputMappings = new List<InputMapping>();
         foreach (var (_, deviceSlot) in profile.Devices)
@@ -59,6 +68,9 @@ internal sealed class ProfileRuntime : IProfileRuntime
 
             foreach (var (inputId, definition) in deviceSlot.Inputs)
             {
+                if (skipped.Contains(definition.Id))
+                    continue;
+
                 inputMappings.Add(new InputMapping(device, inputId, definition.Sources,
                     definition.Events, definition.Sync));
             }
@@ -67,11 +79,13 @@ internal sealed class ProfileRuntime : IProfileRuntime
         return inputMappings;
     }
 
-    private static List<OutputMapping> GetOutputMappings(Profile profile)
+    private static List<OutputMapping> GetOutputMappings(Profile profile, HashSet<string> skipped)
     {
         List<OutputMapping> outputMappings =
         [
-            .. profile.Outputs.Select(x => new OutputMapping(
+            .. profile.Outputs
+                .Where(x => !skipped.Contains(x.Value.Id))
+                .Select(x => new OutputMapping(
                 x.Value.Id,
                 x.Value.Sources,
                 new OutputSink.Computed(x.Key),
@@ -87,6 +101,9 @@ internal sealed class ProfileRuntime : IProfileRuntime
 
             foreach (var (outputId, definition) in deviceSlot.Outputs)
             {
+                if (skipped.Contains(definition.Id))
+                    continue;
+
                 outputMappings.Add(new OutputMapping(definition.Id, definition.Sources,
                     new OutputSink.Indicator(device, outputId), definition.Transform,
                     definition.When, definition.Fallback));

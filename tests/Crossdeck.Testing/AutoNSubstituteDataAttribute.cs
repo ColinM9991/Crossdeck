@@ -13,7 +13,8 @@ public sealed class AutoNSubstituteDataAttribute() : AutoDataAttribute(CreateFix
             .Customize(new ReportDescriptorCustomization())
             .Customize(new TimeProviderCustomization())
             .Customize(new SimValueRouterCollaboratorCustomization())
-            .Customize(new ImmutableDictionaryCustomization());
+            .Customize(new ImmutableDictionaryCustomization())
+            .Customize(new ExpressionCompilerCustomization());
 
         fixture.Behaviors
             .OfType<ThrowingRecursionBehavior>()
