@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crossdeck - Devices, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
+<script src="theme.js"></script>
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
 
@@ -30,10 +31,10 @@
     cursor: pointer;
     box-shadow: var(--shadow-0);
   }
-  .device-card:hover { border-color: #33405a; }
+  .device-card:hover { border-color: var(--hover-line); }
   .device-card.selected {
     border-color: var(--cyan-line);
-    background: #152031;
+    background: var(--selected-bg);
   }
   .device-card .top { display: flex; align-items: center; gap: 9px; }
   .device-card .name { font-size: 14px; font-weight: 600; }
@@ -127,7 +128,7 @@
   .modal {
     position: fixed;
     inset: 0;
-    background: rgba(4, 6, 10, 0.6);
+    background: var(--backdrop);
     display: flex;
     align-items: center;
     justify-content: center;

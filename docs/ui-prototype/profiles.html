@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crossdeck - Profiles, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
+<script src="theme.js"></script>
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
 
@@ -53,10 +54,10 @@
     cursor: pointer;
     box-shadow: var(--shadow-0);
   }
-  .profile-card:hover { border-color: #33405a; }
+  .profile-card:hover { border-color: var(--hover-line); }
   .profile-card.selected {
     border-color: var(--cyan-line);
-    background: #152031;
+    background: var(--selected-bg);
   }
   .profile-card .top { display: flex; align-items: center; gap: 9px; }
   .profile-card .name { font-size: 14px; font-weight: 600; }

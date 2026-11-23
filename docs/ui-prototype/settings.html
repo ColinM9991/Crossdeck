@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crossdeck - Settings, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
+<script src="theme.js"></script>
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
 
@@ -269,6 +270,23 @@
             </div>
             <div class="ctl">
               <label class="switch"><input type="checkbox" aria-label="Restore last profile" checked><span class="track"></span><span class="thumb"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">Appearance</div>
+        <div class="card-b">
+          <div class="set-row">
+            <div class="lbl">
+              <div class="t">Theme</div>
+              <div class="d">Applies to every page and is saved to this browser.</div>
+            </div>
+            <div class="ctl">
+              <select class="input" id="themeSelect" aria-label="Theme">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
             </div>
           </div>
         </div>
@@ -606,6 +624,15 @@
     document.querySelectorAll('#sec-simulators .conn-row').forEach(r => { r.hidden = r.dataset.conn !== e.target.value; });
   });
 
+  // ---- Appearance (theme) -----------------------------------------------------
+  // CrossdeckTheme (theme.js) applies the stored theme at load, live-syncs
+  // same-origin tabs, and carries the theme on in-prototype links so pages
+  // that cannot share storage (Firefox file://) still pick it up.
+  const themeSelect = $('themeSelect');
+
+  themeSelect.addEventListener('change', () => CrossdeckTheme.set(themeSelect.value));
+  themeSelect.value = CrossdeckTheme.get() || 'dark';
+
   // ---- Unsaved tracking -----------------------------------------------------------
   function pulseUnsaved() {
     const el = document.querySelector('.unsaved');
@@ -624,7 +651,7 @@
   }
 
   // Every field bumps the global unsaved count; the top bar's Save and apply commits.
-  document.querySelectorAll('.switch input, .ctl select, .ctl input').forEach(el => {
+  document.querySelectorAll('.switch input, .ctl select:not(#themeSelect), .ctl input').forEach(el => {
     el.addEventListener('change', () => { unsaved++; refreshUnsaved(); });
   });
   $('saveBtn').addEventListener('click', () => { unsaved = 0; refreshUnsaved(); });

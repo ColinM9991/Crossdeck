@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crossdeck - Editor, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
+<script src="theme.js"></script>
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
 
@@ -26,10 +27,10 @@
     margin-bottom: 12px;
     cursor: pointer;
   }
-  .device-card:hover { border-color: #33405a; }
+  .device-card:hover { border-color: var(--hover-line); }
   .device-card.selected {
     border-color: var(--cyan-line);
-    background: #152031;
+    background: var(--selected-bg);
   }
   .device-card .top { display: flex; align-items: center; gap: 9px; }
   .device-card .name { font-size: 14px; font-weight: 600; }
@@ -171,7 +172,7 @@
     display: grid;
     place-items: center;
     padding: 24px;
-    background: rgba(8, 10, 14, 0.55);
+    background: var(--backdrop);
   }
   #apOverlay[hidden] { display: none; }
   #actionPicker {
@@ -180,7 +181,7 @@
     max-height: 100%;
     margin: 0;
     overflow-y: auto;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--modal-shadow);
   }
   #actionPicker > .card-b + .card-b { border-top: 1px solid var(--line-soft); }
   #actionPicker .ap-status {
@@ -311,7 +312,7 @@
     gap: 8px;
     margin-top: 4px;
   }
-  .add-action:hover { border-color: #33405a; }
+  .add-action:hover { border-color: var(--hover-line); }
   .add-action svg { color: var(--text-3); }
 
   .detail-block[hidden] { display: none; }

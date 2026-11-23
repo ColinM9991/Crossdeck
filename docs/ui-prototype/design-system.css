@@ -40,8 +40,62 @@
   --panel: #11161f;
   --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-0: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 14px rgba(0, 0, 0, 0.25);
+  --hover-line: #33405a;
+  --selected-bg: #152031;
+  --on-accent: #062730;
+  --tab-disabled: #76808f;
+  --seg-active: #232c3d;
+  --scroll-thumb: #263041;
+  --backdrop: rgba(4, 6, 10, 0.6);
+  --modal-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --chrome: #0e1116;
+  --chrome-shadow: none;
   --font-ui: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
   --font-mono: "Cascadia Code", "JetBrains Mono", Consolas, "SF Mono", monospace;
+}
+
+/* Light theme: the same tokens re-tuned for bright surfaces. Applied by
+   html[data-theme="light"]; theme.js applies the value stored in
+   localStorage before first paint, settings.html switches it.
+   Surfaces run a shade deeper than the white cards so the cards carry real
+   presence, and the top bar sits on a white chrome layer with a soft shadow. */
+:root[data-theme="light"] {
+  --bg: #e9edf4;
+  --card: #ffffff;
+  --inset: #edf1f7;
+  --line: #c7d0dd;
+  --line-soft: #d8dfe9;
+  --text: #1a2431;
+  --text-2: #44516a;
+  --text-3: #5a6779;
+  --cyan: #0a6f86;
+  --cyan-line: rgba(10, 111, 134, 0.40);
+  --cyan-bg: rgba(10, 111, 134, 0.05);
+  --green: #0e754f;
+  --green-bg: rgba(14, 117, 79, 0.05);
+  --green-line: rgba(14, 117, 79, 0.35);
+  --amber: #8f5705;
+  --amber-bg: rgba(143, 87, 5, 0.05);
+  --amber-line: rgba(143, 87, 5, 0.35);
+  --violet: #7233e0;
+  --violet-bg: rgba(114, 51, 224, 0.05);
+  --violet-line: rgba(114, 51, 224, 0.30);
+  --chip-bg: #eaeef5;
+  --chip-line: #c2cdda;
+  --chip-text: #57647a;
+  --panel: #ffffff;
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px rgba(16, 24, 40, 0.10);
+  --shadow-0: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --hover-line: #b6c2d4;
+  --selected-bg: #e2f1f7;
+  --on-accent: #ffffff;
+  --tab-disabled: #8d99ac;
+  --seg-active: #d7deea;
+  --scroll-thumb: #b4c0d1;
+  --backdrop: rgba(15, 23, 42, 0.50);
+  --modal-shadow: 0 12px 40px rgba(15, 23, 42, 0.30);
+  --chrome: #ffffff;
+  --chrome-shadow: 0 1px 0 rgba(16, 24, 40, 0.03), 0 1px 3px rgba(16, 24, 40, 0.07);
 }
 
 /* ============ Base ============ */
@@ -83,7 +137,8 @@ a:hover { text-decoration: underline; }
 .topbar {
   grid-column: 1 / -1;
   grid-row: 1;
-  background: var(--bg);
+  background: var(--chrome);
+  box-shadow: var(--chrome-shadow);
   border-bottom: 1px solid var(--line-soft);
   display: flex;
   align-items: center;
@@ -106,7 +161,7 @@ a:hover { text-decoration: underline; }
   color: inherit;
   text-decoration: none;
 }
-.profile-chip:hover { border-color: #33405a; }
+.profile-chip:hover { border-color: var(--hover-line); }
 .profile-chip .name { font-weight: 600; font-size: 13px; white-space: nowrap; }
 .profile-chip .sim { color: var(--text-3); font-size: 12px; white-space: nowrap; }
 .profile-chip .chev { margin-left: auto; color: var(--text-3); display: flex; }
@@ -148,10 +203,10 @@ a:hover { text-decoration: underline; }
 .btn.outline { color: var(--cyan); border: 1px solid var(--cyan-line); }
 .btn.outline:hover { background: var(--cyan-bg); }
 .btn.outline.active { background: var(--cyan-bg); }
-.btn.primary { background: var(--cyan); color: #062730; }
+.btn.primary { background: var(--cyan); color: var(--on-accent); }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.secondary { color: var(--text); border: 1px solid var(--line); background: var(--card); }
-.btn.secondary:hover { border-color: #33405a; }
+.btn.secondary:hover { border-color: var(--hover-line); }
 .btn.secondary.active { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-bg); }
 .btn.add { padding: 7px 13px; font-size: 12.5px; }
 .btn.add:disabled {
@@ -167,6 +222,9 @@ button.link {
   font-size: 12.5px;
   font-weight: 600;
   font-family: inherit;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
 }
 button.link:hover { text-decoration: underline; }
 button.link.ghost { color: var(--text-3); }
@@ -270,7 +328,7 @@ button.link.ghost:hover { color: var(--text-2); }
 .tab .tab-count { color: var(--text-3); font-weight: 500; font-size: 11px; margin-left: 5px; }
 .tab.active { color: var(--text); border-bottom-color: var(--cyan); }
 .tab.active .tab-count { color: var(--text-2); }
-.tab.disabled { cursor: not-allowed; color: #76808f; }
+.tab.disabled { cursor: not-allowed; color: var(--tab-disabled); }
 
 /* ============ Chips ============ */
 
@@ -498,7 +556,7 @@ button.link.ghost:hover { color: var(--text-2); }
   font-weight: 500;
   white-space: nowrap;
 }
-.seg button.active { background: #232c3d; color: var(--text); font-weight: 600; }
+.seg button.active { background: var(--seg-active); color: var(--text); font-weight: 600; }
 .seg.full { width: 100%; }
 .seg.full button { flex: 1; text-align: center; }
 
@@ -616,5 +674,5 @@ button.link.ghost:hover { color: var(--text-2); }
 /* ============ Scrollbars ============ */
 
 .col::-webkit-scrollbar { width: 10px; }
-.col::-webkit-scrollbar-thumb { background: #263041; border-radius: 5px; border: 2px solid var(--bg); }
+.col::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 5px; border: 2px solid var(--bg); }
 .col::-webkit-scrollbar-track { background: transparent; }
