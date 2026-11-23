@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crossdeck - Monitor, calm v4</title>
+<title>Crossdeck - Monitor, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
@@ -29,6 +29,7 @@
     flex-wrap: wrap;
   }
   .filter-row .input { width: 220px; }
+  .filter-lbl { font-size: 12px; font-weight: 600; color: var(--text-3); }
   .kind-chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .kind-chip { cursor: pointer; }
   .kind-chip:not(.active) { opacity: 0.45; }
@@ -80,6 +81,25 @@
   .stream-help { margin-top: 10px; }
 
   /* Scrollbars: see design-system.css. */
+
+  /* ============ v5 reflow: columns stack at 1180px, phone nav at 640px ============ */
+  @media (max-width: 1180px) {
+    .app { grid-template-columns: 80px 1fr; }
+  }
+  @media (max-width: 640px) {
+    .app { grid-template-columns: 1fr; }
+    .col.main { grid-column: 1; }
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .filter-row .input { width: 100%; }
+    .kind-chip { min-height: 44px; padding: 6px 12px; }
+    .event-row { flex-wrap: wrap; row-gap: 6px; }
+    .e-time { width: auto; flex: none; }
+    .e-dev { width: auto; flex: 1 1 130px; }
+    .e-ctl { width: auto; }
+    .e-kind { width: auto; }
+    .e-val { width: auto; text-align: left; }
+    .e-route { margin-left: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -88,50 +108,50 @@
   <!-- ============ Top bar ============ -->
   <header class="topbar">
     <div class="brand">Crossdeck</div>
-    <a class="profile-chip" href="profiles-v4.html">
+    <a class="profile-chip" href="profiles.html">
       <span class="name">Zibo 737 - Bravo + PAP3</span>
       <span class="sim">X-Plane &middot; B738</span>
-      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
     </a>
     <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
     <span class="status-pill warn">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
       1 left out
     </span>
     <span class="spacer"></span>
-    <span class="unsaved" id="unsavedEl" hidden><span id="unsavedCount">0</span> unsaved</span>
-    <button class="btn outline" id="learnBtn">Learn</button>
-    <button class="btn primary">Save and apply
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <span class="unsaved" id="unsavedEl" role="status" hidden><span id="unsavedCount">0</span> unsaved</span>
+    <a class="btn outline" href="editor.html?learn=1">Learn</a>
+    <button class="btn primary" id="saveBtn">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </header>
 
   <!-- ============ Rail (Monitor active, cross-page navigation) ============ -->
-  <nav class="rail">
-    <a class="rail-item" href="profiles-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+  <nav class="rail" aria-label="Primary">
+    <a class="rail-item" href="profiles.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
       Profiles
     </a>
-    <a class="rail-item" href="devices-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+    <a class="rail-item" href="devices.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
       Devices
     </a>
-    <a class="rail-item" href="editor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <a class="rail-item" href="editor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Editor
     </a>
-    <a class="rail-item" href="variables-v4.html">
+    <a class="rail-item" href="variables.html">
       <span class="glyph-braces">{ }</span>
       Variables
     </a>
-    <a class="rail-item active" href="monitor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+    <a class="rail-item active" aria-current="page" href="monitor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
       Monitor
       <span class="rail-badge" id="railBadge">0</span>
     </a>
     <span class="push"></span>
-    <a class="rail-item" href="settings-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+    <a class="rail-item" href="settings.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
       Settings
     </a>
   </nav>
@@ -149,7 +169,7 @@
 
     <div class="problem-line">
       <span class="txt">pap3 button:lnav &middot; Only when: unknown name [pwr] &middot; 1 control left out of the profile</span>
-      <a href="editor-v4.html?device=pap3">Fix in Editor</a>
+      <a href="editor.html?device=pap3">Fix in Editor</a>
     </div>
 
     <div class="stat-row">
@@ -165,22 +185,23 @@
         <div class="n" id="statDevices">0</div>
         <div class="l">devices reporting</div>
       </div>
-      <div class="stat amber">
+      <div class="stat">
         <div class="n" id="statRouted">0</div>
         <div class="l">routed to bindings</div>
       </div>
     </div>
 
     <div class="filter-row">
+      <label class="filter-lbl" for="filterInput">Filter</label>
       <input class="input" id="filterInput" type="text" placeholder="Filter device, control&#8230;">
       <div class="kind-chips" id="kindChips">
-        <button class="chip kind-chip active" data-kind="Pressed" type="button">Pressed</button>
-        <button class="chip kind-chip active" data-kind="Released" type="button">Released</button>
-        <button class="chip kind-chip active" data-kind="Increment" type="button">Increment</button>
-        <button class="chip kind-chip active" data-kind="Decrement" type="button">Decrement</button>
-        <button class="chip kind-chip active" data-kind="HatChanged" type="button">Hat</button>
-        <button class="chip kind-chip active" data-kind="AxisChanged" type="button">Axis</button>
-        <button class="chip kind-chip active" data-kind="PositionChanged" type="button">Position</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="Pressed" type="button">Pressed</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="Released" type="button">Released</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="Increment" type="button">Increment</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="Decrement" type="button">Decrement</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="HatChanged" type="button">Hat</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="AxisChanged" type="button">Axis</button>
+        <button class="chip kind-chip active" aria-pressed="true" data-kind="PositionChanged" type="button">Position</button>
       </div>
     </div>
 
@@ -349,22 +370,20 @@
     renderStream(false);
   });
 
+  // Nothing on this page creates changes, so Save and apply stays disabled.
+  $('saveBtn').disabled = true;
+  $('saveBtn').title = 'Nothing to save on this page';
+
   document.querySelectorAll('.kind-chip').forEach(c => c.addEventListener('click', () => {
     const k = c.dataset.kind;
-    if (activeKinds.has(k)) { activeKinds.delete(k); c.classList.remove('active'); }
-    else { activeKinds.add(k); c.classList.add('active'); }
+    if (activeKinds.has(k)) { activeKinds.delete(k); c.classList.remove('active'); c.setAttribute('aria-pressed', 'false'); }
+    else { activeKinds.add(k); c.classList.add('active'); c.setAttribute('aria-pressed', 'true'); }
     renderStream(false);
   }));
 
-  // Keep the prototype's placeholder links from jumping the page.
-  document.addEventListener('click', e => {
-    if (e.target.closest('a[href="#"]')) e.preventDefault();
-  });
 
-  // ?fit=1 scales the 1920px design down to fit a narrow window.
+
   const params = new URLSearchParams(location.search);
-  const fit = params.get('fit');
-  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
 
   // Review params: ?fill=1 backfills the buffer, ?paused=1 starts frozen.
   if (params.get('fill')) {

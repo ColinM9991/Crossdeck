@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crossdeck - Editor, calm v4</title>
+<title>Crossdeck - Editor, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
@@ -50,7 +50,7 @@
   .device-card .count { color: var(--text-3); font-size: 11.5px; }
 
   .section-label {
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -117,7 +117,7 @@
 
   .kind-chip {
     font-family: var(--font-ui);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.05em;
     color: var(--text-3);
@@ -298,7 +298,41 @@
 
   .detail-block[hidden] { display: none; }
 
+  /* ============ Filter, headings, tabs, hit targets ============ */
+
+  .filter-row { display: flex; align-items: center; gap: 10px; }
+  .filter-row label { font-size: 11px; font-weight: 600; color: var(--text-3); flex: none; }
+  .filter-row .input { flex: 1; min-width: 0; }
+  .col-head h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  .detail-head h2 { font-size: 18px; font-weight: 700; }
+  .tablist { display: flex; gap: 4px; }
+  .guard-help.problem { color: var(--amber); }
+  /* 44px hit targets for the small icon buttons (R-03, stacked mobile layout). */
+  .card-h .card-del, .card-h .more, .card-h .close, .src-del { position: relative; }
+  .card-h .card-del::after, .card-h .more::after, .card-h .close::after, .src-del::after {
+    content: "";
+    position: absolute;
+    inset: -11px;
+  }
+
   /* Scrollbars: see design-system.css. */
+
+  /* ============ v5 reflow: columns stack at 1180px ============ */
+  @media (max-width: 1180px) {
+    .app { grid-template-columns: 80px 1fr; grid-template-rows: 56px auto auto 1fr; }
+    .col.devices { grid-column: 2; grid-row: 2; border-right: none; border-bottom: 1px solid var(--line-soft); }
+    .col.bindings { grid-column: 2; grid-row: 3; border-right: none; border-bottom: 1px solid var(--line-soft); }
+    .col.detail { grid-column: 2; grid-row: 4; }
+  }
+  @media (max-width: 640px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto 1fr; }
+    .col.devices, .col.bindings, .col.detail { grid-column: 1; }
+    .col.devices { grid-row: 2; }
+    .col.bindings { grid-row: 3; }
+    .col.detail { grid-row: 4; }
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .filter-row .input { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -307,66 +341,69 @@
   <!-- ============ Top bar ============ -->
   <header class="topbar">
     <div class="brand">Crossdeck</div>
-    <a class="profile-chip" href="profiles-v4.html">
+    <a class="profile-chip" href="profiles.html">
       <span class="name">Zibo 737 - Bravo + PAP3</span>
       <span class="sim">X-Plane &middot; B738</span>
-      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
     </a>
     <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
-    <span class="status-pill warn">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+    <span class="status-pill warn" id="leftOutPill">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
       1 left out
     </span>
     <span class="spacer"></span>
-    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
+    <span class="unsaved" role="status"><span id="unsavedCount">3</span> unsaved</span>
     <button class="btn outline" id="learnBtn">Learn</button>
-    <button class="btn primary">Save and apply
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <button class="btn primary" id="saveBtn">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </header>
 
   <!-- ============ Rail (cross-page navigation) ============ -->
-  <nav class="rail">
-    <a class="rail-item" href="profiles-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+  <nav class="rail" aria-label="Primary">
+    <a class="rail-item" href="profiles.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
       Profiles
     </a>
-    <a class="rail-item" href="devices-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+    <a class="rail-item" href="devices.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
       Devices
     </a>
-    <a class="rail-item active" href="editor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <a class="rail-item active" aria-current="page" href="editor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Editor
     </a>
-    <a class="rail-item" href="variables-v4.html">
+    <a class="rail-item" href="variables.html">
       <span class="glyph-braces">{ }</span>
       Variables
     </a>
-    <a class="rail-item" href="monitor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+    <a class="rail-item" href="monitor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
       Monitor
       <span class="rail-badge">3</span>
     </a>
     <span class="push"></span>
-    <a class="rail-item" href="settings-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+    <a class="rail-item" href="settings.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
       Settings
     </a>
   </nav>
 
   <!-- ============ Devices column ============ -->
-  <main class="col devices">
+  <div class="col devices">
     <div class="col-head">
-      <h1>Devices</h1>
+      <h2>Devices</h2>
       <span class="sub">in this profile</span>
     </div>
 
-    <input class="input" type="text" placeholder="Filter devices, controls, refs&#8230;">
+    <div class="filter-row">
+      <label for="deviceFilter">Filter</label>
+      <input class="input" id="deviceFilter" type="text" placeholder="Filter devices and controls&#8230;">
+    </div>
 
     <div style="height:14px"></div>
 
-    <div class="device-card" data-device="bravo">
+    <div class="device-card" data-device="bravo" role="button" tabindex="0">
       <div class="top">
         <span class="name">bravo</span>
         <span class="chip ok"><span class="dot"></span>connected</span>
@@ -376,7 +413,7 @@
       <div class="foot"><span class="count">5 bindings</span></div>
     </div>
 
-    <div class="device-card selected" data-device="pap3">
+    <div class="device-card selected" data-device="pap3" role="button" tabindex="0">
       <div class="top">
         <span class="name">pap3</span>
         <span class="chip ok"><span class="dot"></span>connected</span>
@@ -386,7 +423,7 @@
       <div class="foot"><span class="count">4 bindings</span></div>
     </div>
 
-    <div class="device-card" data-device="mcdu">
+    <div class="device-card" data-device="mcdu" role="button" tabindex="0">
       <div class="top">
         <span class="name">mcdu</span>
         <span class="chip off"><span class="ring"></span>not connected</span>
@@ -400,15 +437,15 @@
     <div class="card" style="margin-bottom:0">
       <div class="stat-row">
         <div class="stat"><div class="n">12</div><div class="l">bindings running</div></div>
-        <div class="stat amber"><div class="n">1</div><div class="l">left out</div></div>
+        <div class="stat amber"><div class="n" id="loadLeftOut">1</div><div class="l">left out</div></div>
         <div class="stat cyan"><div class="n">2</div><div class="l">variables</div></div>
       </div>
-      <div class="problem-line">
-        <span class="txt">pap3 button:lnav &middot; Only when: unknown name [pwr]</span>
-        <a href="#" id="showProblem">Show</a>
+      <div class="problem-line" id="loadProblemLine">
+        <span class="txt" id="loadProblemTxt">pap3 button:lnav &middot; Only when: unknown name [pwr]</span>
+        <button type="button" id="showProblem" class="link">Show</button>
       </div>
     </div>
-  </main>
+  </div>
 
   <!-- ============ Bindings column ============ -->
   <main class="col bindings">
@@ -420,19 +457,21 @@
     </div>
 
     <div class="tab-row">
-      <button class="tab active" data-tab="inputs">Inputs<span class="tab-count" id="inputsCount">3</span></button>
-      <button class="tab" data-tab="outputs">Outputs<span class="tab-count" id="outputsCount">0</span></button>
+      <div class="tablist" role="tablist" aria-label="Binding type">
+        <button class="tab active" role="tab" aria-selected="true" aria-controls="rowsArea" data-tab="inputs">Inputs<span class="tab-count" id="inputsCount">3</span></button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="rowsArea" data-tab="outputs">Outputs<span class="tab-count" id="outputsCount">0</span></button>
+      </div>
       <button class="btn outline add" id="addBtn">+ Add input</button>
     </div>
 
     <div class="learn-note" id="learnNote" hidden>
       <span class="pulse"></span>
-      Learning on <b id="learnDevice">pap3</b> &mdash; press a control to capture its binding.
-      <a href="#" id="stopLearn">Stop</a>
+      Learning on <b id="learnDevice">pap3</b>: press a control to capture its binding.
+      <button type="button" id="stopLearn" class="link">Stop</button>
     </div>
 
     <div class="conn-note" id="connNote" hidden>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       Bindings are kept. Nothing runs until the device is connected.
     </div>
 
@@ -440,7 +479,7 @@
       <div class="card-h">
         <span id="pickerTitle">Pick an input</span>
         <span class="sub" id="pickerDevice">pap3</span>
-        <button class="close" id="pickerClose">&times;</button>
+        <button class="close" id="pickerClose" aria-label="Close picker">&times;</button>
       </div>
       <div class="picker-list" id="pickerList"></div>
     </div>
@@ -455,24 +494,24 @@
       <div class="card-h">
         <span>Add action</span>
         <span class="sub" id="apContext">this binding</span>
-        <button class="close" id="apClose" type="button">&times;</button>
+        <button class="close" id="apClose" type="button" aria-label="Close add-action panel">&times;</button>
       </div>
       <div class="card-b" style="padding:12px 16px">
         <div class="field-label">Action</div>
-        <div class="seg full" id="apKind">
+        <div class="seg full" id="apKind" role="group" aria-label="Action">
           <button type="button" class="active" data-kind="cmd">Send command</button>
           <button type="button" data-kind="set">Set a value</button>
         </div>
       </div>
       <div class="card-b" style="padding:12px 16px">
-        <div class="field-label">Target</div>
+        <label class="field-label" for="apTarget">Target</label>
         <input class="input mono" id="apTarget" type="text" placeholder="sim/autopilot/LNAV">
         <div class="help" id="apTargetHint">Type the X-Plane dataref or MSFS var this command targets.</div>
         <div class="ap-status" id="apStatus" hidden></div>
       </div>
       <div class="card-b" id="apPhaseCard" style="padding:12px 16px">
         <div class="field-label">Phase</div>
-        <div class="seg full" id="apPhaseSeg">
+        <div class="seg full" id="apPhaseSeg" role="group" aria-label="Phase">
           <button type="button" class="active" data-phase="trigger">Trigger</button>
           <button type="button" data-phase="begin">Begin</button>
           <button type="button" data-phase="end">End</button>
@@ -480,8 +519,8 @@
         <div class="help" id="apPhaseHelp">Trigger fires once on press. Begin and End only exist when the simulator command supports phases.</div>
       </div>
       <div class="card-b" id="apValueCard" hidden style="padding:12px 16px">
-        <div class="field-label">Value</div>
-        <div class="seg full" id="apValueSeg">
+        <label class="field-label" for="apValueInput">Value</label>
+        <div class="seg full" id="apValueSeg" role="group" aria-label="Value mode">
           <button type="button" class="active" data-mode="value">Value</button>
           <button type="button" data-mode="ref">From ref</button>
           <button type="button" data-mode="expr">Expression</button>
@@ -493,6 +532,14 @@
         <div class="help" id="apExprHelp" hidden>Type [ for a ref (input, self, variables) or a function name (Min, Max&hellip;).</div>
         <div id="apRefList" hidden style="margin-top:10px"></div>
       </div>
+      <div class="card-b" style="padding:12px 16px">
+        <label class="field-label" for="apGuardInput">Only when</label>
+        <div class="expr-wrap" style="margin-top:10px">
+          <input class="input mono" id="apGuardInput" type="text" placeholder="[gnd] == 0">
+          <div class="expr-list" id="apGuardList" hidden></div>
+        </div>
+        <div class="help guard-help" id="apGuardHelp">Optional. The action runs only while the guard is true. Empty means always.</div>
+      </div>
       <div class="card-foot" style="justify-content:flex-end">
         <button class="btn primary" id="apAdd" type="button" disabled>Add action</button>
       </div>
@@ -500,32 +547,31 @@
 
     <div class="detail-block" id="detailAlt">
       <div class="detail-head">
-        <h1>button:14</h1>
+        <h2>button:14</h2>
         <span class="chip">Button</span>
-        <a class="device-ref" href="devices-v4.html?device=pap3">pap3</a>
+        <a class="device-ref" href="devices.html?device=pap3">pap3</a>
       </div>
 
       <div class="card" data-srcs="detailAlt">
         <div class="card-h">Sources</div>
         <div class="card-b"></div>
-        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+        <div class="card-foot"><button type="button" class="link" data-src-add>+ Add source</button></div>
       </div>
 
       <div class="card">
         <div class="card-h">Only when</div>
-        <div class="card-b">
-          <div class="kv">
-            <span class="k">Guard</span>
-            <span class="v mono">[fn] == 0</span>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="altGuardInput">Guard</label>
+          <div class="expr-wrap">
+            <input class="input mono" id="altGuardInput" type="text" value="[fn] == 0" placeholder="[gnd] == 0">
+            <div class="expr-list" id="altGuardList" hidden></div>
           </div>
-        </div>
-        <div class="card-foot" style="justify-content:flex-end">
-          <span class="chip ok"><span class="dot"></span>true now</span>
+          <div class="help guard-help" id="altGuardHelp"></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="more" title="Action options">&hellip;</button><button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="more" type="button" title="Action options" aria-label="Action options">&hellip;</button><button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
         <div class="card-b">
           <div class="kv">
             <span class="k">Target</span>
@@ -533,8 +579,8 @@
           </div>
         </div>
         <div class="card-b" style="padding:12px 16px">
-          <div class="field-label">Value</div>
-          <div class="seg full" data-group="value-mode">
+          <label class="field-label" for="altExprInput">Value</label>
+          <div class="seg full" data-group="value-mode" role="group" aria-label="Value mode">
             <button>Value</button>
             <button>From ref</button>
             <button class="active">Expression</button>
@@ -555,30 +601,27 @@
             <span class="v dim">Increase by 100, max 50000</span>
           </div>
         </div>
-        <div class="card-foot" style="justify-content:flex-end"><a class="link" href="#">Edit preset</a></div>
       </div>
 
       <button class="add-action">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add action
       </button>
     </div>
 
     <div class="detail-block" id="detailLnav" hidden>
       <div class="detail-head">
-        <h1>button:lnav</h1>
+        <h2>button:lnav</h2>
         <span class="chip">Button</span>
-        <a class="device-ref" href="devices-v4.html?device=pap3">pap3</a>
+        <a class="device-ref" href="devices.html?device=pap3">pap3</a>
       </div>
 
-      <div class="note-line">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      <div class="note-line" id="lnavNote">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
         <span>
-          Only when: unknown name [pwr]. The binding was left out at load.
+          <span id="lnavNoteTxt">Only when: unknown name [pwr]. The binding was left out at load.</span>
           <span class="fixes">
-            <a href="#" data-src-add>Add as source</a>
-            <a href="#" class="ghost">Fix name</a>
-            <a href="#" class="ghost">Ignore</a>
+            <button type="button" class="link" data-src-add>Add as source</button>
           </span>
         </span>
       </div>
@@ -586,11 +629,11 @@
       <div class="card" data-srcs="detailLnav">
         <div class="card-h">Sources</div>
         <div class="card-b"></div>
-        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+        <div class="card-foot"><button type="button" class="link" data-src-add>+ Add source</button></div>
       </div>
 
       <div class="card">
-        <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
         <div class="card-b">
           <div class="kv">
             <span class="k">Target</span>
@@ -601,77 +644,82 @@
             <span class="v mono">trigger</span>
           </div>
           <div class="help">Sent once on press. This command has no end phase, so release is ignored.</div>
-          <div class="kv">
-            <span class="k">Only when</span>
-            <span class="v mono" style="color:var(--amber)">[pwr] == 1</span>
+          <div style="margin-top:10px">
+            <label class="field-label" for="lnavGuardInput">Only when</label>
+            <div class="expr-wrap">
+              <input class="input mono" id="lnavGuardInput" type="text" value="[pwr] == 1" placeholder="[gnd] == 1">
+              <div class="expr-list" id="lnavGuardList" hidden></div>
+            </div>
           </div>
         </div>
       </div>
 
       <button class="add-action">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add action
       </button>
     </div>
 
     <div class="detail-block" id="detailGeneric" hidden>
       <div class="detail-head">
-        <h1 id="gTitle">button:10</h1>
+        <h2 id="gTitle">button:10</h2>
         <span class="chip" id="gKind">Button</span>
-        <a class="device-ref" id="gRef" href="devices-v4.html?device=pap3">pap3</a>
+        <a class="device-ref" id="gRef" href="devices.html?device=pap3">pap3</a>
       </div>
 
       <div class="card" data-srcs="detailGeneric">
         <div class="card-h">Sources</div>
         <div class="card-b"></div>
-        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+        <div class="card-foot"><button type="button" class="link" data-src-add>+ Add source</button></div>
       </div>
 
       <div class="card">
-        <div class="card-h"><span class="kind-chip" id="gActionKind">SET</span><span id="gActionTitle">Set a value</span><button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-h"><span class="kind-chip" id="gActionKind">SET</span><span id="gActionTitle">Set a value</span><button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
         <div class="card-b">
           <div class="kv">
             <span class="k">Target</span>
-            <span class="v mono" id="gTarget">&mdash;</span>
+            <span class="v mono" id="gTarget">&ndash;</span>
           </div>
           <div class="kv" id="gPhaseRow" hidden>
             <span class="k">Phase</span>
-            <span class="v mono" id="gPhase">&mdash;</span>
+            <span class="v mono" id="gPhase">&ndash;</span>
           </div>
           <div class="help" id="gPhaseHelp" hidden></div>
         </div>
       </div>
 
-      <div class="card" id="gWhenCard" hidden>
+      <div class="card" id="gWhenCard">
         <div class="card-h">Only when</div>
-        <div class="card-b">
-          <div class="kv">
-            <span class="k">Guard</span>
-            <span class="v mono" id="gWhenVal">&mdash;</span>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="gGuardInput">Guard</label>
+          <div class="expr-wrap">
+            <input class="input mono" id="gGuardInput" type="text" placeholder="[gnd] == 0">
+            <div class="expr-list" id="gGuardList" hidden></div>
           </div>
+          <div class="help guard-help" id="gGuardHelp"></div>
         </div>
       </div>
 
       <button class="add-action">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add action
       </button>
     </div>
 
     <div class="detail-block" id="detailNewIn" hidden>
       <div class="detail-head">
-        <h1 id="newInTitle">button:12</h1>
+        <h2 id="newInTitle">button:12</h2>
         <span class="chip" id="newInKind">Button</span>
-        <a class="device-ref" id="newInDevice" href="devices-v4.html?device=pap3">pap3</a>
+        <a class="device-ref" id="newInDevice" href="devices.html?device=pap3">pap3</a>
       </div>
 
       <div class="note-line info">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span>
           Just added. Pick an action so this binding does something.
           <span class="fixes">
-            <a href="#" data-open-ap="cmd">Send a command</a>
-            <a href="#" class="ghost" data-open-ap="set">Set a value</a>
+            <button type="button" class="link" data-open-ap="cmd">Send a command</button>
+            <button type="button" class="link ghost" data-open-ap="set">Set a value</button>
           </span>
         </span>
       </div>
@@ -679,55 +727,51 @@
       <div class="card" data-srcs="detailNewIn">
         <div class="card-h">Sources</div>
         <div class="card-b"></div>
-        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+        <div class="card-foot"><button type="button" class="link" data-src-add>+ Add source</button></div>
       </div>
 
       <div class="card action-placeholder">
         <div class="card-h">Action</div>
         <div class="card-b" style="padding:12px 16px">
-          <div class="seg full" data-group="newin-kind">
-            <button class="active">Send command</button>
-            <button>Set a value</button>
+          <div class="seg full" data-group="newin-kind" role="group" aria-label="Action">
+            <button class="active" data-kind="cmd">Send command</button>
+            <button data-kind="set">Set a value</button>
           </div>
         </div>
         <div class="card-b">
           <div class="kv">
             <span class="k">Target</span>
-            <span class="v dim">&mdash; choose a command</span>
+            <span class="v dim">Choose a command</span>
           </div>
         </div>
-        <div class="card-foot"><a class="link" href="#" data-open-ap="cmd">Choose target&hellip;</a></div>
+        <div class="card-foot"><button type="button" class="link" data-open-ap="cmd">Choose target&hellip;</button></div>
       </div>
     </div>
 
     <div class="detail-block" id="detailNewOut" hidden>
       <div class="detail-head">
-        <h1 id="newOutTitle">led:keys</h1>
+        <h2 id="newOutTitle">led:keys</h2>
         <span class="chip" id="newOutKind">LED</span>
-        <a class="device-ref" id="newOutDevice" href="devices-v4.html?device=pap3">pap3</a>
+        <a class="device-ref" id="newOutDevice" href="devices.html?device=pap3">pap3</a>
       </div>
 
       <div class="note-line info">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span>
           Just added. Choose what drives this output.
-          <span class="fixes">
-            <a href="#">From a ref</a>
-            <a href="#" class="ghost">From a device input</a>
-          </span>
         </span>
       </div>
 
       <div class="card" data-srcs="detailNewOut" data-single>
         <div class="card-h">Source</div>
         <div class="card-b"></div>
-        <div class="card-foot"><a class="link" href="#" data-src-add>+ Choose source</a></div>
+        <div class="card-foot"><button type="button" class="link" data-src-add>+ Choose source</button></div>
       </div>
 
       <div class="card">
         <div class="card-h">Transform</div>
         <div class="card-b" style="padding:12px 16px">
-          <div class="seg full">
+          <div class="seg full" data-group="newout-transform" role="group" aria-label="Transform">
             <button class="active">Raw</button>
             <button>Expression</button>
           </div>
@@ -735,12 +779,24 @@
         <div class="card-b">
           <div class="kv">
             <span class="k">Preview</span>
-            <span class="v mono dim">&mdash; &rarr; 0</span>
+            <span class="v mono dim">&ndash; &rarr; 0</span>
           </div>
           <div class="kv">
             <span class="k">Fallback</span>
             <span class="v dim">Number &middot; 0</span>
           </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Only when</div>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="newOutGuardInput">Guard</label>
+          <div class="expr-wrap">
+            <input class="input mono" id="newOutGuardInput" type="text" placeholder="[gnd] == 0">
+            <div class="expr-list" id="newOutGuardList" hidden></div>
+          </div>
+          <div class="help">The output is driven only while the guard is true. Empty means always.</div>
         </div>
       </div>
     </div>
@@ -805,17 +861,17 @@
   // Refs a binding can draw from: the profile's variables, device outputs and
   // sim refs. Feeds the "Sources" cards and the picker's "From ref" list.
   const SRC_CANDIDATES = [
-    { id: 'var:fn', label: 'fn', k: 'VAR', d: 'modifier key', now: '0', href: 'variables-v4.html?var=fn' },
-    { id: 'var:presetAlt', label: 'presetAlt', k: 'VAR', d: 'preset altitude', now: '1000', href: 'variables-v4.html?var=presetAlt' },
+    { id: 'var:fn', label: 'fn', k: 'VAR', d: 'modifier key', now: '0', href: 'variables.html?var=fn' },
+    { id: 'var:presetAlt', label: 'presetAlt', k: 'VAR', d: 'preset altitude', now: '1000', href: 'variables.html?var=presetAlt' },
     { id: 'out:led:keys', label: 'led:keys', k: 'OUT', d: 'pap3 key backlight', now: '255' },
     { id: 'sim/cockpit2/gps/alt', label: 'gps/alt', k: 'SIM', d: 'GPS altitude', now: '12000' },
   ];
   const SRC_EMPTY = {
     detailAlt: 'none',
-    detailLnav: 'none &mdash; the guard uses [pwr], which is not a source',
+    detailLnav: 'none: the guard uses [pwr], which is not a source',
     detailGeneric: 'none',
     detailNewIn: 'none',
-    detailNewOut: '&mdash; choose a source',
+    detailNewOut: 'Choose a source',
   };
   const srcState = { detailAlt: ['var:fn'], detailLnav: [], detailNewIn: [], detailNewOut: [] };
   const genSrc = {}; // detailGeneric is shared between rows: source lists per control.
@@ -837,7 +893,7 @@
       return `<div class="src-item" data-src="${esc(id)}">
         <div class="kv"><span class="k">${kLabel}</span><span class="v mono">${esc(s.label)} <span class="arrow">&rarr;</span> ${idHtml}</span></div>
         <div class="kv"><span class="k">Value now</span><span class="v mono dim">${esc(s.now)}</span></div>
-        <button class="src-del" type="button" title="Remove source">&times;</button>
+        <button class="src-del" type="button" title="Remove source" aria-label="Remove source ${esc(id)}">&times;</button>
       </div>`;
     }).join('');
     const empty = list.length
@@ -846,7 +902,7 @@
     const avail = SRC_CANDIDATES.filter(c => !list.includes(c.id));
     const addList = avail.length
       ? `<div class="src-add" hidden>${avail.map(c =>
-          `<div class="picker-row" data-ref="${esc(c.id)}">
+          `<div class="picker-row" role="button" tabindex="0" data-ref="${esc(c.id)}">
              <span class="kind-chip">${c.k}</span>
              <span class="pid">${esc(c.id)}</span>
              <span class="pdesc">${esc(c.d)}</span>
@@ -948,7 +1004,7 @@
       items = candidates();
       active = items.length ? 0 : -1;
       list.innerHTML = items.map((c, i) =>
-        `<div class="expr-row${i === active ? ' active' : ''}" data-i="${i}">
+        `<div class="expr-row${i === active ? ' active' : ''}" role="button" tabindex="0" data-i="${i}">
            <span class="kind-chip">${c.kind === 'ref' ? 'REF' : 'FN'}</span>
            <span class="expr-name">${c.kind === 'ref' ? '[' + esc(c.name) + ']' : esc(c.name)}</span>
            <span class="expr-desc">${esc(c.d)}</span>
@@ -989,6 +1045,7 @@
       } else if (e.key === 'Tab' || e.key === 'Enter') {
         if (active >= 0 && items[active]) { e.preventDefault(); choose(items[active]); }
       } else if (e.key === 'Escape') {
+        e.stopPropagation();
         hide();
       }
     });
@@ -999,6 +1056,12 @@
       e.preventDefault(); // keep the input focused
       choose(items[+row.dataset.i]);
     });
+    // Keyboard activation: Enter on a focused row arrives as a synthetic click.
+    list.addEventListener('click', e => {
+      const row = e.target.closest('.expr-row');
+      if (!row || list.hidden) return;
+      choose(items[+row.dataset.i]);
+    });
   }
 
   // ---- Detail switching -------------------------------------------------------
@@ -1007,14 +1070,14 @@
     const block = $(id);
     block.hidden = false;
     if (title !== undefined) {
-      const h1 = block.querySelector('h1');
-      h1.textContent = title;
+      const h2 = block.querySelector('h2');
+      h2.textContent = title;
       const chip = block.querySelector('.detail-head .chip');
       if (chip) chip.textContent = kind;
       const ref = block.querySelector('.device-ref');
       if (ref) {
         ref.textContent = device;
-        if (ref.tagName === 'A') ref.href = 'devices-v4.html?device=' + device;
+        if (ref.tagName === 'A') ref.href = 'devices.html?device=' + device;
       }
     }
   }
@@ -1030,7 +1093,7 @@
     $('gTitle').textContent = row.c;
     $('gKind').textContent = row.kindGuess || guessKind(row.c);
     $('gRef').textContent = device;
-    $('gRef').href = 'devices-v4.html?device=' + device;
+    $('gRef').href = 'devices.html?device=' + device;
     const aKind = $('gActionKind');
     if (aKind) {
       aKind.textContent = row.b;
@@ -1049,13 +1112,11 @@
       }
     }
     if (row.w) {
-      $('gWhenCard').hidden = false;
-      const v = $('gWhenVal');
-      v.textContent = row.w;
-      v.style.color = row.wp ? 'var(--amber)' : '';
+      $('gGuardInput').value = row.w;
     } else {
-      $('gWhenCard').hidden = true;
+      $('gGuardInput').value = '';
     }
+    guardHelp($('gGuardHelp'), $('gGuardInput'));
     renderSrcCard('detailGeneric', row.c);
     showDetail('detailGeneric');
   }
@@ -1075,7 +1136,7 @@
     const phase = r.b === 'CMD' && r.ph
       ? `<span class="kind-chip phase${r.ph === 'begin / end' ? ' on' : ''}">${esc(r.ph)}</span>`
       : '';
-    return `<div class="binding-row${r.sel ? ' selected' : ''}" data-c="${esc(r.c)}" data-detail="${detailFor(r)}">
+    return `<div class="binding-row${r.sel ? ' selected' : ''}" role="button" tabindex="0" data-c="${esc(r.c)}" data-detail="${detailFor(r)}">
       <div class="l1">
         <span class="ctrl${r.problem ? ' problem' : ''}">${esc(r.c)}</span>
         <span class="event">${esc(r.ev || '')}</span>
@@ -1122,6 +1183,7 @@
 
     $('inputsCount').textContent = d.inputs.length;
     $('outputsCount').textContent = d.outputs.length;
+    applyFilter();
   }
 
   function selectDevice(id) {
@@ -1165,7 +1227,7 @@
     $('pickerTitle').textContent = tab === 'inputs' ? 'Pick an input' : 'Pick an output';
     $('pickerDevice').textContent = current;
     $('pickerList').innerHTML = avail.length
-      ? avail.map(i => `<div class="picker-row" data-pick="${esc(i.c)}" data-kind="${esc(i.k)}">
+      ? avail.map(i => `<div class="picker-row" role="button" tabindex="0" data-pick="${esc(i.c)}" data-kind="${esc(i.k)}">
             <span class="pid">${esc(i.c)}</span>
             <span class="pdesc">${esc(i.k)} · ${esc(i.d)}</span>
             <span class="pplus">+</span>
@@ -1174,6 +1236,9 @@
     $('pickerList').querySelectorAll('.picker-row').forEach(row => {
       row.addEventListener('click', () => addPick(row.dataset.pick, row.dataset.kind));
     });
+    // Keyboard users open this with the + Add button; put focus on the first choice.
+    const firstRow = $('pickerList').querySelector('.picker-row');
+    (firstRow || $('pickerClose')).focus();
   }
 
   function addPick(controlId, kind) {
@@ -1185,7 +1250,7 @@
       c: controlId,
       ev,
       b: tab === 'inputs' ? 'CMD' : 'OUT',
-      x: tab === 'inputs' ? '— no action yet' : '— no source yet',
+      x: tab === 'inputs' ? '- no action yet' : '- no source yet',
       none: true,
       kindGuess: kind,
       sel: true,
@@ -1278,7 +1343,7 @@
   function renderApRefs() {
     const list = $('apRefList');
     list.innerHTML = SRC_CANDIDATES.map(c =>
-      `<div class="picker-row${AP.ref === c.id ? ' selected' : ''}" data-ref="${esc(c.id)}">
+      `<div class="picker-row${AP.ref === c.id ? ' selected' : ''}" role="button" tabindex="0" data-ref="${esc(c.id)}">
          <span class="kind-chip">${c.k}</span>
          <span class="pid">${esc(c.id)}</span>
          <span class="pdesc">${esc(c.d)}</span>
@@ -1307,6 +1372,8 @@
 
   function buildApCard() {
     const target = $('apTarget').value.trim();
+    const guard = $('apGuardInput').value.trim();
+    const guardKv = guard ? `<div class="kv"><span class="k">Only when</span><span class="v mono">${esc(guard)}</span></div>` : '';
     if (AP.kind === 'cmd') {
       const help = AP.phase === 'trigger'
         ? 'One-shot command: fires on press; release is ignored.'
@@ -1314,34 +1381,38 @@
           ? 'Fires on press. The End action (on release) closes the command.'
           : 'Fires on release. It pairs with the Begin action on press.';
       return `<div class="card">
-        <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
         <div class="card-b" style="padding:12px 16px">
           <div class="kv"><span class="k">Target</span><span class="v mono">${esc(target)}</span></div>
           <div class="kv"><span class="k">Phase</span><span class="v mono">${AP.phase}</span></div>
+          ${guardKv}
           <div class="help">${help}</div>
         </div>
       </div>`;
     }
     const mode = AP.mode === 'value' ? 'literal' : AP.mode === 'ref' ? 'from ref' : 'expression';
     const val = AP.mode === 'ref'
-      ? (AP.ref || '&mdash;')
-      : $('apValueInput').value.trim() || '&mdash;';
+      ? (AP.ref || '&ndash;')
+      : $('apValueInput').value.trim() || '&ndash;';
     return `<div class="card">
-      <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="card-del" type="button" title="Remove action">&times;</button></div>
+      <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
       <div class="card-b" style="padding:12px 16px">
         <div class="kv"><span class="k">Target</span><span class="v mono">${esc(target)}</span></div>
         <div class="kv"><span class="k">Value</span><span class="v mono">${esc(val)}  (${mode})</span></div>
+        ${guardKv}
       </div>
     </div>`;
   }
 
   function openAp(kind) {
     const block = document.querySelector('.detail-block:not([hidden])');
-    const h1 = block && block.querySelector('h1');
-    $('apContext').textContent = h1 ? h1.textContent : 'this binding';
+    const h2 = block && block.querySelector('h2');
+    $('apContext').textContent = h2 ? h2.textContent : 'this binding';
     $('actionPicker').hidden = false;
     $('apTarget').value = '';
     $('apValueInput').value = '';
+    $('apGuardInput').value = '';
+    guardHelp($('apGuardHelp'), $('apGuardInput'));
     AP.ref = null;
     AP.mode = 'value';
     $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === 'value'));
@@ -1382,7 +1453,9 @@
     if (!block) return;
     const ph = block.querySelector('.action-placeholder');
     if (ph) ph.remove();
-    const card = buildApCard();
+    const holder = document.createElement('div');
+    holder.innerHTML = buildApCard();
+    const card = holder.firstElementChild;
     const addBtn = block.querySelector('.add-action');
     if (addBtn) block.insertBefore(card, addBtn); else block.appendChild(card);
     unsaved++;
@@ -1390,6 +1463,8 @@
     // Reset the form, keep the picker open: add the next action without reopening.
     $('apTarget').value = '';
     $('apValueInput').value = '';
+    $('apGuardInput').value = '';
+    guardHelp($('apGuardHelp'), $('apGuardInput'));
     AP.ref = null;
     AP.mode = 'value';
     $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === 'value'));
@@ -1434,14 +1509,106 @@
     const openApLink = t.closest('[data-open-ap]');
     if (openApLink) {
       e.preventDefault();
-      openAp(openApLink.dataset.openAp);
+      // The placeholder card's action choice decides which mode the picker opens in.
+      const blockEl = openApLink.closest('.detail-block');
+      const segBtn = blockEl && blockEl.querySelector('.seg[data-group="newin-kind"] button.active');
+      openAp(segBtn ? segBtn.dataset.kind : openApLink.dataset.openAp);
     }
   });
 
-  // Expression autocomplete: the picker (expressions only) and the seeded
-  // expression input on the alt-up card.
+  // Expression autocomplete: the picker (expressions only), the seeded
+  // expression input on the alt-up card, and the guard inputs.
   attachExprAutocomplete($('apValueInput'), $('apExprList'), () => AP.kind === 'set' && AP.mode === 'expr');
   attachExprAutocomplete($('altExprInput'), $('altExprList'));
+  attachExprAutocomplete($('apGuardInput'), $('apGuardList'));
+  attachExprAutocomplete($('altGuardInput'), $('altGuardList'));
+  attachExprAutocomplete($('lnavGuardInput'), $('lnavGuardList'));
+  attachExprAutocomplete($('gGuardInput'), $('gGuardList'));
+  attachExprAutocomplete($('newOutGuardInput'), $('newOutGuardList'));
+
+  // ---- Guard (When) expressions ------------------------------------------------
+  // A guard is a boolean expression over known refs. A name the profile does not
+  // know leaves the binding out at load, the same way the compiler validation does.
+  const GUARD_REFS = new Set(EXPR_REFS.map(r => r.name));
+  function unknownRefs(expr) {
+    const names = (expr.match(/\[([A-Za-z_][A-Za-z0-9_]*)\]/g) || []).map(n => n.slice(1, -1));
+    return [...new Set(names.filter(n => !GUARD_REFS.has(n)))];
+  }
+  function guardHelp(help, input) {
+    const v = input.value.trim();
+    const u = unknownRefs(v);
+    if (!v) help.textContent = 'No guard. It always runs.';
+    else if (u.length) help.textContent = 'Unknown name ' + u.map(n => '[' + n + ']').join(', ') + '. The binding will be left out at load.';
+    else help.textContent = 'Runs only while the guard is true.';
+    help.classList.toggle('problem', !!(v && u.length));
+  }
+  function commitGuard(input, row) {
+    const v = input.value.trim();
+    if ((row.w || '') === v) return;
+    row.w = v || undefined;
+    row.wp = v ? unknownRefs(v).length > 0 : false;
+    row.sel = true; // the re-render must keep this row highlighted
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    renderRows();
+  }
+  function refreshLeftOut() {
+    let n = 0;
+    let first = null;
+    for (const id in DEV) {
+      DEV[id].inputs.concat(DEV[id].outputs).forEach(r => {
+        if (r.problem) { n++; if (!first) first = { dev: id, r }; }
+      });
+    }
+    $('loadLeftOut').textContent = n;
+    $('loadProblemLine').style.display = n ? '' : 'none';
+    if (n && first) {
+      const u = unknownRefs(first.r.w || '')[0] || '?';
+      $('loadProblemTxt').textContent = first.dev + ' ' + first.r.c + ' \u00b7 Only when: unknown name [' + u + ']';
+    }
+    const pill = $('leftOutPill');
+    pill.style.display = n ? '' : 'none';
+    if (n) pill.lastChild.textContent = n + ' left out';
+  }
+
+  $('apGuardInput').addEventListener('input', () => guardHelp($('apGuardHelp'), $('apGuardInput')));
+  $('altGuardInput').addEventListener('input', () => guardHelp($('altGuardHelp'), $('altGuardInput')));
+  $('altGuardInput').addEventListener('change', () => {
+    const row = DEV[current].inputs.find(x => x.c === 'button:14');
+    if (row) commitGuard($('altGuardInput'), row);
+  });
+  $('gGuardInput').addEventListener('input', () => guardHelp($('gGuardHelp'), $('gGuardInput')));
+  $('gGuardInput').addEventListener('change', () => {
+    const row = DEV[current][tab].find(x => x.c === $('gTitle').textContent);
+    if (row) commitGuard($('gGuardInput'), row);
+  });
+  $('newOutGuardInput').addEventListener('change', () => {
+    const row = DEV[current].outputs.find(x => x.c === $('newOutTitle').textContent);
+    if (row) commitGuard($('newOutGuardInput'), row);
+  });
+  // The lnav guard is the profile's known problem: fixing or clearing it resolves
+  // the "left out at load" state; re-introducing an unknown name re-raises it.
+  $('lnavGuardInput').addEventListener('change', () => {
+    const row = DEV[current].inputs.find(x => x.c === 'button:lnav');
+    if (!row) return;
+    const v = $('lnavGuardInput').value.trim();
+    const u = unknownRefs(v);
+    row.w = v || undefined;
+    row.wp = u.length > 0;
+    row.sel = true;
+    if (u.length) {
+      row.problem = true;
+      $('lnavNote').hidden = false;
+      $('lnavNoteTxt').textContent = 'Only when: unknown name ' + u.map(x => '[' + x + ']').join(', ') + '. The binding was left out at load.';
+    } else {
+      row.problem = false;
+      $('lnavNote').hidden = true;
+    }
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    renderRows();
+    refreshLeftOut();
+  });
 
   // ---- Wiring --------------------------------------------------------------------
   document.querySelectorAll('.device-card[data-device]').forEach(card => {
@@ -1450,8 +1617,10 @@
 
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
+      document.querySelectorAll('.tab').forEach(x => {
+        x.classList.toggle('active', x === t);
+        x.setAttribute('aria-selected', x === t ? 'true' : 'false');
+      });
       tab = t.dataset.tab;
       const d = DEV[current];
       $('addBtn').textContent = tab === 'inputs' ? '+ Add input' : '+ Add output';
@@ -1461,7 +1630,7 @@
     });
   });
 
-  $('addBtn').addEventListener('click', () => togglePicker(!$('picker').hidden));
+  $('addBtn').addEventListener('click', () => togglePicker($('picker').hidden));
   $('pickerClose').addEventListener('click', () => togglePicker(false));
 
   // "Show" in the At-load problem line.
@@ -1469,7 +1638,10 @@
     e.preventDefault();
     selectDevice('pap3');
     tab = 'inputs';
-    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === 'inputs'));
+    document.querySelectorAll('.tab').forEach(x => {
+      x.classList.toggle('active', x.dataset.tab === 'inputs');
+      x.setAttribute('aria-selected', x.dataset.tab === 'inputs' ? 'true' : 'false');
+    });
     renderRows();
     const lnav = document.querySelector('#rowsArea .binding-row[data-c="button:lnav"]');
     if (lnav) {
@@ -1477,6 +1649,11 @@
       lnav.classList.add('selected');
       lnav.scrollIntoView({ block: 'nearest' });
       showDetail('detailLnav');
+      const lrow = DEV.pap3.inputs.find(x => x.c === 'button:lnav');
+      if (lrow) {
+        $('lnavGuardInput').value = lrow.w || '';
+        $('lnavNote').hidden = !lrow.problem;
+      }
     }
   });
 
@@ -1490,6 +1667,12 @@
   learnBtn.addEventListener('click', () => setLearn(learnNote.hidden));
   $('stopLearn').addEventListener('click', e => { e.preventDefault(); setLearn(false); });
 
+  // Save and apply commits the pending changes: the counter drops to zero.
+  $('saveBtn').addEventListener('click', () => {
+    unsaved = 0;
+    $('unsavedCount').textContent = '0';
+  });
+
   // Segmented controls.
   document.querySelectorAll('.seg[data-group]').forEach(seg => {
     seg.addEventListener('click', e => {
@@ -1500,20 +1683,62 @@
     });
   });
 
-  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  // Keyboard: Enter / Space activate role="button" cards and rows (R-32),
+  // Escape closes an open picker.
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (!$('actionPicker').hidden) { closeAp(); return; }
+      if (!$('picker').hidden) togglePicker(false);
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"]:not(button)')) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
+  // Tab list: arrow keys move between tabs (ARIA tabs pattern).
+  document.querySelector('.tablist').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const tabs = [...document.querySelectorAll('.tablist .tab')];
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    next.click();
+    next.focus();
+  });
+
+  // Filter the device cards and the binding rows. Re-applied after every
+  // row re-render so a filter survives switching devices and tabs.
+  let filterQ = '';
+  function applyFilter() {
+    document.querySelectorAll('.device-card[data-device]').forEach(c => {
+      c.style.display = !filterQ || c.textContent.toLowerCase().includes(filterQ) ? '' : 'none';
+    });
+    document.querySelectorAll('#rowsArea .binding-row').forEach(r => {
+      r.style.display = !filterQ || r.textContent.toLowerCase().includes(filterQ) ? '' : 'none';
+    });
+  }
+  $('deviceFilter').addEventListener('input', e => {
+    filterQ = e.target.value.trim().toLowerCase();
+    applyFilter();
+  });
+
   const params = new URLSearchParams(location.search);
-  const fit = params.get('fit');
-  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
 
   // Initial state.
   ['detailAlt', 'detailLnav', 'detailNewIn', 'detailNewOut'].forEach(id => renderSrcCard(id));
+  guardHelp($('altGuardHelp'), $('altGuardInput'));
+  refreshLeftOut();
   selectDevice('pap3');
 
-  // ?device=bravo|pap3|mcdu, ?tab=outputs, ?add=1 open alternate states for review.
+  // ?device=bravo|pap3|mcdu, ?tab=outputs, ?add=1, ?learn=1 open alternate states for review.
   const deviceParam = params.get('device');
   if (deviceParam && DEV[deviceParam]) selectDevice(deviceParam);
   if (params.get('tab') === 'outputs') document.querySelector('.tab[data-tab="outputs"]').click();
   if (params.get('add')) togglePicker(true);
+  if (params.get('learn')) setLearn(true);
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crossdeck - Variables, calm v4</title>
+<title>Crossdeck - Variables, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
@@ -18,7 +18,7 @@
   .tab-row .btn.add { margin-left: auto; }
 
   .phase-chip {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
     color: var(--text-3);
@@ -59,7 +59,7 @@
   .vlive { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--green); }
   .vlive.off { font-weight: 400; color: var(--text-3); }
   .vrefs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .vnone { font-size: 11.5px; color: var(--text-3); font-style: italic; }
+  .vnone { font-size: 12px; color: var(--text-3); font-style: italic; }
   .row-del {
     width: 22px;
     height: 22px;
@@ -72,7 +72,10 @@
     line-height: 1;
     opacity: 0;
     flex: none;
+    position: relative;
   }
+  /* 44px hit target (R-03, stacked mobile layout). */
+  .row-del::after { content: ""; position: absolute; inset: -11px; }
   .var-row:hover .row-del,
   .var-row.selected .row-del { opacity: 1; }
   .row-del:hover { color: var(--amber); background: var(--amber-bg); }
@@ -88,7 +91,7 @@
     flex-wrap: wrap;
     gap: 18px;
     padding: 12px 14px 0;
-    font-size: 11.5px;
+    font-size: 12px;
     color: var(--text-2);
   }
   .legend .swatch {
@@ -109,7 +112,7 @@
 
   /* ============ Detail column ============ */
 
-  .detail-head h1 {
+  .detail-head h2 {
     font-size: 18px;
     font-weight: 700;
     font-family: var(--font-mono);
@@ -178,11 +181,25 @@
     gap: 7px;
     margin-top: 10px;
     color: var(--text-3);
-    font-size: 11.5px;
+    font-size: 12px;
   }
   .save-hint[hidden] { display: none; }
   .save-hint .dot { width: 6px; height: 6px; background: var(--amber); }
   .save-hint .n { color: var(--amber); font-weight: 600; }
+
+  /* ============ v5 reflow: detail stacks below the table at 1180px ============ */
+  @media (max-width: 1180px) {
+    .app { grid-template-columns: 80px 1fr; grid-template-rows: 56px auto 1fr; }
+    .col.main { grid-column: 2; border-right: none; border-bottom: 1px solid var(--line-soft); }
+    .col.detail { grid-column: 2; background: var(--bg); }
+  }
+  @media (max-width: 640px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .col.main, .col.detail { grid-column: 1; }
+    .row-del { opacity: 1; }
+    #rowsArea { overflow-x: auto; }
+    .table-head, .var-row { min-width: 620px; }
+  }
 </style>
 </head>
 <body>
@@ -191,60 +208,62 @@
   <!-- ============ Top bar ============ -->
   <header class="topbar">
     <div class="brand">Crossdeck</div>
-    <a class="profile-chip" href="profiles-v4.html">
+    <a class="profile-chip" href="profiles.html">
       <span class="name">Zibo 737 - Bravo + PAP3</span>
-      <span class="sim">X-Plane · B738</span>
-      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      <span class="sim">X-Plane &middot; B738</span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
     </a>
-    <span class="status-pill ok"><span class="dot"></span>X-Plane ready · B738</span>
+    <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
     <span class="status-pill warn">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
       1 left out
     </span>
     <span class="spacer"></span>
-    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
-    <button class="btn outline" id="learnBtn">Learn</button>
-    <button class="btn primary">Save and apply
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <span class="unsaved" role="status"><span id="unsavedCount">3</span> unsaved</span>
+    <a class="btn outline" href="editor.html?learn=1">Learn</a>
+    <button class="btn primary" id="saveBtn">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </header>
 
   <!-- ============ Rail (Variables active, cross-page navigation) ============ -->
-  <nav class="rail">
-    <a class="rail-item" href="profiles-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+  <nav class="rail" aria-label="Primary">
+    <a class="rail-item" href="profiles.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
       Profiles
     </a>
-    <a class="rail-item" href="devices-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+    <a class="rail-item" href="devices.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
       Devices
     </a>
-    <a class="rail-item" href="editor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <a class="rail-item" href="editor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Editor
     </a>
-    <a class="rail-item active" href="variables-v4.html">
+    <a class="rail-item active" aria-current="page" href="variables.html">
       <span class="glyph-braces">{ }</span>
       Variables
     </a>
-    <a class="rail-item" href="monitor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+    <a class="rail-item" href="monitor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
       Monitor
       <span class="rail-badge">3</span>
     </a>
     <span class="push"></span>
-    <a class="rail-item" href="settings-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+    <a class="rail-item" href="settings.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
       Settings
     </a>
   </nav>
   <!-- ============ Main column: variable table ============ -->
   <main class="col main">
+    <div class="col-head">
+      <h1>Variables</h1>
+      <span class="sub">values bindings can share; kept in Crossdeck, never sent to the sim</span>
+    </div>
     <div class="tab-row">
-      <button class="tab active" id="tabVars">Variables<span class="tab-count" id="varsCount">2</span></button>
-      <button class="tab disabled" id="tabLogic" title="Computed variables (a value worked out from other refs) arrive in phase 2.">
-        Logic<span class="phase-chip">phase 2</span>
-      </button>
+      <span class="tab active" id="tabVars">Variables<span class="tab-count" id="varsCount">2</span></span>
+      <span class="tab disabled" id="tabLogic" title="Computed variables (a value worked out from other refs) arrive in phase 2.">Logic<span class="phase-chip">phase 2</span></span>
       <button class="btn outline add" id="newVarBtn">+ New variable</button>
     </div>
 
@@ -278,11 +297,11 @@
       initial: '0',
       live: '1',
       liveNote: 'since bravo button:30 was pressed · 4 s ago',
-      writtenBy: [ { id: 'bnd-fn', desc: 'bravo button:30 · Modifier', href: 'editor-v4.html?device=bravo' } ],
+      writtenBy: [ { id: 'bnd-fn', desc: 'bravo button:30 · Modifier', href: 'editor.html?device=bravo' } ],
       readBy: [
-        { id: 'bnd-alt-btn', desc: 'pap3 button:14 · Only when', href: 'editor-v4.html?device=pap3' },
-        { id: 'out-fn', desc: 'bravo led:fn · Value', href: 'editor-v4.html?device=bravo&tab=outputs' },
-        { id: 'out-cmd-a', desc: 'pap3 lcmd-a · Show when', href: 'editor-v4.html?device=pap3&tab=outputs' },
+        { id: 'bnd-alt-btn', desc: 'pap3 button:14 · Only when', href: 'editor.html?device=pap3' },
+        { id: 'out-fn', desc: 'bravo led:fn · Value', href: 'editor.html?device=bravo&tab=outputs' },
+        { id: 'out-cmd-a', desc: 'pap3 lcmd-a · Show when', href: 'editor.html?device=pap3&tab=outputs' },
       ],
     },
     {
@@ -291,7 +310,7 @@
       live: '1000',
       liveNote: 'set when the profile was applied · unchanged',
       writtenBy: [],
-      readBy: [ { id: 'bnd-alt-preset', desc: 'pap3 button:alt · Value', href: 'editor-v4.html?device=pap3' } ],
+      readBy: [ { id: 'bnd-alt-preset', desc: 'pap3 button:alt · Value', href: 'editor.html?device=pap3' } ],
     },
   ];
 
@@ -311,15 +330,15 @@
       ? v.readBy.map(r => `<span class="chip read">${esc(r.id)}</span>`).join('')
       : '<span class="vnone">nothing reads it</span>';
     const live = v.live === undefined
-      ? '<span class="vlive off">&mdash;</span>'
+      ? '<span class="vlive off">&ndash;</span>'
       : `<span class="vlive">${esc(v.live)}</span>`;
-    return `<div class="var-row${i === selected ? ' selected' : ''}" data-i="${i}">
+    return `<div class="var-row${i === selected ? ' selected' : ''}" role="button" tabindex="0" data-i="${i}">
       <span class="vname">var:${esc(v.name)}</span>
       <span class="vinit">${esc(v.initial)}</span>
       ${live}
       <span class="vrefs">${written}</span>
       <span class="vrefs">${read}</span>
-      <button class="row-del" data-del="${i}" type="button" title="Remove variable">&times;</button>
+      <button class="row-del" data-del="${i}" type="button" aria-label="Remove variable ${esc(v.name)}">&times;</button>
     </div>`;
   }
 
@@ -374,28 +393,28 @@
       ? v.readBy.map(r => refBox(r, 'read')).join('')
       : '<div class="refs-empty">Nothing reads it yet.</div>';
     const live = v.live === undefined
-      ? '<span class="live-value off">&mdash;</span><span class="live-note">waiting for a write</span>'
+      ? '<span class="live-value off">&ndash;</span><span class="live-note">waiting for a write</span>'
       : `<span class="live-value">${esc(v.live)}</span><span class="live-note">${esc(v.liveNote || '')}</span>`;
     area.innerHTML = `
       <div class="detail-head">
-        <h1>var:${esc(v.name)}</h1>
+        <h2>var:${esc(v.name)}</h2>
         <span class="chip">plain</span>
       </div>
       ${v.isNew ? `<div class="note-line info" style="margin-bottom:18px">
            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
            <span>Just added. A variable does nothing until a binding writes to it.
-             <span class="fixes"><a href="editor-v4.html?device=pap3">Pick a writer</a></span>
+             <span class="fixes"><a href="editor.html?device=pap3">Pick a writer</a></span>
            </span>
          </div>` : ''}
       <div class="dsec" style="margin-top:0">
         <div class="field-label">Name</div>
-        <input class="input mono" id="varNameInput" type="text" value="${esc(v.name)}">
+        <input class="input mono" id="varNameInput" type="text" aria-label="Variable name" value="${esc(v.name)}">
         <div class="help">Renaming updates every binding that uses it.</div>
       </div>
       <div class="dsec">
         <div class="field-label">Initial value</div>
         <div class="init-row">
-          <input class="input mono" id="varInitInput" type="text" value="${esc(v.initial)}">
+          <input class="input mono" id="varInitInput" type="text" aria-label="Initial value" value="${esc(v.initial)}">
           <span class="chip">Number</span>
         </div>
         <div class="help">Set when the profile is applied.</div>
@@ -486,18 +505,23 @@
   }
 
   $('newVarBtn').addEventListener('click', addVariable);
+  $('saveBtn').addEventListener('click', () => { unsaved = 0; refreshUnsaved(); });
 
-  // Keep the prototype's placeholder links from jumping the page,
-  // and route the detail's remove button to the selected variable.
+
+  // Route the detail's remove button to the selected variable.
   document.addEventListener('click', e => {
-    if (e.target.closest('a[href="#"]')) e.preventDefault();
     if (e.target.closest('#removeVarBtn')) removeVariable(selected);
   });
 
-  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  // role="button" cards and rows: Enter and Space activate them (R-32).
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"]:not(button)')) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
   const params = new URLSearchParams(location.search);
-  const fit = params.get('fit');
-  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
 
   // Initial state, with review params: ?var=presetAlt, ?new=1, ?empty=1.
   if (params.get('empty')) VARS.length = 0;

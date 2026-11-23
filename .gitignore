@@ -60,5 +60,9 @@ nunit-*.xml
 graphify-out/
 docs/
 
+# Impeccable (npm-installed design skill pack, kept local only, see AGENTS.md)
+.opencode/skills/impeccable/
+.opencode/commands/impeccable.md
+
 # Agent working state (transient progress tally, see AGENTS.md)
 STATE.md

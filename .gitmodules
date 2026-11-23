@@ -6,3 +6,11 @@
 	path = .opencode/skills/c4-codebase-architecture-skill
 	url = https://github.com/lmammino/c4-codebase-architecture-skill
 	branch = main
+[submodule ".opencode/skills/ponytail"]
+	path = .opencode/skills/ponytail
+	url = https://github.com/DietrichGebert/ponytail
+	branch = main
+[submodule ".opencode/skills/anti-slop"]
+	path = .opencode/skills/anti-slop
+	url = https://github.com/miqdadbadjuber/anti-slop
+	branch = main

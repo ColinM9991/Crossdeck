@@ -44,6 +44,9 @@
     },
     "buffer": 16384
   },
+  "plugins": [
+    "./skills/ponytail/.opencode/plugins"
+  ],
   "permissions": [
     {
       "action": "skill",

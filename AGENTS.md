@@ -56,6 +56,18 @@ Microsoft's .NET agent skills are vendored as a git submodule at `.opencode/skil
 - The full list, grouped by activity, is in `agents/dotnet-skills.md`. Read it only when picking a skill for a .NET task.
 - Updating: `git submodule update --remote --recurse-submodules .opencode/skills/dotnet-skills`, then `pwsh ./sync-dotnet-skills.ps1` to regenerate the `permissions` rules and `agents/dotnet-skills.md`.
 
+## Other skill sources (Ponytail, Impeccable, Antislop)
+
+Agent skill packs for coding style, design and UX, vendored alongside dotnet-skills:
+
+- **Ponytail** (git submodule at `.opencode/skills/ponytail`, DietrichGebert/ponytail, branch `main`): six skills (`ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`) plus an OpenCode plugin. The plugin is registered in the `plugins` array of `.opencode/opencode.json` as `./skills/ponytail/.opencode/plugins` (relative to that config file). It injects the lazy-senior-dev ruleset into every session, registers the `/ponytail` commands, and switches levels (`lite|full|ultra|off`). Its hooks need `node` on PATH.
+- **Antislop** (git submodule at `.opencode/skills/anti-slop`, miqdadbadjuber/anti-slop, branch `main`): six skills (`antislop`, `antislop-code`, `antislop-copywriting`, `antislop-human`, `antislop-layoutmobile`, `antislop-ui`) for de-slopping AI-generated UI, copy and code. Skills only, no plugin.
+- **Impeccable** (npm, deliberately not committed): `npx impeccable install -y --providers=opencode --scope=project` writes `.opencode/skills/impeccable/` and `.opencode/commands/impeccable.md`; both are gitignored and stay local to this machine. The engine binary lands in `~/.impeccable/bin/`. Update with `npx impeccable update`; reinstall the skill files the same way after a version bump.
+
+These skills need no `permissions` entries: a skill absent from the array defaults to allowed, the same as the c4-codebase-architecture and nsubstitute skills. Do not add entries for them, because `sync-dotnet-skills.ps1` rewrites the whole `permissions` array from the dotnet-skills submodule and would silently drop them on the next run.
+
+Updating the submodules: `git submodule update --remote .opencode/skills/ponytail .opencode/skills/anti-slop`. No sync script needed: neither contributes `permissions` rules.
+
 ## Build and test
 
 - `dotnet build` and `dotnet test` take a single project or solution argument per invocation (MSB1008 otherwise). Run the command once per project.

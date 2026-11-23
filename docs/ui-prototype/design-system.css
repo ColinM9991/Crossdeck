@@ -1,7 +1,16 @@
-/* Crossdeck editor UI - design system (calm v4 language)
-   Shared tokens and primitives for the HTML prototypes in this folder.
-   Page-specific component styles (device cards, binding rows, the variable
-   table, profile cards, pickers) stay in each page's own <style> block.
+/* Crossdeck editor UI - design system (calm v5 language)
+   Rebuilt from the v4 system under the antislop / impeccable / ponytail rules.
+   v4 deltas:
+   - --text-3 lightened to #828c9e: v4's #6b7484 measured 3.70:1 on cards,
+     failing WCAG AA (4.5:1) for normal text (contrast-check.py).
+   - The fixed 1280px canvas (min-width + overflow:hidden) is gone. Pages
+     reflow: columns stack at 1180px, the rail becomes a bottom nav at 640px.
+     The v4 ?fit=1 zoom hack is retired with this.
+   - A visible :focus-visible ring on every control (R-32); v4's
+     .input { outline: none } is removed.
+   - All non-essential motion stops under prefers-reduced-motion (R-39).
+   - Actions render as <button> (button.link) instead of <a href="#"> (R-26/R-39).
+   Page-specific component styles stay in each page's own <style> block.
    Each page sets its own .app grid-template-columns. */
 
 :root {
@@ -12,7 +21,7 @@
   --line-soft: #1e2531;
   --text: #e8ecf3;
   --text-2: #9aa3b2;
-  --text-3: #6b7484;
+  --text-3: #828c9e;
   --cyan: #41d9f0;
   --cyan-line: rgba(65, 217, 240, 0.45);
   --cyan-bg: rgba(65, 217, 240, 0.07);
@@ -46,17 +55,22 @@ body {
   color: var(--text);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
-  min-width: 1280px;
-  overflow: hidden;
 }
 
 ::selection { background: rgba(65, 217, 240, 0.22); }
 button { font-family: inherit; background: none; border: none; color: inherit; cursor: pointer; font-size: inherit; }
+button:disabled { cursor: not-allowed; }
+select { cursor: pointer; }
 a { color: var(--cyan); text-decoration: none; font-size: 12.5px; }
 a:hover { text-decoration: underline; }
 .mono { font-family: var(--font-mono); }
 .dim { color: var(--text-2); }
 .faint { color: var(--text-3); }
+
+/* Keyboard focus: one visible ring everywhere, 3:1+ against adjacent
+   surfaces (cyan on the dark theme measures 10.3:1). */
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+::selection { background: var(--cyan-bg); color: var(--text); }
 
 .app {
   display: grid;
@@ -145,6 +159,18 @@ a:hover { text-decoration: underline; }
   cursor: not-allowed;
   background: none;
 }
+
+/* Actions that v4 shipped as <a href="#"> now render as <button class="link">
+   (R-26: no dead anchors). Navigation stays <a href>. */
+button.link {
+  color: var(--cyan);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+}
+button.link:hover { text-decoration: underline; }
+button.link.ghost { color: var(--text-3); }
+button.link.ghost:hover { color: var(--text-2); }
 
 /* ============ Rail ============ */
 
@@ -244,7 +270,7 @@ a:hover { text-decoration: underline; }
 .tab .tab-count { color: var(--text-3); font-weight: 500; font-size: 11px; margin-left: 5px; }
 .tab.active { color: var(--text); border-bottom-color: var(--cyan); }
 .tab.active .tab-count { color: var(--text-2); }
-.tab.disabled { cursor: default; }
+.tab.disabled { cursor: not-allowed; color: #76808f; }
 
 /* ============ Chips ============ */
 
@@ -402,10 +428,8 @@ a:hover { text-decoration: underline; }
   height: 7px;
   border-radius: 50%;
   background: var(--cyan);
-  animation: pulse 1.6s ease-in-out infinite;
   flex: none;
 }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 .learn-note a { margin-left: auto; font-weight: 600; }
 .learn-note[hidden] { display: none; }
 
@@ -435,7 +459,7 @@ a:hover { text-decoration: underline; }
 /* ============ Fields ============ */
 
 .field-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -454,7 +478,6 @@ a:hover { text-decoration: underline; }
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
-  outline: none;
 }
 .input::placeholder { color: var(--text-3); }
 .input.mono { font-family: var(--font-mono); font-size: 12.5px; }
@@ -499,6 +522,95 @@ a:hover { text-decoration: underline; }
   color: var(--text-3);
   font-size: 12.5px;
   line-height: 1.6;
+}
+
+/* ============ Reduced motion (R-39) ============ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+}
+
+/* ============ Fluid reflow (R-03) ============
+   Three states: desktop grid, stacked columns (<=1180px), phone with a
+   bottom nav (<=640px). v4's fixed canvas and ?fit zoom hack are gone. */
+
+@media (max-width: 1180px) {
+  .app { height: auto; min-height: 100vh; }
+  .col { overflow: visible; }
+  /* The base .col pins both columns to row 2; on the stacked layout the detail
+     column must take the next row or it overlaps the list (R-03). */
+  .rail { grid-row: 2 / -1; }
+  .col.main { grid-row: 2; }
+  .col.detail { grid-row: 3; }
+}
+
+@media (max-width: 900px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 640px) {
+  body { padding-bottom: 66px; }
+  .app { grid-template-rows: auto 1fr; }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .brand { width: auto; }
+  .profile-chip { min-width: 0; flex: 1; }
+  .profile-chip .name { overflow: hidden; text-overflow: ellipsis; }
+  .profile-chip .sim { display: none; }
+  .status-pill { padding: 4px 9px; font-size: 11px; }
+  .rail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: center;
+    background: var(--panel);
+    border-right: none;
+    border-top: 1px solid var(--line-soft);
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+    gap: 2px;
+    z-index: 50;
+  }
+  .rail .push { display: none; }
+  .rail-item {
+    width: auto;
+    min-width: 52px;
+    min-height: 48px;
+    padding: 6px 4px 5px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .rail-item.active::before {
+    left: 50%;
+    top: auto;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    border-radius: 3px;
+  }
+  .rail-item .rail-badge { top: 0; right: 4px; }
+  .col { padding: 14px 12px 20px; }
+  .col.main { grid-row: 2; }
+  .col.detail { grid-row: 3; }
+  .col-head { flex-wrap: wrap; }
+  .col-head .actions { margin-left: 0; width: 100%; }
+  .btn { min-height: 44px; }
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .problem-line { flex-wrap: wrap; }
+  .problem-line .txt { white-space: normal; }
+  .problem-line a { margin-left: 0; }
+  .card { margin-bottom: 12px; }
+  .kv { padding: 11px 12px; }
+  .kv .k { width: 72px; }
 }
 
 /* ============ Scrollbars ============ */

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crossdeck - Devices, calm v4</title>
+<title>Crossdeck - Devices, calm v5</title>
 <link rel="stylesheet" href="design-system.css">
 <style>
   /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
@@ -48,14 +48,18 @@
   .device-card .foot {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 9px;
     margin-top: 10px;
   }
+  .device-card .foot .count { flex: 1; min-width: 0; }
+  .device-card .foot button.link { margin-left: auto; }
   .device-card .count { color: var(--text-3); font-size: 11.5px; }
   .device-card .foot .chip { margin-left: auto; }
   .device-card[hidden] { display: none; }
 
   .row-del {
+    position: relative;
     width: 22px;
     height: 22px;
     display: flex;
@@ -68,6 +72,9 @@
     opacity: 0;
     flex: none;
   }
+  /* 44px-tall hit area: 11px of transparent reach, left capped at the 9px gap so it
+     never covers the status chip (R-03 tap target). */
+  .row-del::after { content: ""; position: absolute; inset: -11px -11px -11px -8px; }
   .device-card:hover .row-del { opacity: 1; }
   .row-del:hover { color: var(--amber); background: var(--amber-bg); }
 
@@ -109,6 +116,62 @@
     font-size: 12.5px;
   }
 
+  /* ============ Filter ============ */
+
+  .filter-row { display: flex; align-items: center; gap: 10px; }
+  .filter-row label { font-size: 11px; font-weight: 600; color: var(--text-3); flex: none; }
+  .filter-row .input { flex: 1; min-width: 0; }
+
+  /* ============ Reassign modal ============ */
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 6, 10, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+  }
+  .modal[hidden] { display: none; }
+  .modal-card {
+    width: min(440px, calc(100vw - 32px));
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow-1);
+    padding: 16px;
+  }
+  .modal-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .modal-head h2 { font-size: 14px; font-weight: 700; line-height: 1.3; }
+  .modal-head .sub { color: var(--text-3); font-size: 12px; }
+  .modal-head .close {
+    margin-left: auto;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: var(--text-3);
+    font-size: 15px;
+    line-height: 1;
+    flex: none;
+  }
+  .modal-head .close:hover { color: var(--text); background: var(--chip-bg); }
+  .modal-help {
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1.45;
+    margin: 2px 0 12px;
+  }
+  .modal-list { display: flex; flex-direction: column; gap: 4px; }
+
   /* ============ Cards and notes: see design-system.css ============ */
 
   .stat-row.two { grid-template-columns: 1fr 1fr; }
@@ -119,7 +182,7 @@
 
   /* ============ Detail column ============ */
 
-  .detail-head h1 {
+  .detail-head h2 {
     font-size: 18px;
     font-weight: 700;
     font-family: var(--font-mono);
@@ -130,7 +193,9 @@
 
   .hw-row { display: flex; align-items: center; gap: 10px; }
   .hw-id { font-size: 12.5px; color: var(--text-2); }
+  .hw-product { font-size: 12px; color: var(--text-2); margin-top: 6px; }
   .refs-empty { color: var(--text-3); font-size: 12.5px; font-style: italic; }
+  .dsec .btn { margin-top: 8px; }
 
   /* ============ Detail body: properties + display preview ============ */
 
@@ -179,7 +244,7 @@
   .fmc-l { color: #66756d; font-size: 9.5px; letter-spacing: 0.14em; margin-top: 10px; white-space: nowrap; }
   .fmc-l:first-child { margin-top: 0; }
   .fmc-l.sp { margin-top: 24px; }
-  .fmc-v { color: #57e08a; font-size: 12.5px; margin-top: 3px; white-space: nowrap; text-shadow: 0 0 7px rgba(87, 224, 138, 0.45); }
+  .fmc-v { color: #57e08a; font-size: 12.5px; margin-top: 3px; white-space: nowrap; }
   .fmc-v.dim { color: #66756d; text-shadow: none; }
   .fmc-v.r { text-align: right; }
   .fmc-v.mt { margin-top: 10px; }
@@ -196,7 +261,7 @@
   }
   .seg-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-family: var(--font-mono); }
   .seg-k { font-size: 10px; letter-spacing: 0.2em; color: rgba(245, 176, 76, 0.55); }
-  .seg-v { font-size: 26px; font-weight: 700; color: var(--amber); text-shadow: 0 0 10px rgba(245, 168, 60, 0.4); }
+  .seg-v { font-size: 26px; font-weight: 700; color: var(--amber); }
 
   .preview-note { font-size: 11px; color: var(--text-3); text-align: center; }
 
@@ -252,6 +317,20 @@
   .save-hint .n { color: var(--amber); font-weight: 600; }
 
   /* Scrollbars: see design-system.css. */
+
+  /* ============ v5 reflow: detail stacks below the list at 1180px ============ */
+  @media (max-width: 1180px) {
+    .app, .app.preview-wide { grid-template-columns: 80px 1fr; grid-template-rows: 56px auto 1fr; }
+    .col.main { grid-column: 2; border-right: none; border-bottom: 1px solid var(--line-soft); }
+    .col.detail { grid-column: 2; background: var(--bg); }
+  }
+  @media (max-width: 640px) {
+    .app, .app.preview-wide { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .col.main, .col.detail { grid-column: 1; }
+    .detail-body.with-preview { grid-template-columns: 1fr; }
+    .row-del { opacity: 1; }
+    .picker-row .pplus { opacity: 1; }
+  }
 </style>
 </head>
 <body>
@@ -260,50 +339,50 @@
   <!-- ============ Top bar ============ -->
   <header class="topbar">
     <div class="brand">Crossdeck</div>
-    <a class="profile-chip" href="profiles-v4.html">
+    <a class="profile-chip" href="profiles.html">
       <span class="name">Zibo 737 - Bravo + PAP3</span>
       <span class="sim">X-Plane &middot; B738</span>
-      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
     </a>
     <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
     <span class="status-pill warn">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
       1 left out
     </span>
     <span class="spacer"></span>
-    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
-    <button class="btn outline" id="learnBtn">Learn</button>
-    <button class="btn primary">Save and apply
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <span class="unsaved" role="status"><span id="unsavedCount">3</span> unsaved</span>
+    <a class="btn outline" href="editor.html?learn=1">Learn</a>
+    <button class="btn primary" id="saveBtn">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </header>
 
   <!-- ============ Rail (Devices active, cross-page navigation) ============ -->
-  <nav class="rail">
-    <a class="rail-item" href="profiles-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+  <nav class="rail" aria-label="Primary">
+    <a class="rail-item" href="profiles.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
       Profiles
     </a>
-    <a class="rail-item active" href="devices-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+    <a class="rail-item active" aria-current="page" href="devices.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
       Devices
     </a>
-    <a class="rail-item" href="editor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <a class="rail-item" href="editor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Editor
     </a>
-    <a class="rail-item" href="variables-v4.html">
+    <a class="rail-item" href="variables.html">
       <span class="glyph-braces">{ }</span>
       Variables
     </a>
-    <a class="rail-item" href="monitor-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+    <a class="rail-item" href="monitor.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
       Monitor
       <span class="rail-badge">3</span>
     </a>
     <span class="push"></span>
-    <a class="rail-item" href="settings-v4.html">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+    <a class="rail-item" href="settings.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
       Settings
     </a>
   </nav>
@@ -319,14 +398,30 @@
 
     <div class="picker card" id="picker" hidden>
       <div class="card-h">Add device<span class="sub">detected hardware</span>
-        <button class="close" id="pickerClose" type="button">&times;</button>
+        <button class="close" id="pickerClose" type="button" aria-label="Close">&times;</button>
       </div>
       <div class="picker-list" id="pickerList"></div>
     </div>
 
-    <input class="input" id="filterInput" type="text" placeholder="Filter devices, hardware&#8230;">
+    <div class="filter-row">
+      <label for="filterInput">Filter</label>
+      <input class="input" id="filterInput" type="text" placeholder="Filter devices, hardware&#8230;">
+    </div>
 
     <div id="rowsArea" style="margin-top:14px"></div>
+
+    <!-- Reassign modal: pick replacement hardware for a slot whose unit is no longer detected. -->
+    <div class="modal" id="reassignModal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reassignTitle">
+        <div class="modal-head">
+          <h2 id="reassignTitle">Reassign hardware</h2>
+          <span class="sub" id="reassignSub">Pick a replacement</span>
+          <button class="close" id="reassignClose" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-help">The slot keeps its name, bindings and screen role. Only the hardware it answers to changes.</div>
+        <div class="modal-list" id="reassignList"></div>
+      </div>
+    </div>
   </main>
 
   <!-- ============ Detail column ============ -->
@@ -401,7 +496,7 @@
   ];
 
   // Detected hardware not in the profile yet (DeviceDescriptor from the watcher).
-  const DETECTED = [
+  let DETECTED = [
     {
       id: 'winctrl',
       name: 'winctrl',
@@ -512,12 +607,13 @@
       : '';
     const foot = d.connected
       ? `<span class="count">${d.bindings} binding${d.bindings === 1 ? '' : 's'}</span>${warn}`
-      : '<span class="count">Bindings are kept. Nothing runs until connected.</span>';
-    return `<div class="device-card${i === selected ? ' selected' : ''}" data-i="${i}">
+      : `<span class="count">Bindings are kept. Nothing runs until connected.</span>
+         <button class="link" data-reassign="${i}" type="button">Reassign hardware</button>`;
+    return `<div class="device-card${i === selected ? ' selected' : ''}" role="button" tabindex="0" data-i="${i}">
       <div class="top">
         <span class="name">${esc(d.name)}</span>
         ${status}
-        <button class="row-del" data-del="${i}" type="button" title="Remove device">&times;</button>
+        <button class="row-del" data-del="${i}" type="button" title="Remove device" aria-label="Remove device ${esc(d.name)}">&times;</button>
       </div>
       <div class="meta">${d.meta}</div>
       <div class="desc">${d.desc}</div>
@@ -553,6 +649,12 @@
         e.stopPropagation();
         removeDevice(+del.dataset.del);
       });
+      const reassign = card.querySelector('.link[data-reassign]');
+      if (reassign) reassign.addEventListener('click', e => {
+        e.stopPropagation();
+        selected = +reassign.dataset.reassign;
+        openReassign();
+      });
     });
   }
 
@@ -567,7 +669,9 @@
     const area = $('detailArea');
     const d = DEVICES[selected];
     if (!d) {
-      area.innerHTML = '<div class="detail-empty">Select a device to see its details.</div>';
+      area.innerHTML = '<div class="detail-empty">'
+        + (DEVICES.length ? 'Select a device to see its details.' : 'Add a device to see its details.')
+        + '</div>';
       document.querySelector('.app').classList.remove('preview-wide');
       return;
     }
@@ -576,23 +680,28 @@
       : '<span class="chip off"><span class="ring"></span>not connected</span>';
     const note = d.isNew
       ? infoNote('Just added from detected hardware. It is connected, so its bindings run as soon as you save.',
-          `<a href="editor-v4.html?device=${esc(d.id)}">Open in editor</a>`)
+          `<a href="editor.html?device=${esc(d.id)}">Open in editor</a>`)
+      : d.isReassigned
+      ? infoNote('Hardware reassigned to ' + esc(d.identity) + '. The slot and its bindings are kept; save to apply.',
+          `<a href="editor.html?device=${esc(d.id)}">Open in editor</a>`)
       : (!d.connected
         ? infoNote('Not connected. Bindings are kept; nothing runs until the hardware is plugged in.')
         : '');
     const hardware = d.connected
       ? `<div class="hw-row"><span class="hw-id mono">${esc(d.identity)}</span><span class="chip">${esc(d.transport)}</span></div>
+         <div class="hw-product">${esc(d.product || 'unknown product')}</div>
          <div class="help">The identity matches the physical unit to this slot.</div>`
       : `<div class="refs-empty">No hardware plugged in.</div>
-         <div class="help">Plug in the matching unit and it will be assigned automatically.</div>`;
+         <div class="help">The expected unit is not detected: its stable ID may have changed. Plug in the matching unit to re-link it, or reassign the slot to another unit.</div>
+         <button class="btn outline" id="reassignBtn" type="button">Reassign hardware</button>`;
     const hasDisplay = d.outputs.some(x => x[0] === 'Display');
     const screen = hasDisplay
       ? `<div class="dsec">
            <div class="field-label">Screen</div>
-           <div class="seg full" data-group="screen">
-             <button type="button"${d.screen === 'Captain' ? ' class="active"' : ''}>Captain</button>
-             <button type="button"${d.screen === 'FirstOfficer' ? ' class="active"' : ''}>First Officer</button>
-             <button type="button"${d.screen === 'Observer' ? ' class="active"' : ''}>Observer</button>
+           <div class="seg full" data-group="screen" role="group" aria-label="Screen">
+             <button type="button" data-value="Captain"${d.screen === 'Captain' ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"'}>Captain</button>
+             <button type="button" data-value="FirstOfficer"${d.screen === 'FirstOfficer' ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"'}>First Officer</button>
+             <button type="button" data-value="Observer"${d.screen === 'Observer' ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"'}>Observer</button>
            </div>
            <div class="help">Cockpit seat this device's screen belongs to.</div>
          </div>`
@@ -602,13 +711,13 @@
       <div class="detail-body${preview ? ' with-preview' : ''}">
         <div class="props">
       <div class="detail-head">
-        <h1>${esc(d.name)}</h1>
+        <h2>${esc(d.name)}</h2>
         <span class="chip">${esc(d.model)}</span>
         ${statusChip}
       </div>
       ${note}
       <div class="dsec" style="margin-top:0">
-        <div class="field-label">Name</div>
+        <label class="field-label" for="devNameInput">Name</label>
         <input class="input mono" id="devNameInput" type="text" value="${esc(d.name)}">
         <div class="help">Renaming updates every binding and page that shows this device.</div>
       </div>
@@ -628,20 +737,10 @@
           <div class="stat cyan"><div class="n">${d.bindings}</div><div class="l">bindings</div></div>
           <div class="stat${d.leftOut ? ' amber' : ''}"><div class="n">${d.leftOut}</div><div class="l">left out</div></div>
         </div>
-        ${d.leftOut ? `<div class="problem-line"><span class="txt">${d.problem}</span><a href="editor-v4.html?device=${esc(d.id)}">Show</a></div>` : ''}
+        ${d.leftOut ? `<div class="problem-line"><span class="txt">${d.problem}</span><a href="editor.html?device=${esc(d.id)}">Show</a></div>` : ''}
       </div>
 
-      <div class="card">
-        <div class="card-h">Connection</div>
-        <div class="card-b">
-          <div class="kv"><span class="k">Model</span><span class="v">${esc(d.model)}</span></div>
-          <div class="kv"><span class="k">Transport</span><span class="v">${esc(d.transport)}</span></div>
-          <div class="kv"><span class="k">Identity</span><span class="v mono${d.connected ? '' : ' dim'}">${d.connected ? esc(d.identity) : 'not connected'}</span></div>
-          <div class="kv"><span class="k">Product</span><span class="v${d.product ? '' : ' dim'}">${d.product ? esc(d.product) : 'unknown'}</span></div>
-        </div>
-      </div>
-
-      <a class="open-action" href="editor-v4.html?device=${esc(d.id)}">
+      <a class="open-action" href="editor.html?device=${esc(d.id)}">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         Open in editor
       </a>
@@ -661,12 +760,16 @@
 
     const nameInput = $('devNameInput');
     if (nameInput) nameInput.addEventListener('change', () => { unsaved++; refreshUnsaved(); });
+    const reassignBtn = $('reassignBtn');
+    if (reassignBtn) reassignBtn.addEventListener('click', openReassign);
     area.querySelectorAll('.seg[data-group]').forEach(seg => {
       seg.addEventListener('click', e => {
         const btn = e.target.closest('button');
         if (!btn) return;
-        seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        seg.querySelectorAll('button').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        d.screen = btn.dataset.value;
         unsaved++;
         refreshUnsaved();
       });
@@ -699,6 +802,7 @@
     }, item, {
       id: addSeq > 1 ? item.id + '-' + addSeq : item.id,
     }));
+    DETECTED = DETECTED.filter(x => x.id !== item.id);
     selected = DEVICES.length - 1;
     togglePicker(false);
     unsaved++;
@@ -708,6 +812,56 @@
     if (card) card.scrollIntoView({ block: 'nearest' });
   }
 
+  // Re-link the slot to different hardware: the slot's config (name, model, signals,
+  // bindings) is kept; only the hardware identity fields change.
+  function reassignDevice(item) {
+    const d = DEVICES[selected];
+    if (!d) return;
+    Object.assign(d, {
+      identity: item.identity,
+      vid: item.vid,
+      pid: item.pid,
+      transport: item.transport,
+      product: item.product,
+      meta: item.meta,
+      connected: true,
+      isReassigned: true,
+    });
+    DETECTED = DETECTED.filter(x => x.id !== item.id);
+    closeReassign();
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  // ---- Reassign modal -----------------------------------------------------------
+  // Scrimmed dialog; selecting a row re-links the slot and closes it. In the
+  // Avalonia port this maps to a ContentDialog over the device detail.
+  function openReassign() {
+    const d = DEVICES[selected];
+    if (!d) return;
+    $('reassignSub').textContent = 'Pick a replacement for ' + d.name;
+    $('reassignList').innerHTML = DETECTED.length
+      ? DETECTED.map(i => `<div class="picker-row" role="button" tabindex="0" data-pick="${esc(i.id)}">
+            <span class="pid">${esc(i.identity)}</span>
+            <span class="pdesc">${esc(i.product)} &middot; ${esc(i.transport)}</span>
+            <span class="pplus">&#8594;</span>
+          </div>`).join('')
+      : '<div class="picker-empty">No new hardware detected. Plug in a device and it will appear here.</div>';
+    $('reassignModal').hidden = false;
+    $('reassignClose').focus();
+    $('reassignList').querySelectorAll('.picker-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const item = DETECTED.find(x => x.id === row.dataset.pick);
+        if (item) reassignDevice(item);
+      });
+    });
+  }
+
+  function closeReassign() {
+    $('reassignModal').hidden = true;
+  }
+
   // ---- Picker ------------------------------------------------------------------
   function togglePicker(open) {
     const p = $('picker');
@@ -715,7 +869,7 @@
     $('addDeviceBtn').classList.toggle('active', open);
     if (!open) return;
     $('pickerList').innerHTML = DETECTED.length
-      ? DETECTED.map(i => `<div class="picker-row" data-pick="${esc(i.id)}">
+      ? DETECTED.map(i => `<div class="picker-row" role="button" tabindex="0" data-pick="${esc(i.id)}">
             <span class="pid">${esc(i.identity)}</span>
             <span class="pdesc">${esc(i.product)} &middot; ${esc(i.transport)}</span>
             <span class="pplus">+</span>
@@ -749,24 +903,36 @@
   }
 
   // ---- Wiring --------------------------------------------------------------------
-  $('addDeviceBtn').addEventListener('click', () => togglePicker(!$('picker').hidden));
+  $('saveBtn').addEventListener('click', () => { unsaved = 0; refreshUnsaved(); });
+  $('addDeviceBtn').addEventListener('click', () => togglePicker($('picker').hidden));
   $('pickerClose').addEventListener('click', () => togglePicker(false));
+  $('reassignClose').addEventListener('click', closeReassign);
+  $('reassignModal').addEventListener('click', e => {
+    if (e.target === $('reassignModal')) closeReassign();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('reassignModal').hidden) closeReassign();
+  });
   $('filterInput').addEventListener('input', e => {
     filter = e.target.value.trim();
     renderList();
   });
 
-  // Keep the prototype's placeholder links from jumping the page,
-  // and route the detail's remove button to the selected device.
+
+  // Route the detail's remove button to the selected device.
   document.addEventListener('click', e => {
-    if (e.target.closest('a[href="#"]')) e.preventDefault();
     if (e.target.closest('#removeDeviceBtn')) removeDevice(selected);
   });
 
-  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  // role="button" cards and rows: Enter and Space activate them (R-32).
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"]:not(button)')) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
   const params = new URLSearchParams(location.search);
-  const fit = params.get('fit');
-  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
 
   // Initial state, with review params: ?device=mcdu, ?add=1, ?empty=1.
   if (params.get('empty')) DEVICES.length = 0;
