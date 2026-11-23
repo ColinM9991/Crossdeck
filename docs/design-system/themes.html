@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Themes</title>
+<link rel="stylesheet" href="../ui-prototype/design-system.css">
+<script src="../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="index.html">Overview</a>
+    <a class="tab" href="tokens.html">Tokens</a>
+    <a class="tab active" aria-current="page" href="themes.html">Themes</a>
+    <a class="tab" href="colourblind.html">Colourblind</a>
+    <a class="tab" href="components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+
+<main class="docs-main">
+  <h1>Themes</h1>
+  <p class="page-sub">Four themes: dark (default), light, sepia and dusk. A theme is a re-tuning of the tokens, not a different component set: 36 of the 39 tokens are overridden per theme (fonts stay shared).</p>
+
+  <h2>How a theme is applied</h2>
+  <p>A theme is a single attribute on the document element, <code>html[data-theme="..."]</code>. Omitting the attribute is the dark theme. <code>theme.js</code> owns the whole cycle:</p>
+  <table class="spec">
+    <tr><th>Step</th><th>What happens</th></tr>
+    <tr><td>Persist</td><td>The chosen theme is stored in <code>localStorage["crossdeck-theme"]</code>. Unknown or stale stored values fall back to the default rather than erroring.</td></tr>
+    <tr><td>First paint</td><td><code>theme.js</code> loads in <code>&lt;head&gt;</code> and applies the stored value before the body renders, so there is no theme flash.</td></tr>
+    <tr><td>Switch</td><td><code>CrossdeckTheme.set(value)</code> validates against the four known themes, sets or removes the <code>data-theme</code> attribute (dark removes it), persists, and rewrites the in-prototype links. <code>CrossdeckTheme.get()</code> returns the current value or <code>null</code>.</td></tr>
+    <tr><td>Live sync</td><td>Same-origin tabs hear the <code>storage</code> event and re-apply, so every open page switches together. The <code>storage</code> event also fires with a null key, which theme.js treats as "re-read both keys".</td></tr>
+    <tr><td>Fallback for split origins</td><td>Browsers that give each <code>file://</code> page a unique origin (Firefox) cannot share storage: the theme and the <a href="colourblind.html">colourblind mode</a> also ride on the <code>?theme=</code> and <code>?cb=</code> URL parameters of in-prototype links, and the <code>set</code> methods keep those links current. A URL parameter also wins over storage when present, and is persisted on the way in.</td></tr>
+  </table>
+  <p>The user-facing switch lives on the <a href="../ui-prototype/settings.html">settings page</a>, Appearance card: a <code>select.input</code> bound to <code>CrossdeckTheme.set</code>, initialised from <code>CrossdeckTheme.get()</code>. A second select on the same card drives <code>CrossdeckCB</code>.</p>
+
+  <h2>The four themes</h2>
+
+  <h3>Dark <span class="dim" style="font-size:12px">(default, no attribute)</span></h3>
+  <p>Near-black surfaces (<code>#0e1116</code>) with a one-step card lift. The only theme that uses inset top highlights (1px white at 2-3%) on its shadows for the raised edge, and the only one whose top bar has no shadow at all (<code>--chrome-shadow: none</code>). The accent is the brightest in the set: cyan <code>#41d9f0</code> at 10.3:1 for the focus ring.</p>
+  <div class="strip">
+    <div class="cell"><span class="sw-lg" style="background:#0e1116"></span><span class="name">bg</span><span class="val">#0e1116</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#141a24"></span><span class="name">card</span><span class="val">#141a24</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#10151d"></span><span class="name">inset</span><span class="val">#10151d</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#252d3b"></span><span class="name">line</span><span class="val">#252d3b</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#e8ecf3"></span><span class="name">text</span><span class="val">#e8ecf3</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#828c9e"></span><span class="name">text-3</span><span class="val">#828c9e</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#41d9f0"></span><span class="name">cyan</span><span class="val">#41d9f0</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#3ddc91"></span><span class="name">green</span><span class="val">#3ddc91</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#f5a83c"></span><span class="name">amber</span><span class="val">#f5a83c</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#bd8ef0"></span><span class="name">violet</span><span class="val">#bd8ef0</span></div>
+  </div>
+
+  <h3>Light</h3>
+  <p>White cards on a slightly deeper surface (<code>#e9edf4</code>) so the cards keep real presence, and the top bar sits on a white chrome layer with a soft drop shadow. Every role colour darkens to hold contrast on white: cyan becomes petrol <code>#0a6f86</code>, green <code>#0e754f</code>, amber <code>#8f5705</code>, violet <code>#7233e0</code>.</p>
+  <div class="strip">
+    <div class="cell"><span class="sw-lg" style="background:#e9edf4"></span><span class="name">bg</span><span class="val">#e9edf4</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#ffffff"></span><span class="name">card</span><span class="val">#ffffff</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#edf1f7"></span><span class="name">inset</span><span class="val">#edf1f7</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#c7d0dd"></span><span class="name">line</span><span class="val">#c7d0dd</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#1a2431"></span><span class="name">text</span><span class="val">#1a2431</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#5a6779"></span><span class="name">text-3</span><span class="val">#5a6779</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#0a6f86"></span><span class="name">cyan</span><span class="val">#0a6f86</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#0e754f"></span><span class="name">green</span><span class="val">#0e754f</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#8f5705"></span><span class="name">amber</span><span class="val">#8f5705</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#7233e0"></span><span class="name">violet</span><span class="val">#7233e0</span></div>
+  </div>
+
+  <h3>Sepia</h3>
+  <p>A warm-paper light theme: cream surfaces (<code>#faf7f0</code> cards on <code>#ece5d8</code>) with a petrol accent, <code>#0c6b5c</code>, so the app's identity survives the colour-temperature shift. The role palette shifts with the paper: olive-green ok, burnt-sienna warn, plum info.</p>
+  <div class="strip">
+    <div class="cell"><span class="sw-lg" style="background:#ece5d8"></span><span class="name">bg</span><span class="val">#ece5d8</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#faf7f0"></span><span class="name">card</span><span class="val">#faf7f0</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#f0ebdf"></span><span class="name">inset</span><span class="val">#f0ebdf</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#c9bfa9"></span><span class="name">line</span><span class="val">#c9bfa9</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#2a241a"></span><span class="name">text</span><span class="val">#2a241a</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#6b5f4a"></span><span class="name">text-3</span><span class="val">#6b5f4a</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#0c6b5c"></span><span class="name">cyan</span><span class="val">#0c6b5c</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#4f6a1e"></span><span class="name">green</span><span class="val">#4f6a1e</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#8a5210"></span><span class="name">amber</span><span class="val">#8a5210</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#7a3b72"></span><span class="name">violet</span><span class="val">#7a3b72</span></div>
+  </div>
+
+  <h3>Dusk</h3>
+  <p>A mid slate-blue between dark and light: surfaces are a visible step up from dark's near-black (<code>#1d2536</code>) so the page reads as a night scene rather than a void, and the text is soft (<code>#dbe3f2</code>) rather than white. The only theme with its own chevron stroke: the shared <code>#6b7484</code> measures 2.8:1 on dusk's card, under the 3:1 standard for UI components, so the token is re-tinted to <code>#8fa0c0</code>.</p>
+  <div class="strip">
+    <div class="cell"><span class="sw-lg" style="background:#1d2536"></span><span class="name">bg</span><span class="val">#1d2536</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#252f45"></span><span class="name">card</span><span class="val">#252f45</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#202a3e"></span><span class="name">inset</span><span class="val">#202a3e</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#3a4763"></span><span class="name">line</span><span class="val">#3a4763</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#dbe3f2"></span><span class="name">text</span><span class="val">#dbe3f2</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#8b98b3"></span><span class="name">text-3</span><span class="val">#8b98b3</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#56c8e8"></span><span class="name">cyan</span><span class="val">#56c8e8</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#4ed093"></span><span class="name">green</span><span class="val">#4ed093</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#e8b04a"></span><span class="name">amber</span><span class="val">#e8b04a</span></div>
+    <div class="cell"><span class="sw-lg" style="background:#a98bf0"></span><span class="name">violet</span><span class="val">#a98bf0</span></div>
+  </div>
+  <p class="dim" style="font-size:12px">Full per-theme values for all 39 tokens: the master table on the <a href="tokens.html">tokens page</a>. Dusk's shadow set is dark's deepened (0.45 alpha drop instead of 0.35) because the lighter surface needs more separation.</p>
+
+  <h2>Contrast notes carried in the stylesheet</h2>
+  <ul>
+    <li>Tertiary text was lightened in v5 specifically to clear WCAG AA: v4's <code>#6b7484</code> measured 3.70:1 on cards, under the 4.5:1 standard for normal text.</li>
+    <li>The editor page's kind pill uses <code>--chip-text</code> rather than <code>--text-3</code> because dusk's <code>#8b98b3</code> on dusk <code>--chip-bg</code> measures 4.14:1, still under 4.5:1.</li>
+    <li>Every colourblind mode's role-on-surface pairs clear 4.5:1 on the worst surface of its theme class and on the role's own tint; the prototype verifies this programmatically before release.</li>
+  </ul>
+
+  <h2>Modelling the themes in Avalonia</h2>
+  <ul>
+    <li>One base dictionary (dark) plus small override dictionaries per theme that redefine the same resource keys; merge order decides the winner, later dictionary wins.</li>
+    <li>Avalonia's <code>ThemeVariant</code> gives you the dark/light pair for free (FluentTheme already flips on it). Sepia and dusk have no built-in variant: register them as runtime-swappable dictionaries on <code>Application.Current</code>, or as resource keys the app swaps on change.</li>
+    <li>The prototype's single-attribute model (<code>data-theme</code>) has no direct Avalonia equivalent; the closest is a theme service that (re)merges the chosen dictionaries on change and persists the choice, mirroring <code>CrossdeckTheme</code>'s get/set/persist/sync contract.</li>
+    <li>Verify the Avalonia 12 theme-variant resource syntax in the docs before relying on it; the 11-era patterns have drifted.</li>
+  </ul>
+</main>
+
+<footer class="docs-foot">Source: <a href="../ui-prototype/profiles.html">docs/ui-prototype</a> (design-system.css, theme.js and the six pages); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

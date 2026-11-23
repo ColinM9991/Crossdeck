@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Tokens</title>
+<link rel="stylesheet" href="../ui-prototype/design-system.css">
+<script src="../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="index.html">Overview</a>
+    <a class="tab active" aria-current="page" href="tokens.html">Tokens</a>
+    <a class="tab" href="themes.html">Themes</a>
+    <a class="tab" href="colourblind.html">Colourblind</a>
+    <a class="tab" href="components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+
+<main class="docs-main">
+  <h1>Tokens</h1>
+  <p class="page-sub">All 39 design tokens, grouped, with the source value in every theme. The <em>Now</em> swatch renders the live value under the header selectors, so the table previews itself.</p>
+
+  <h2>Colour roles</h2>
+  <p>The system has four semantic colour roles. Components and themes never use a raw hue; they use the role tokens, which is what lets the <a href="colourblind.html">colourblind modes</a> repalette everything with 14 token changes.</p>
+  <table class="spec">
+    <tr><th>Role</th><th>Meaning</th><th>Used by</th><th>Now</th></tr>
+    <tr><td><code>--cyan</code> family</td><td>Accent. The app's identity colour.</td><td>Links, focus ring, active rail item, primary button, <code>.active</code> pills and segments, selected rows, learn notes.</td><td><span class="sw" style="background:var(--cyan)"></span><span class="sw" style="background:var(--cyan-bg); border-color:var(--cyan-line)"></span></td></tr>
+    <tr><td><code>--green</code> family</td><td>Ok / ready / connected.</td><td><code>.status-pill.ok</code>, <code>.chip.ok</code>, live values, <code>.stat</code> success.</td><td><span class="sw" style="background:var(--green)"></span><span class="sw" style="background:var(--green-bg); border-color:var(--green-line)"></span></td></tr>
+    <tr><td><code>--amber</code> family</td><td>Warn / attention / unsaved.</td><td><code>.status-pill.warn</code>, <code>.chip.warn</code>, <code>.note-line</code>, <code>.problem-line</code>, unsaved counter, <code>.stat.amber</code>.</td><td><span class="sw" style="background:var(--amber)"></span><span class="sw" style="background:var(--amber-bg); border-color:var(--amber-line)"></span></td></tr>
+    <tr><td><code>--violet</code> family</td><td>Info / provenance.</td><td><code>.chip.write</code> (who writes a variable), write reference boxes, <code>.stat</code> info.</td><td><span class="sw" style="background:var(--violet)"></span><span class="sw" style="background:var(--violet-bg); border-color:var(--violet-line)"></span></td></tr>
+  </table>
+  <p class="dim" style="font-size:12px">Each role has three tokens: the solid colour, a <code>-line</code> variant (the 1px border at reduced alpha) and a <code>-bg</code> variant (the tinted fill at low alpha).</p>
+
+  <h2>Master token table</h2>
+  <p>Values are quoted verbatim from <code>design-system.css</code>. The dark column is the <code>:root</code> default; the other three are the <code>data-theme</code> overrides. Fonts are shared by all themes and are not redefined per theme.</p>
+
+  <table class="spec">
+    <tr><th>Token</th><th>Use</th><th>Dark</th><th>Light</th><th>Sepia</th><th>Dusk</th><th>Now</th></tr>
+
+    <tr class="group"><th colspan="7">Surfaces</th></tr>
+    <tr><td><code>--bg</code></td><td>Page background</td><td class="hex">#0e1116</td><td class="hex">#e9edf4</td><td class="hex">#ece5d8</td><td class="hex">#1d2536</td><td><span class="sw" style="background:var(--bg)"></span></td></tr>
+    <tr><td><code>--card</code></td><td>Card and top-bar profile pill surface</td><td class="hex">#141a24</td><td class="hex">#ffffff</td><td class="hex">#faf7f0</td><td class="hex">#252f45</td><td><span class="sw" style="background:var(--card)"></span></td></tr>
+    <tr><td><code>--inset</code></td><td>Recessed surface: inputs, stat cards, tabs, neutral notes</td><td class="hex">#10151d</td><td class="hex">#edf1f7</td><td class="hex">#f0ebdf</td><td class="hex">#202a3e</td><td><span class="sw" style="background:var(--inset)"></span></td></tr>
+    <tr><td><code>--panel</code></td><td>Detail column background; bottom nav at 640px</td><td class="hex">#11161f</td><td class="hex">#ffffff</td><td class="hex">#faf7f0</td><td class="hex">#202a3e</td><td><span class="sw" style="background:var(--panel)"></span></td></tr>
+    <tr><td><code>--chrome</code></td><td>Top bar background</td><td class="hex">#0e1116</td><td class="hex">#ffffff</td><td class="hex">#faf7f0</td><td class="hex">#222c42</td><td><span class="sw" style="background:var(--chrome)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Lines</th></tr>
+    <tr><td><code>--line</code></td><td>Strong border: cards, inputs, <code>.kv</code> dividers</td><td class="hex">#252d3b</td><td class="hex">#c7d0dd</td><td class="hex">#c9bfa9</td><td class="hex">#3a4763</td><td><span class="sw" style="background:var(--line)"></span></td></tr>
+    <tr><td><code>--line-soft</code></td><td>Subtle divider: top bar edge, <code>.card-h</code> under-border, <code>.rail</code> edge</td><td class="hex">#1e2531</td><td class="hex">#d8dfe9</td><td class="hex">#d8d0bd</td><td class="hex">#2e3950</td><td><span class="sw" style="background:var(--line-soft)"></span></td></tr>
+    <tr><td><code>--hover-line</code></td><td>Border colour on hover of cards, pills, buttons</td><td class="hex">#33405a</td><td class="hex">#b6c2d4</td><td class="hex">#b8ac92</td><td class="hex">#46557a</td><td><span class="sw" style="background:var(--hover-line)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Text</th></tr>
+    <tr><td><code>--text</code></td><td>Primary text. Light theme keeps dark text on light surfaces</td><td class="hex">#e8ecf3</td><td class="hex">#1a2431</td><td class="hex">#2a241a</td><td class="hex">#dbe3f2</td><td><span class="sw" style="background:var(--text)"></span></td></tr>
+    <tr><td><code>--text-2</code></td><td>Secondary text (<code>.dim</code>)</td><td class="hex">#9aa3b2</td><td class="hex">#44516a</td><td class="hex">#4f4633</td><td class="hex">#9fabc4</td><td><span class="sw" style="background:var(--text-2)"></span></td></tr>
+    <tr><td><code>--text-3</code></td><td>Tertiary, muted (<code>.faint</code>). Lightened from v4's <code>#6b7484</code> (3.70:1) to pass WCAG AA on cards</td><td class="hex">#828c9e</td><td class="hex">#5a6779</td><td class="hex">#6b5f4a</td><td class="hex">#8b98b3</td><td><span class="sw" style="background:var(--text-3)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Roles: accent (cyan)</th></tr>
+    <tr><td><code>--cyan</code></td><td>Accent solid</td><td class="hex">#41d9f0</td><td class="hex">#0a6f86</td><td class="hex">#0c6b5c</td><td class="hex">#56c8e8</td><td><span class="sw" style="background:var(--cyan)"></span></td></tr>
+    <tr><td><code>--cyan-line</code></td><td>Accent border</td><td class="hex">rgba(65, 217, 240, 0.45)</td><td class="hex">rgba(10, 111, 134, 0.40)</td><td class="hex">rgba(12, 107, 92, 0.40)</td><td class="hex">rgba(86, 200, 232, 0.40)</td><td><span class="sw" style="background:var(--cyan)"></span></td></tr>
+    <tr><td><code>--cyan-bg</code></td><td>Accent tint fill, and text selection</td><td class="hex">rgba(65, 217, 240, 0.07)</td><td class="hex">rgba(10, 111, 134, 0.05)</td><td class="hex">rgba(12, 107, 92, 0.05)</td><td class="hex">rgba(86, 200, 232, 0.05)</td><td><span class="sw" style="background:var(--cyan-bg); border-color:var(--cyan-line)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Roles: ok (green)</th></tr>
+    <tr><td><code>--green</code></td><td>Ok solid</td><td class="hex">#3ddc91</td><td class="hex">#0e754f</td><td class="hex">#4f6a1e</td><td class="hex">#4ed093</td><td><span class="sw" style="background:var(--green)"></span></td></tr>
+    <tr><td><code>--green-line</code></td><td>Ok border</td><td class="hex">rgba(61, 220, 145, 0.30)</td><td class="hex">rgba(14, 117, 79, 0.35)</td><td class="hex">rgba(79, 106, 30, 0.35)</td><td class="hex">rgba(78, 208, 147, 0.35)</td><td><span class="sw" style="background:var(--green)"></span></td></tr>
+    <tr><td><code>--green-bg</code></td><td>Ok tint fill</td><td class="hex">rgba(61, 220, 145, 0.10)</td><td class="hex">rgba(14, 117, 79, 0.05)</td><td class="hex">rgba(79, 106, 30, 0.05)</td><td class="hex">rgba(78, 208, 147, 0.08)</td><td><span class="sw" style="background:var(--green-bg); border-color:var(--green-line)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Roles: warn (amber)</th></tr>
+    <tr><td><code>--amber</code></td><td>Warn solid</td><td class="hex">#f5a83c</td><td class="hex">#8f5705</td><td class="hex">#8a5210</td><td class="hex">#e8b04a</td><td><span class="sw" style="background:var(--amber)"></span></td></tr>
+    <tr><td><code>--amber-line</code></td><td>Warn border</td><td class="hex">rgba(245, 168, 60, 0.30)</td><td class="hex">rgba(143, 87, 5, 0.35)</td><td class="hex">rgba(138, 82, 16, 0.35)</td><td class="hex">rgba(232, 176, 74, 0.35)</td><td><span class="sw" style="background:var(--amber)"></span></td></tr>
+    <tr><td><code>--amber-bg</code></td><td>Warn tint fill</td><td class="hex">rgba(245, 168, 60, 0.08)</td><td class="hex">rgba(143, 87, 5, 0.05)</td><td class="hex">rgba(138, 82, 16, 0.05)</td><td class="hex">rgba(232, 176, 74, 0.08)</td><td><span class="sw" style="background:var(--amber-bg); border-color:var(--amber-line)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Roles: info (violet)</th></tr>
+    <tr><td><code>--violet</code></td><td>Info solid</td><td class="hex">#bd8ef0</td><td class="hex">#7233e0</td><td class="hex">#7a3b72</td><td class="hex">#a98bf0</td><td><span class="sw" style="background:var(--violet)"></span></td></tr>
+    <tr><td><code>--violet-line</code></td><td>Info border</td><td class="hex">rgba(189, 142, 240, 0.30)</td><td class="hex">rgba(114, 51, 224, 0.30)</td><td class="hex">rgba(122, 59, 114, 0.30)</td><td class="hex">rgba(169, 139, 240, 0.30)</td><td><span class="sw" style="background:var(--violet)"></span></td></tr>
+    <tr><td><code>--violet-bg</code></td><td>Info tint fill</td><td class="hex">rgba(189, 142, 240, 0.10)</td><td class="hex">rgba(114, 51, 224, 0.05)</td><td class="hex">rgba(122, 59, 114, 0.05)</td><td class="hex">rgba(169, 139, 240, 0.10)</td><td><span class="sw" style="background:var(--violet-bg); border-color:var(--violet-line)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Neutral pills</th></tr>
+    <tr><td><code>--chip-bg</code></td><td>Neutral pill fill; rail badge fill</td><td class="hex">#1a2130</td><td class="hex">#eaeef5</td><td class="hex">#e5ddca</td><td class="hex">#2b3650</td><td><span class="sw" style="background:var(--chip-bg)"></span></td></tr>
+    <tr><td><code>--chip-line</code></td><td>Neutral pill border</td><td class="hex">#2a3344</td><td class="hex">#c2cdda</td><td class="hex">#c4b99e</td><td class="hex">#3d4a68</td><td><span class="sw" style="background:var(--chip-line)"></span></td></tr>
+    <tr><td><code>--chip-text</code></td><td>Neutral pill text</td><td class="hex">#aab3c2</td><td class="hex">#57647a</td><td class="hex">#6b5f4a</td><td class="hex">#a7b2c9</td><td><span class="sw" style="background:var(--chip-text)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">State</th></tr>
+    <tr><td><code>--selected-bg</code></td><td>Selected-row background (remapped by every colourblind mode)</td><td class="hex">#152031</td><td class="hex">#e2f1f7</td><td class="hex">#ecefe4</td><td class="hex">#232f4a</td><td><span class="sw" style="background:var(--selected-bg)"></span></td></tr>
+    <tr><td><code>--on-accent</code></td><td>Foreground on filled accent (primary button)</td><td class="hex">#062730</td><td class="hex">#ffffff</td><td class="hex">#ffffff</td><td class="hex">#0a2430</td><td><span class="sw" style="background:var(--on-accent)"></span></td></tr>
+    <tr><td><code>--tab-disabled</code></td><td>Disabled tab text</td><td class="hex">#76808f</td><td class="hex">#7c889c</td><td class="hex">#8a7d64</td><td class="hex">#6d7a96</td><td><span class="sw" style="background:var(--tab-disabled)"></span></td></tr>
+    <tr><td><code>--seg-active</code></td><td>Active segment / active tab fill</td><td class="hex">#232c3d</td><td class="hex">#d7deea</td><td class="hex">#e0d8c4</td><td class="hex">#2e3a54</td><td><span class="sw" style="background:var(--seg-active)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Effects</th></tr>
+    <tr><td><code>--shadow-0</code></td><td>Resting shadow (cards, ref boxes)</td><td class="hex">0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 14px rgba(0, 0, 0, 0.25)</td><td class="hex">0 1px 2px rgba(16, 24, 40, 0.06)</td><td class="hex">0 1px 2px rgba(58, 48, 30, 0.06)</td><td class="hex">0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 14px rgba(0, 0, 0, 0.35)</td><td><span class="sw" style="background:var(--card); box-shadow:var(--shadow-0); border-color:var(--line)"></span></td></tr>
+    <tr><td><code>--shadow-1</code></td><td>Raised shadow (cards)</td><td class="hex">0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35)</td><td class="hex">0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px rgba(16, 24, 40, 0.10)</td><td class="hex">0 1px 2px rgba(58, 48, 30, 0.06), 0 2px 8px rgba(58, 48, 30, 0.10)</td><td class="hex">0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.45)</td><td><span class="sw demo-shadow"></span></td></tr>
+    <tr><td><code>--chrome-shadow</code></td><td>Top bar shadow (dark has none; light themes get a soft drop)</td><td class="hex">none</td><td class="hex">0 1px 0 rgba(16, 24, 40, 0.03), 0 1px 3px rgba(16, 24, 40, 0.07)</td><td class="hex">0 1px 0 rgba(58, 48, 30, 0.03), 0 1px 3px rgba(58, 48, 30, 0.07)</td><td class="hex">0 1px 2px rgba(0, 0, 0, 0.25)</td><td>–</td></tr>
+    <tr><td><code>--modal-shadow</code></td><td>Modal drop shadow</td><td class="hex">0 12px 40px rgba(0, 0, 0, 0.5)</td><td class="hex">0 12px 40px rgba(15, 23, 42, 0.30)</td><td class="hex">0 12px 40px rgba(35, 28, 16, 0.28)</td><td class="hex">0 12px 40px rgba(0, 0, 0, 0.50)</td><td>–</td></tr>
+    <tr><td><code>--backdrop</code></td><td>Modal backdrop tint</td><td class="hex">rgba(4, 6, 10, 0.6)</td><td class="hex">rgba(15, 23, 42, 0.50)</td><td class="hex">rgba(35, 28, 16, 0.50)</td><td class="hex">rgba(6, 10, 18, 0.60)</td><td><span class="sw" style="background:var(--backdrop)"></span></td></tr>
+    <tr><td><code>--scroll-thumb</code></td><td>Scrollbar thumb (10px, 5px radius, 2px page-bg border)</td><td class="hex">#263041</td><td class="hex">#b4c0d1</td><td class="hex">#bfb499</td><td class="hex">#3c4a6b</td><td><span class="sw" style="background:var(--scroll-thumb)"></span></td></tr>
+
+    <tr class="group"><th colspan="7">Shared (not redefined per theme)</th></tr>
+    <tr><td><code>--font-ui</code></td><td>Interface font stack</td><td class="hex" colspan="4">"Segoe UI", Inter, system-ui, -apple-system, sans-serif</td><td>–</td></tr>
+    <tr><td><code>--font-mono</code></td><td>Monospace stack: values, variable names, addresses</td><td class="hex" colspan="4">"Cascadia Code", "JetBrains Mono", Consolas, "SF Mono", monospace</td><td>–</td></tr>
+    <tr><td><code>--chevron</code></td><td>11px chevron SVG for select backgrounds; stroke per theme: dark/light <code>#6b7484</code>, sepia <code>#6b5f4a</code>, dusk <code>#8fa0c0</code> (dusk's <code>#6b7484</code> measured 2.8:1 on its card, under the 3:1 UI-component standard, so it is re-tinted)</td><td class="hex">stroke #6b7484</td><td class="hex">stroke #6b7484</td><td class="hex">stroke #6b5f4a</td><td class="hex">stroke #8fa0c0</td><td>–</td></tr>
+  </table>
+
+  <h2>Typography</h2>
+  <table class="spec">
+    <tr><th>Property</th><th>Value</th><th>Notes</th></tr>
+    <tr><td>Base</td><td class="hex"><code>var(--font-ui)</code>, 13px, antialiased</td><td>Set on <code>body</code>; every control inherits</td></tr>
+    <tr><td>Sizes in use</td><td class="hex">9, 11, 11.5, 12, 12.5, 13, 14, 15, 17, 18, 21, 22 px</td><td>9 rail badge; 11 rail item / pill / stat label; 12.5 links, help, inputs-mono; 13 base, buttons, values; 14 card head; 17 brand; 18 column and detail heads; 21 stat number; 22 live value</td></tr>
+    <tr><td>Weights</td><td class="hex">400 / 500 / 600 / 700</td><td>500 pills and segments; 600 buttons, pills, names; 700 heads, card heads, stat numbers, field labels</td></tr>
+    <tr><td>Field label</td><td class="hex">11px, 700, letter-spacing 0.08em, uppercase, <code>--text-3</code></td><td><code>.field-label</code>, <code>.nav-head</code> style; the only tracking in the system</td></tr>
+    <tr><td>Display tracking</td><td class="hex">-0.02em brand, -0.01em h1</td><td>Small negative tracking on display sizes only</td></tr>
+    <tr><td>Mono usage</td><td class="hex"><code>.mono</code> class, or <code>--font-mono</code> directly</td><td>Variable names, live values, addresses, stat numbers</td></tr>
+  </table>
+
+  <h2>Spacing and layout</h2>
+  <table class="spec">
+    <tr><th>Token / value</th><th>Where</th></tr>
+    <tr><td class="hex">56px top bar row; 1fr below</td><td><code>.app</code> grid rows; every page</td></tr>
+    <tr><td class="hex">92px rail column; 72px rail items, 9px vertical padding, 6px gap</td><td>Rail; item 10px radius, active shows a 3px cyan indicator 14px out</td></tr>
+    <tr><td class="hex">20px 20px 28px column padding</td><td><code>.col</code></td></tr>
+    <tr><td class="hex">14px</td><td>Top bar gap; card bottom margin; column head bottom margin; top bar / column gap rhythm</td></tr>
+    <tr><td class="hex">12px 16px / 11px 16px</td><td><code>.stat-row</code> padding; <code>.kv</code> row padding</td></tr>
+    <tr><td class="hex">13px 16px</td><td><code>.card-h</code> padding</td></tr>
+    <tr><td class="hex">9-10px 12-13px</td><td>Note and callout padding</td></tr>
+    <tr><td class="hex">8px between field label and input; 7px between input and help; 18px section gap (<code>.dsec</code>)</td><td>Fields</td></tr>
+    <tr><td class="hex">Component gaps: 14 top bar, 10 profile pill, 7 pill, 12 kv, 8 button, 6 pill, 9-13 notes</td><td>See component specs on the <a href="components.html">components page</a></td></tr>
+    <tr><td class="hex">Breakpoints: 1180px, 900px, 640px</td><td>1180: columns stack, rail becomes a bottom band; 900: stat row goes 2-up; 640: rail becomes a fixed bottom nav, 44px tap targets, top bar wraps</td></tr>
+  </table>
+
+  <h2>Corner radii</h2>
+  <table class="spec">
+    <tr><th>Radius</th><th>Used by</th></tr>
+    <tr><td class="hex">3px</td><td>Rail active indicator, dots at small scale</td></tr>
+    <tr><td class="hex">6px</td><td>Tabs, segment buttons, card close button, link buttons, ref boxes, inputs</td></tr>
+    <tr><td class="hex">8px</td><td>Buttons, inputs, notes, callouts, stat cards, nav items, cards (cards use 10px)</td></tr>
+    <tr><td class="hex">10px</td><td>Cards, rail items, empty states</td></tr>
+    <tr><td class="hex">999px</td><td>Pills, dots, switch tracks, rail badges</td></tr>
+  </table>
+
+  <h2>Focus, selection and motion</h2>
+  <ul>
+    <li><strong>Focus.</strong> One rule everywhere: <code>:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px }</code>. On the dark theme the ring measures 10.3:1 against adjacent surfaces (the 3:1 UI-component minimum is exceeded).</li>
+    <li><strong>Text selection.</strong> <code>background: var(--cyan-bg); color: var(--text)</code> (the later rule wins over the base cyan-tint rule).</li>
+    <li><strong>Motion.</strong> The only essential animation is the unsaved-counter pulse (<code>0.45s</code> ease, scale 1 to 1.15). Switches transition 0.15s. Everything non-essential is disabled under <code>prefers-reduced-motion</code> (durations forced to 0.001s, single iteration).</li>
+  </ul>
+</main>
+
+<footer class="docs-foot">Source: <a href="../ui-prototype/profiles.html">docs/ui-prototype</a> (design-system.css, theme.js and the six pages); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

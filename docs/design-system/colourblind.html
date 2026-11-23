@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Colourblind Modes</title>
+<link rel="stylesheet" href="../ui-prototype/design-system.css">
+<script src="../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="index.html">Overview</a>
+    <a class="tab" href="tokens.html">Tokens</a>
+    <a class="tab" href="themes.html">Themes</a>
+    <a class="tab active" aria-current="page" href="colourblind.html">Colourblind</a>
+    <a class="tab" href="components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+
+<main class="docs-main">
+  <h1>Colourblind modes</h1>
+  <p class="page-sub">Four repalette modes for the known colour-vision deficiencies. Each mode is a layer on top of the active theme that remaps the four semantic roles (accent, ok, warn, info) to hues that stay distinguishable under that deficiency.</p>
+
+  <h2>How it works</h2>
+  <p>A mode is a single attribute, <code>html[data-cb="..."]</code>, layered over <code>data-theme</code>. Only 14 tokens change per mode: the three variants of each role (<code>--role</code>, <code>--role-line</code>, <code>--role-bg</code>) plus <code>--selected-bg</code> and <code>--on-accent</code>, which are derived from the accent. Surfaces, text and line tokens keep the theme's values, so the layout is untouched. Because the layers only ever redefine token keys, the combination <em>every theme × every mode</em> is valid by construction.</p>
+  <p>The modes split into two surface classes in the selectors. The <strong>dark class</strong> (the <code>:not([data-theme="light"]):not([data-theme="sepia"])</code> selector) covers <em>dark and dusk</em>; the <strong>light class</strong> selector covers <em>light and sepia</em>. Dusk therefore uses the same colourblind values as dark. Each mode below gives both.</p>
+
+  <h2>The four modes</h2>
+
+  <h3>Deuteranopia and protanopia <span class="dim" style="font-size:12px">(one shared selector group, identical values)</span></h3>
+  <p>The red-green axis is broken. The system moves to the Okabe-Ito colour-blind-safe set: a blue accent, a blue-green ok, an orange warn, and a reddish-purple info. The light class uses darker variants of the same hues to hold contrast on white and cream.</p>
+  <table class="spec">
+    <tr><th>Token</th><th>Dark class (dark, dusk)</th><th>Light class (light, sepia)</th></tr>
+    <tr><td><code>--cyan</code></td><td class="hex">#56b4e9</td><td class="hex">#00649c</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex">rgba(86, 180, 233, 0.40)</td><td class="hex">rgba(0, 100, 156, 0.40)</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex">rgba(86, 180, 233, 0.08)</td><td class="hex">rgba(0, 100, 156, 0.05)</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex">#304c69</td><td class="hex">#d6e6ef</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex">#0a1a2a</td><td class="hex">#ffffff</td></tr>
+    <tr><td><code>--green</code></td><td class="hex">#1ab187</td><td class="hex">#006e55</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex">rgba(26, 177, 135, 0.05)</td><td class="hex">rgba(0, 110, 85, 0.05)</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex">rgba(26, 177, 135, 0.35)</td><td class="hex">rgba(0, 110, 85, 0.35)</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex">#e69f00</td><td class="hex">#8a4a00</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex">rgba(230, 159, 0, 0.08)</td><td class="hex">rgba(138, 74, 0, 0.05)</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex">rgba(230, 159, 0, 0.35)</td><td class="hex">rgba(138, 74, 0, 0.35)</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex">#d186b0</td><td class="hex">#7c3a64</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex">rgba(209, 134, 176, 0.06)</td><td class="hex">rgba(124, 58, 100, 0.05)</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex">rgba(209, 134, 176, 0.30)</td><td class="hex">rgba(124, 58, 100, 0.30)</td></tr>
+  </table>
+
+  <h3>Tritanopia</h3>
+  <p>The blue-yellow axis is broken. The accent moves to orange and the warn moves to bright yellow, where a tritanope can separate it from the green ok; the info role keeps its reddish-purple.</p>
+  <table class="spec">
+    <tr><th>Token</th><th>Dark class (dark, dusk)</th><th>Light class (light, sepia)</th></tr>
+    <tr><td><code>--cyan</code></td><td class="hex">#f08a30</td><td class="hex">#a33000</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex">rgba(240, 138, 48, 0.40)</td><td class="hex">rgba(163, 48, 0, 0.40)</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex">rgba(240, 138, 48, 0.08)</td><td class="hex">rgba(163, 48, 0, 0.05)</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex">#524340</td><td class="hex">#f0ded6</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex">#160a00</td><td class="hex">#ffffff</td></tr>
+    <tr><td><code>--green</code></td><td class="hex">#3ddc91 (unchanged)</td><td class="hex">#0e754f (unchanged)</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex">rgba(61, 220, 145, 0.08)</td><td class="hex">rgba(14, 117, 79, 0.05)</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex">rgba(61, 220, 145, 0.35)</td><td class="hex">rgba(14, 117, 79, 0.35)</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex">#f5d44a</td><td class="hex">#6a5c00</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex">rgba(245, 212, 74, 0.08)</td><td class="hex">rgba(106, 92, 0, 0.05)</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex">rgba(245, 212, 74, 0.35)</td><td class="hex">rgba(106, 92, 0, 0.35)</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex">#d186b0</td><td class="hex">#7c3a64</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex">rgba(209, 134, 176, 0.06)</td><td class="hex">rgba(124, 58, 100, 0.05)</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex">rgba(209, 134, 176, 0.30)</td><td class="hex">rgba(124, 58, 100, 0.30)</td></tr>
+  </table>
+
+  <h3>Achromatopsia</h3>
+  <p>No hue perception. Roles stop differing in hue and instead form a lightness ladder: on dark surfaces the ladder runs from near-white warn down through light greys; on light surfaces it is the inverse, from near-black warn up through mid greys. The system's non-colour channels (text labels, icons, shapes) do the identifying work here.</p>
+  <table class="spec">
+    <tr><th>Token</th><th>Dark class (dark, dusk)</th><th>Light class (light, sepia)</th></tr>
+    <tr><td><code>--cyan</code></td><td class="hex">#cecece</td><td class="hex">#484848</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex">rgba(206, 206, 206, 0.40)</td><td class="hex">rgba(72, 72, 72, 0.40)</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex">rgba(206, 206, 206, 0.08)</td><td class="hex">rgba(72, 72, 72, 0.05)</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex">#4a5263</td><td class="hex">#e2e2e2</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex">#0e1116</td><td class="hex">#ffffff</td></tr>
+    <tr><td><code>--green</code></td><td class="hex">#b3b3b3</td><td class="hex">#5f5f5f</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex">rgba(179, 179, 179, 0.08)</td><td class="hex">rgba(95, 95, 95, 0.05)</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex">rgba(179, 179, 179, 0.35)</td><td class="hex">rgba(95, 95, 95, 0.35)</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex">#f3f3f3</td><td class="hex">#272727</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex">rgba(243, 243, 243, 0.08)</td><td class="hex">rgba(39, 39, 39, 0.05)</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex">rgba(243, 243, 243, 0.35)</td><td class="hex">rgba(39, 39, 39, 0.35)</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex">#a0a0a0</td><td class="hex">#666666</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex">rgba(160, 160, 160, 0.07)</td><td class="hex">rgba(102, 102, 102, 0.05)</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex">rgba(160, 160, 160, 0.30)</td><td class="hex">rgba(102, 102, 102, 0.30)</td></tr>
+  </table>
+
+  <h2>Contrast guarantee</h2>
+  <p>Every role-on-surface pair in every mode clears 4.5:1 on the worst surface of its theme class and on the role's own tint. The prototype verifies this programmatically before release, so the values above are not approximations.</p>
+
+  <h2>How the setting is exposed and stored</h2>
+  <table class="spec">
+    <tr><th>Aspect</th><th>Behaviour</th></tr>
+    <tr><td>UI</td><td>The settings page, Appearance card: a <code>select.input</code> with <em>Off</em>, <em>Deuteranopia</em>, <em>Protanopia</em>, <em>Tritanopia</em>, <em>Achromatopsia</em>, bound to <code>CrossdeckCB.set</code> and initialised from <code>CrossdeckCB.get()</code>. The help text reads: "Repalettes the interface's status colours to hues that stay distinguishable under the chosen colour-vision deficiency. Layers on top of the theme."</td></tr>
+    <tr><td>Persist</td><td>Stored under its own key, <code>localStorage["crossdeck-cb-mode"]</code>, independent of the theme. <code>set('')</code> clears the mode.</td></tr>
+    <tr><td>First paint</td><td>Applied by <code>theme.js</code> before the body renders, alongside the theme.</td></tr>
+    <tr><td>Live sync</td><td>Same <code>storage</code>-event mechanism as the theme: all open pages switch together, and in-prototype links carry <code>?cb=</code> for origins that cannot share storage.</td></tr>
+    <tr><td>Composition</td><td>Mode and theme are independent axes. The 14-token remap applies on top of whatever theme is active; there is no per-theme mode state to desynchronise.</td></tr>
+  </table>
+
+  <h2>Live preview</h2>
+  <p>Set the Colourblind selector in the header (with any theme) and this area re-colours. The rows show the four roles in the components that carry them: a status pill, a plain pill, a stat number, and a primary button.</p>
+  <div class="example stack">
+    <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
+    <span class="status-pill warn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg> 1 left out</span>
+    <span><span class="chip ok"><span class="dot"></span>connected</span> <span class="chip warn">1 left out</span> <span class="chip active"><span class="dot"></span>active</span> <span class="chip">plain</span></span>
+    <span class="stat" style="max-width:220px"><span class="n" style="color:var(--amber)">1</span><span class="l" style="display:block">left out</span></span>
+    <span class="stat" style="max-width:220px"><span class="n" style="color:var(--cyan)">12</span><span class="l" style="display:block">bindings running</span></span>
+    <button class="btn primary" type="button">Save and apply</button>
+    <span class="chip" style="color:var(--violet); background:var(--violet-bg); border-color:var(--violet-line)">written by bnd-fn</span>
+  </div>
+
+  <h2>Guidance</h2>
+  <ul>
+    <li>Colourblind modes are a second layer, not the primary channel. Status in this system is never colour alone: pills carry a text label, notes carry an icon, and the warn role is reserved for things a user must act on. The modes make the colour channel itself safe for the four deficiencies.</li>
+    <li>When porting to Avalonia, keep the 14 remapped keys as one small override dictionary per mode. Merging it after the theme dictionary reproduces the layering exactly, and "off" simply means not merging it.</li>
+    <li>Do not add per-component colourblind special cases: if a component reads the role tokens, it is already correct under every mode.</li>
+  </ul>
+</main>
+
+<footer class="docs-foot">Source: <a href="../ui-prototype/profiles.html">docs/ui-prototype</a> (design-system.css, theme.js and the six pages); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

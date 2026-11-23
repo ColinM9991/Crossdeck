@@ -1,0 +1,275 @@
+/* Crossdeck design system, docs-site styling only.
+   Tokens, component primitives and the theme/colourblind switching come from
+   the prototype's design-system.css and theme.js, linked by every docs page.
+   This file adds the document layout: tables, swatches, code blocks, examples. */
+
+:root {
+  --docs-max: 1100px;
+}
+
+body {
+  line-height: 1.6;
+  padding-top: 0;
+}
+
+/* ============ Docs header ============ */
+
+.docs-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  background: var(--chrome);
+  box-shadow: var(--chrome-shadow);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.docs-top .brand {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  width: auto;
+  flex: none;
+}
+
+.docs-top .brand .v {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 7px;
+}
+
+.docs-nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.docs-nav .tab { cursor: pointer; }
+.docs-nav .tab:hover { color: var(--text); }
+
+.docs-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.docs-controls .lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  align-self: center;
+  margin-right: -2px;
+}
+.docs-controls select {
+  width: 170px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 30px 6px 12px;
+  font-size: 12.5px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.docs-controls select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* ============ Document ============ */
+
+.docs-main {
+  max-width: var(--docs-max);
+  margin: 0 auto;
+  padding: 26px 20px 90px;
+}
+
+.docs-main > h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+.page-sub {
+  color: var(--text-3);
+  font-size: 12px;
+  margin: 0 0 18px;
+}
+.docs-main h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 30px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.docs-main h2:first-of-type { border-top: none; padding-top: 0; }
+.docs-main h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 18px 0 6px;
+}
+.docs-main p { margin: 0 0 8px; }
+.docs-main ul, .docs-main ol { margin: 0 0 10px; padding-left: 20px; }
+.docs-main li { margin: 3px 0; }
+a { font-size: 12.5px; }
+
+/* ============ Tables ============ */
+
+table.spec {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin: 10px 0 16px;
+}
+table.spec th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+table.spec td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+table.spec tr.group th {
+  color: var(--text-2);
+  border-bottom: 1px solid var(--line);
+  padding-top: 14px;
+}
+table.spec td.hex,
+table.spec td .hex {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+/* ============ Swatches ============ */
+
+.sw {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--line-soft);
+  vertical-align: -2px;
+  margin-right: 7px;
+}
+.sw.demo-shadow { box-shadow: var(--shadow-1); background: var(--card); border-color: var(--line); }
+
+.strip { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0 14px; }
+.strip .cell { width: 118px; }
+.strip .cell .sw-lg {
+  display: block;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  margin-bottom: 5px;
+}
+.strip .cell .name { font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
+.strip .cell .val { font-size: 10.5px; color: var(--text-3); font-family: var(--font-mono); word-break: break-all; }
+
+/* ============ Code and examples ============ */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--inset);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre {
+  background: var(--inset);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0 14px;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+.example {
+  background: var(--inset);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 8px 0 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.example.stack { flex-direction: column; align-items: stretch; }
+.example .cap {
+  width: 100%;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* ============ Component reference ============ */
+
+.comp { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.comp h3 { margin: 0 0 2px; }
+.comp h3 .cls { color: var(--text-3); font-weight: 400; font-family: var(--font-mono); font-size: 12px; margin-left: 7px; }
+.comp .purpose { color: var(--text-2); margin: 2px 0 8px; }
+
+/* ============ In-page TOC ============ */
+
+.toc {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 13px 16px;
+  margin: 12px 0 18px;
+  box-shadow: var(--shadow-0);
+}
+.toc .toc-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 7px;
+}
+.toc ol { margin: 0; padding-left: 18px; columns: 2; column-gap: 28px; }
+.toc li { margin: 2px 0; }
+
+/* ============ Footer ============ */
+
+.docs-foot {
+  max-width: var(--docs-max);
+  margin: 0 auto;
+  padding: 0 20px 40px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ============ Responsive ============ */
+
+@media (max-width: 760px) {
+  .docs-controls { margin-left: 0; width: 100%; }
+  .docs-controls select { flex: 1; width: auto; }
+  .toc ol { columns: 1; }
+  .strip .cell { width: 44%; }
+}

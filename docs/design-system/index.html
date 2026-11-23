@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Overview</title>
+<link rel="stylesheet" href="../ui-prototype/design-system.css">
+<script src="../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab active" aria-current="page" href="index.html">Overview</a>
+    <a class="tab" href="tokens.html">Tokens</a>
+    <a class="tab" href="themes.html">Themes</a>
+    <a class="tab" href="colourblind.html">Colourblind</a>
+    <a class="tab" href="components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+
+<main class="docs-main">
+  <h1>Overview</h1>
+  <p class="page-sub">The Crossdeck UI design system, documented from the live HTML prototype. Single source of truth for the Avalonia implementation in <code>src/Crossdeck.UI</code>.</p>
+
+  <h2>What this is</h2>
+  <p>Crossdeck's interface follows a small, calm visual language: dark surfaces by default, one cyan accent, a four-role status palette (accent, ok, warn, info), 13px Inter-class type, and component primitives that repeat across every page. The prototype at <a href="../ui-prototype/profiles.html">docs/ui-prototype/</a> is the reference build; this site documents its tokens, themes, colourblind modes and components so the Avalonia app can be built without re-deriving decisions.</p>
+  <p>Everything on these pages is sourced from the prototype's <code>design-system.css</code> (tokens and component rules), <code>theme.js</code> (theme and colourblind switching) and the six page files. Values are quoted verbatim; where the CSS carries a rationale (contrast fixes, reflow behaviour), the note is included.</p>
+
+  <h2>How the layering works</h2>
+  <p>Colours are not hard-coded in components. Every component reads from design tokens, and the tokens are layered:</p>
+  <ol>
+    <li><strong>Base (dark, default).</strong> The <code>:root</code> block defines all 39 tokens. No <code>data-theme</code> attribute means dark.</li>
+    <li><strong>Theme override.</strong> <code>html[data-theme="light" | "sepia" | "dusk"]</code> re-tunes 36 of the 39 (fonts stay shared). The override is applied by <code>theme.js</code> before first paint, from the value stored in <code>localStorage["crossdeck-theme"]</code>.</li>
+    <li><strong>Colourblind repalette.</strong> <code>html[data-cb="deuteranopia" | "protanopia" | "tritanopia" | "achromatopsia"]</code> layers on top of the active theme and remaps the 14 semantic-role tokens (the accent/ok/warn/info families, plus <code>--selected-bg</code> and <code>--on-accent</code>). It is an independent setting: its own storage key, its own URL parameter, and it composes with any theme.</li>
+  </ol>
+  <p>Because both layers only ever redefine tokens, a component written once against token names is correct in all 4 themes and all 4 colourblind modes with no changes. That is the contract the Avalonia resource dictionaries must preserve: base dictionary, theme override dictionaries, colourblind override dictionaries, and component styles that only reference token keys.</p>
+
+  <h2>Pages</h2>
+  <table class="spec">
+    <tr><th>Page</th><th>Covers</th></tr>
+    <tr><td><a href="tokens.html">Tokens</a></td><td>All 39 tokens, grouped, with values in every theme, plus type, spacing, radii, focus and motion rules.</td></tr>
+    <tr><td><a href="themes.html">Themes</a></td><td>Dark, light, sepia and dusk: intent, key swatches, how switching and persistence work.</td></tr>
+    <tr><td><a href="colourblind.html">Colourblind</a></td><td>The four repalette modes, the remapped tokens per mode, and how the setting is exposed and stored.</td></tr>
+    <tr><td><a href="components.html">Components</a></td><td>Every shared component and each page's own components, with markup, variants and spec values.</td></tr>
+  </table>
+  <p>Use the Theme and Colourblind selectors in the header on every page to preview the live result; the swatches and examples re-colour instantly because they read the same tokens the prototype uses.</p>
+
+  <h2>Design rules the system enforces</h2>
+  <p>These are stated in the prototype's stylesheet and hold across all pages:</p>
+  <ul>
+    <li><strong>Contrast.</strong> Body text on its surfaces meets WCAG AA (4.5:1 for normal text). The v4 tertiary text colour measured 3.70:1 on cards and was lightened to <code>#828c9e</code> to pass.</li>
+    <li><strong>One focus ring.</strong> Every control shows the same <code>:focus-visible</code> ring: 2px <code>--cyan</code>, 2px offset. Cyan on the dark theme measures 10.3:1 against adjacent surfaces.</li>
+    <li><strong>Motion is essential-only.</strong> All non-essential animation and transition stops under <code>prefers-reduced-motion</code>.</li>
+    <li><strong>Actions are buttons.</strong> Anything that acts is a <code>&lt;button&gt;</code>; dead <code>&lt;a href="#&quot;&gt;</code> anchors do not exist. Navigation stays <code>&lt;a href&gt;</code>.</li>
+    <li><strong>Fluid layout.</strong> No fixed canvas: three states, desktop grid, stacked columns at 1180px, and a bottom nav rail at 640px. Interactive targets grow to 44px on the smallest layout.</li>
+    <li><strong>Status is never colour alone.</strong> Pills and notes pair a colour role with a text label or an icon, so the colourblind repalettes are a belt-and-braces layer rather than the only channel.</li>
+  </ul>
+
+  <h2>Notes for the Avalonia port</h2>
+  <p>Direction of travel, not prototype fact. The prototype's layering maps cleanly onto resource dictionaries:</p>
+  <ul>
+    <li><code>Tokens.axaml</code> holds the dark base set; <code>Tokens.Light.axaml</code> (and sepia/dusk equivalents) redefine the same keys, so a dictionary merged later wins per-key.</li>
+    <li>Colourblind modes are a second override axis: four more small dictionaries that redefine only the 14 role keys, merged after the theme dictionary when a mode is active.</li>
+    <li>Component styles reference token keys only, never raw colours, so they stay valid under every combination.</li>
+    <li>Avalonia's <code>ThemeVariant</code> covers the dark/light axis; sepia and dusk, and the colourblind overlay, need their own dictionaries (or a runtime merge), because there is no built-in third variant. Verify the 12.x theme-variant resource syntax in the Avalonia docs before relying on it.</li>
+  </ul>
+</main>
+
+<footer class="docs-foot">Source: <a href="../ui-prototype/profiles.html">docs/ui-prototype</a> (design-system.css, theme.js and the six pages); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  // Header selectors, same contract as settings.html: theme.js applies the
+  // stored values before first paint and these selects drive it live.
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>
