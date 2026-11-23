@@ -50,6 +50,7 @@
   --modal-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   --chrome: #0e1116;
   --chrome-shadow: none;
+  --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7484' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
   --font-ui: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
   --font-mono: "Cascadia Code", "JetBrains Mono", Consolas, "SF Mono", monospace;
 }
@@ -89,13 +90,158 @@
   --hover-line: #b6c2d4;
   --selected-bg: #e2f1f7;
   --on-accent: #ffffff;
-  --tab-disabled: #8d99ac;
+  --tab-disabled: #7c889c;
   --seg-active: #d7deea;
   --scroll-thumb: #b4c0d1;
   --backdrop: rgba(15, 23, 42, 0.50);
   --modal-shadow: 0 12px 40px rgba(15, 23, 42, 0.30);
   --chrome: #ffffff;
   --chrome-shadow: 0 1px 0 rgba(16, 24, 40, 0.03), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7484' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* Sepia: a warm paper light theme. The same tokens re-tuned on cream
+   surfaces with a petrol accent, so the app's identity survives the
+   colour-temperature shift. */
+:root[data-theme="sepia"] {
+  --bg: #ece5d8;
+  --card: #faf7f0;
+  --inset: #f0ebdf;
+  --line: #c9bfa9;
+  --line-soft: #d8d0bd;
+  --text: #2a241a;
+  --text-2: #4f4633;
+  --text-3: #6b5f4a;
+  --cyan: #0c6b5c;
+  --cyan-line: rgba(12, 107, 92, 0.40);
+  --cyan-bg: rgba(12, 107, 92, 0.05);
+  --green: #4f6a1e;
+  --green-bg: rgba(79, 106, 30, 0.05);
+  --green-line: rgba(79, 106, 30, 0.35);
+  --amber: #8a5210;
+  --amber-bg: rgba(138, 82, 16, 0.05);
+  --amber-line: rgba(138, 82, 16, 0.35);
+  --violet: #7a3b72;
+  --violet-bg: rgba(122, 59, 114, 0.05);
+  --violet-line: rgba(122, 59, 114, 0.30);
+  --chip-bg: #e5ddca;
+  --chip-line: #c4b99e;
+  --chip-text: #6b5f4a;
+  --panel: #faf7f0;
+  --shadow-1: 0 1px 2px rgba(58, 48, 30, 0.06), 0 2px 8px rgba(58, 48, 30, 0.10);
+  --shadow-0: 0 1px 2px rgba(58, 48, 30, 0.06);
+  --hover-line: #b8ac92;
+  --selected-bg: #ecefe4;
+  --on-accent: #ffffff;
+  --tab-disabled: #8a7d64;
+  --seg-active: #e0d8c4;
+  --scroll-thumb: #bfb499;
+  --backdrop: rgba(35, 28, 16, 0.50);
+  --modal-shadow: 0 12px 40px rgba(35, 28, 16, 0.28);
+  --chrome: #faf7f0;
+  --chrome-shadow: 0 1px 0 rgba(58, 48, 30, 0.03), 0 1px 3px rgba(58, 48, 30, 0.07);
+  --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b5f4a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* Dusk: a mid slate-blue, between the dark and light themes. Surfaces are
+   a visible step up from dark's near-black so the page reads as a night
+   scene rather than a void; text is soft, not white. */
+:root[data-theme="dusk"] {
+  --bg: #1d2536;
+  --card: #252f45;
+  --inset: #202a3e;
+  --line: #3a4763;
+  --line-soft: #2e3950;
+  --text: #dbe3f2;
+  --text-2: #9fabc4;
+  --text-3: #8b98b3;
+  --cyan: #56c8e8;
+  --cyan-line: rgba(86, 200, 232, 0.40);
+  --cyan-bg: rgba(86, 200, 232, 0.05);
+  --green: #4ed093;
+  --green-bg: rgba(78, 208, 147, 0.08);
+  --green-line: rgba(78, 208, 147, 0.35);
+  --amber: #e8b04a;
+  --amber-bg: rgba(232, 176, 74, 0.08);
+  --amber-line: rgba(232, 176, 74, 0.35);
+  --violet: #a98bf0;
+  --violet-bg: rgba(169, 139, 240, 0.10);
+  --violet-line: rgba(169, 139, 240, 0.30);
+  --chip-bg: #2b3650;
+  --chip-line: #3d4a68;
+  --chip-text: #a7b2c9;
+  --panel: #202a3e;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-0: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 14px rgba(0, 0, 0, 0.35);
+  --hover-line: #46557a;
+  --selected-bg: #232f4a;
+  --on-accent: #0a2430;
+  --tab-disabled: #6d7a96;
+  --seg-active: #2e3a54;
+  --scroll-thumb: #3c4a6b;
+  --backdrop: rgba(6, 10, 18, 0.60);
+  --modal-shadow: 0 12px 40px rgba(0, 0, 0, 0.50);
+  --chrome: #222c42;
+  --chrome-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%238fa0c0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* ============ Colourblind modes ============
+   Repalette modes for the known colour-vision deficiencies, layered on top
+   of the active theme. theme.js sets html[data-cb]; each mode remaps the
+   four semantic roles (cyan=accent, green=ok, amber=warn, violet=info) to
+   hues that stay distinguishable under that deficiency:
+   - Deuteranopia/protanopia (red-green axis broken): blue accent,
+     blue-green ok, orange warn, reddish-purple info (Okabe-Ito safe set).
+   - Tritanopia (blue-yellow axis broken): orange accent, green ok,
+     bright yellow warn, reddish-purple info.
+   - Achromatopsia (no hue perception): lightness ladder; roles differ in
+     lightness, not hue.
+   Every role-on-surface pair clears 4.5:1 on the worst surface of its theme
+   class and on its own tint (verified programmatically before release). */
+html[data-cb="deuteranopia"]:not([data-theme="light"]):not([data-theme="sepia"]),
+html[data-cb="protanopia"]:not([data-theme="light"]):not([data-theme="sepia"]) {
+  --cyan: #56b4e9; --cyan-line: rgba(86, 180, 233, 0.40); --cyan-bg: rgba(86, 180, 233, 0.08);
+  --selected-bg: #304c69; --on-accent: #0a1a2a;
+  --green: #1ab187; --green-bg: rgba(26, 177, 135, 0.05); --green-line: rgba(26, 177, 135, 0.35);
+  --amber: #e69f00; --amber-bg: rgba(230, 159, 0, 0.08); --amber-line: rgba(230, 159, 0, 0.35);
+  --violet: #d186b0; --violet-bg: rgba(209, 134, 176, 0.06); --violet-line: rgba(209, 134, 176, 0.30);
+}
+html[data-theme="light"][data-cb="deuteranopia"], html[data-theme="sepia"][data-cb="deuteranopia"],
+html[data-theme="light"][data-cb="protanopia"], html[data-theme="sepia"][data-cb="protanopia"] {
+  --cyan: #00649c; --cyan-line: rgba(0, 100, 156, 0.40); --cyan-bg: rgba(0, 100, 156, 0.05);
+  --selected-bg: #d6e6ef; --on-accent: #ffffff;
+  --green: #006e55; --green-bg: rgba(0, 110, 85, 0.05); --green-line: rgba(0, 110, 85, 0.35);
+  --amber: #8a4a00; --amber-bg: rgba(138, 74, 0, 0.05); --amber-line: rgba(138, 74, 0, 0.35);
+  --violet: #7c3a64; --violet-bg: rgba(124, 58, 100, 0.05); --violet-line: rgba(124, 58, 100, 0.30);
+}
+html[data-cb="tritanopia"]:not([data-theme="light"]):not([data-theme="sepia"]) {
+  --cyan: #f08a30; --cyan-line: rgba(240, 138, 48, 0.40); --cyan-bg: rgba(240, 138, 48, 0.08);
+  --selected-bg: #524340; --on-accent: #160a00;
+  --green: #3ddc91; --green-bg: rgba(61, 220, 145, 0.08); --green-line: rgba(61, 220, 145, 0.35);
+  --amber: #f5d44a; --amber-bg: rgba(245, 212, 74, 0.08); --amber-line: rgba(245, 212, 74, 0.35);
+  --violet: #d186b0; --violet-bg: rgba(209, 134, 176, 0.06); --violet-line: rgba(209, 134, 176, 0.30);
+}
+html[data-theme="light"][data-cb="tritanopia"], html[data-theme="sepia"][data-cb="tritanopia"] {
+  --cyan: #a33000; --cyan-line: rgba(163, 48, 0, 0.40); --cyan-bg: rgba(163, 48, 0, 0.05);
+  --selected-bg: #f0ded6; --on-accent: #ffffff;
+  --green: #0e754f; --green-bg: rgba(14, 117, 79, 0.05); --green-line: rgba(14, 117, 79, 0.35);
+  --amber: #6a5c00; --amber-bg: rgba(106, 92, 0, 0.05); --amber-line: rgba(106, 92, 0, 0.35);
+  --violet: #7c3a64; --violet-bg: rgba(124, 58, 100, 0.05); --violet-line: rgba(124, 58, 100, 0.30);
+}
+html[data-cb="achromatopsia"]:not([data-theme="light"]):not([data-theme="sepia"]) {
+  --cyan: #cecece; --cyan-line: rgba(206, 206, 206, 0.40); --cyan-bg: rgba(206, 206, 206, 0.08);
+  --selected-bg: #4a5263; --on-accent: #0e1116;
+  --green: #b3b3b3; --green-bg: rgba(179, 179, 179, 0.08); --green-line: rgba(179, 179, 179, 0.35);
+  --amber: #f3f3f3; --amber-bg: rgba(243, 243, 243, 0.08); --amber-line: rgba(243, 243, 243, 0.35);
+  --violet: #a0a0a0; --violet-bg: rgba(160, 160, 160, 0.07); --violet-line: rgba(160, 160, 160, 0.30);
+}
+html[data-theme="light"][data-cb="achromatopsia"], html[data-theme="sepia"][data-cb="achromatopsia"] {
+  --cyan: #484848; --cyan-line: rgba(72, 72, 72, 0.40); --cyan-bg: rgba(72, 72, 72, 0.05);
+  --selected-bg: #e2e2e2; --on-accent: #ffffff;
+  --green: #5f5f5f; --green-bg: rgba(95, 95, 95, 0.05); --green-line: rgba(95, 95, 95, 0.35);
+  --amber: #272727; --amber-bg: rgba(39, 39, 39, 0.05); --amber-line: rgba(39, 39, 39, 0.35);
+  --violet: #666666; --violet-bg: rgba(102, 102, 102, 0.05); --violet-line: rgba(102, 102, 102, 0.30);
 }
 
 /* ============ Base ============ */
@@ -315,18 +461,21 @@ button.link.ghost:hover { color: var(--text-2); }
   border-bottom: 1px solid var(--line-soft);
   margin-bottom: 14px;
 }
+/* Tabs render as segmented pills (the .seg pattern): bare text tabs on a
+   bare canvas blend into the background in every theme. */
 .tab {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--text-3);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  color: var(--text-2);
+  background: var(--inset);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
 }
 .tab .tab-count { color: var(--text-3); font-weight: 500; font-size: 11px; margin-left: 5px; }
-.tab.active { color: var(--text); border-bottom-color: var(--cyan); }
+.tab.active { background: var(--seg-active); border-color: var(--line); color: var(--text); }
 .tab.active .tab-count { color: var(--text-2); }
 .tab.disabled { cursor: not-allowed; color: var(--tab-disabled); }
 

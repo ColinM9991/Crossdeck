@@ -68,7 +68,9 @@
     width: 220px;
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7484' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    /* The chevron stroke colour is a per-theme token: #6b7484 measures
+       2.8:1 on dusk's card, under the 3:1 UI-component standard. */
+    background-image: var(--chevron);
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 30px;
@@ -286,6 +288,23 @@
               <select class="input" id="themeSelect" aria-label="Theme">
                 <option value="dark">Dark</option>
                 <option value="light">Light</option>
+                <option value="sepia">Sepia</option>
+                <option value="dusk">Dusk</option>
+              </select>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="lbl">
+              <div class="t">Colourblind mode</div>
+              <div class="d">Repalettes the interface's status colours to hues that stay distinguishable under the chosen colour-vision deficiency. Layers on top of the theme.</div>
+            </div>
+            <div class="ctl">
+              <select class="input" id="cbSelect" aria-label="Colourblind mode">
+                <option value="">Off</option>
+                <option value="deuteranopia">Deuteranopia</option>
+                <option value="protanopia">Protanopia</option>
+                <option value="tritanopia">Tritanopia</option>
+                <option value="achromatopsia">Achromatopsia</option>
               </select>
             </div>
           </div>
@@ -633,6 +652,13 @@
   themeSelect.addEventListener('change', () => CrossdeckTheme.set(themeSelect.value));
   themeSelect.value = CrossdeckTheme.get() || 'dark';
 
+  // CrossdeckCB (theme.js) applies the stored colourblind mode at load,
+  // live-syncs same-origin tabs, and carries the mode on links.
+  const cbSelect = $('cbSelect');
+
+  cbSelect.addEventListener('change', () => CrossdeckCB.set(cbSelect.value));
+  cbSelect.value = CrossdeckCB.get() || '';
+
   // ---- Unsaved tracking -----------------------------------------------------------
   function pulseUnsaved() {
     const el = document.querySelector('.unsaved');
@@ -651,7 +677,7 @@
   }
 
   // Every field bumps the global unsaved count; the top bar's Save and apply commits.
-  document.querySelectorAll('.switch input, .ctl select:not(#themeSelect), .ctl input').forEach(el => {
+  document.querySelectorAll('.switch input, .ctl select:not(#themeSelect):not(#cbSelect), .ctl input').forEach(el => {
     el.addEventListener('change', () => { unsaved++; refreshUnsaved(); });
   });
   $('saveBtn').addEventListener('click', () => { unsaved = 0; refreshUnsaved(); });

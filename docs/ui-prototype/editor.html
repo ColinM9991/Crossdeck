@@ -113,15 +113,15 @@
   .binding-row .l2 .expr.none { color: var(--text-3); font-style: italic; }
   .binding-row .l2 .when { margin-left: auto; flex: none; font-size: 11.5px; color: var(--text-3); }
   .binding-row .l2 .when.problem { color: var(--amber); }
-  .binding-row .l2 .kind-chip.phase.on { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-bg); }
-  .list-dimmed { opacity: 0.55; }
 
   .kind-chip {
     font-family: var(--font-ui);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.05em;
-    color: var(--text-3);
+    /* Chip content uses --chip-text (not --text-3): #8b98b3 dusk text-3
+       measures 4.14:1 on dusk chip-bg, under the 4.5:1 standard. */
+    color: var(--chip-text);
     background: var(--chip-bg);
     border: 1px solid var(--chip-line);
     border-radius: 4px;
@@ -162,42 +162,15 @@
     font-size: 12.5px;
   }
 
-  /* ============ Add-action modal ============ */
+  /* ============ Add-action editor (inline card in the detail column) ============ */
 
-  .kind-chip.phase.on { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-bg); }
-  #apOverlay {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background: var(--backdrop);
-  }
-  #apOverlay[hidden] { display: none; }
-  #actionPicker {
-    width: 100%;
-    max-width: 520px;
-    max-height: 100%;
-    margin: 0;
-    overflow-y: auto;
-    box-shadow: var(--modal-shadow);
-  }
   #actionPicker > .card-b + .card-b { border-top: 1px solid var(--line-soft); }
-  #actionPicker .ap-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 9px;
-    font-size: 12px;
-    color: var(--text-2);
-  }
-  #actionPicker .ap-status .chip { flex: none; }
-  #actionPicker .ap-status[hidden] { display: none; }
-  .seg.locked button { opacity: 0.35; pointer-events: none; }
-  .seg.locked button.active { opacity: 1; pointer-events: auto; }
   #actionPicker .picker-row { margin: 2px 0; padding: 8px 0; }
   #actionPicker .picker-row.selected { background: var(--cyan-bg); box-shadow: inset 2px 0 0 var(--cyan); }
+
+  /* Committed action cards are click-to-edit: the cursor and border say so. */
+  .act-card { cursor: pointer; }
+  .act-card:hover { border-color: var(--hover-line); }
 
   /* ============ Action cards and Sources (detail column) ============ */
 
@@ -523,7 +496,7 @@
       </div>
 
       <div class="card">
-        <div class="card-h">Only when</div>
+        <div class="card-h">Guard</div>
         <div class="card-b" style="padding:12px 16px">
           <label class="field-label" for="altGuardInput">Guard</label>
           <div class="expr-wrap">
@@ -597,7 +570,7 @@
       </div>
 
       <div class="card">
-        <div class="card-h">Only when</div>
+        <div class="card-h">Guard</div>
         <div class="card-b" style="padding:12px 16px">
           <label class="field-label" for="lnavGuardInput">Guard</label>
           <div class="expr-wrap">
@@ -608,9 +581,9 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card act-card" tabindex="0" title="Click to edit" data-kind="cmd" data-target="sim/autopilot/LNAV" data-phase="trigger">
         <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
-        <div class="card-b">
+        <div class="card-b" style="padding:12px 16px">
           <div class="kv">
             <span class="k">Target</span>
             <span class="v mono">sim/autopilot/LNAV</span>
@@ -619,7 +592,7 @@
             <span class="k">Phase</span>
             <span class="v mono">trigger</span>
           </div>
-          <div class="help">Sent once on press. This command has no end phase, so release is ignored.</div>
+          <div class="help">Sent once on press. Release is ignored.</div>
         </div>
       </div>
 
@@ -642,9 +615,21 @@
         <div class="card-foot"><button type="button" class="link" data-src-add>+ Add source</button></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="gWhenCard">
+        <div class="card-h">Guard</div>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="gGuardInput">Guard</label>
+          <div class="expr-wrap">
+            <input class="input mono" id="gGuardInput" type="text" placeholder="[gnd] == 0">
+            <div class="expr-list" id="gGuardList" hidden></div>
+          </div>
+          <div class="help guard-help" id="gGuardHelp"></div>
+        </div>
+      </div>
+
+      <div class="card act-card" tabindex="0" id="gActionCard" title="Click to edit">
         <div class="card-h"><span class="kind-chip" id="gActionKind">SET</span><span id="gActionTitle">Set a value</span><button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
-        <div class="card-b">
+        <div class="card-b" style="padding:12px 16px">
           <div class="kv">
             <span class="k">Target</span>
             <span class="v mono" id="gTarget">&ndash;</span>
@@ -657,15 +642,31 @@
         </div>
       </div>
 
-      <div class="card" id="gWhenCard">
-        <div class="card-h">Only when</div>
+      <div class="card" id="gOutTargetCard" hidden>
+        <div class="card-h">Target</div>
         <div class="card-b" style="padding:12px 16px">
-          <label class="field-label" for="gGuardInput">Guard</label>
-          <div class="expr-wrap">
-            <input class="input mono" id="gGuardInput" type="text" placeholder="[gnd] == 0">
-            <div class="expr-list" id="gGuardList" hidden></div>
+          <label class="field-label" for="gOutTargetInput">Simulator variable</label>
+          <input class="input mono" id="gOutTargetInput" type="text" placeholder="sim/cockpit2/gps/alt">
+        </div>
+      </div>
+
+      <div class="card" id="gOutTransformCard" hidden>
+        <div class="card-h">Transformation</div>
+        <div class="card-b" style="padding:12px 16px">
+          <div class="seg full" data-group="generic-transform" role="group" aria-label="Transform">
+            <button class="active">Raw</button>
+            <button>Expression</button>
           </div>
-          <div class="help guard-help" id="gGuardHelp"></div>
+        </div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Preview</span>
+            <span class="v mono dim">&ndash; &rarr; 0</span>
+          </div>
+          <div class="kv">
+            <span class="k">Fallback</span>
+            <span class="v dim">Number &middot; 0</span>
+          </div>
         </div>
       </div>
 
@@ -699,8 +700,20 @@
         <div class="card-foot"><button type="button" class="link" data-src-add>+ Add source</button></div>
       </div>
 
+      <div class="card">
+        <div class="card-h">Guard</div>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="newInGuardInput">Guard</label>
+          <div class="expr-wrap">
+            <input class="input mono" id="newInGuardInput" type="text" placeholder="[gnd] == 0">
+            <div class="expr-list" id="newInGuardList" hidden></div>
+          </div>
+          <div class="help">The binding fires only while the guard is true. Empty means always.</div>
+        </div>
+      </div>
+
       <div class="card action-placeholder">
-        <div class="card-h">Action</div>
+        <div class="card-h">Actions</div>
         <div class="card-b" style="padding:12px 16px">
           <div class="seg full" data-group="newin-kind" role="group" aria-label="Action">
             <button class="active" data-kind="cmd">Send command</button>
@@ -732,13 +745,34 @@
       </div>
 
       <div class="card" data-srcs="detailNewOut" data-single>
-        <div class="card-h">Source</div>
+        <div class="card-h">Sources</div>
         <div class="card-b"></div>
         <div class="card-foot"><button type="button" class="link" data-src-add>+ Choose source</button></div>
       </div>
 
       <div class="card">
-        <div class="card-h">Transform</div>
+        <div class="card-h">Guard</div>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="newOutGuardInput">Guard</label>
+          <div class="expr-wrap">
+            <input class="input mono" id="newOutGuardInput" type="text" placeholder="[gnd] == 0">
+            <div class="expr-list" id="newOutGuardList" hidden></div>
+          </div>
+          <div class="help">The output is driven only while the guard is true. Empty means always.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Target</div>
+        <div class="card-b" style="padding:12px 16px">
+          <label class="field-label" for="newOutTargetInput">Simulator variable</label>
+          <input class="input mono" id="newOutTargetInput" type="text" placeholder="sim/cockpit2/gps/alt">
+          <div class="help">Which simulator variable this output reads from, like the Target on an input.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Transformation</div>
         <div class="card-b" style="padding:12px 16px">
           <div class="seg full" data-group="newout-transform" role="group" aria-label="Transform">
             <button class="active">Raw</button>
@@ -756,68 +790,62 @@
           </div>
         </div>
       </div>
-
-      <div class="card">
-        <div class="card-h">Only when</div>
-        <div class="card-b" style="padding:12px 16px">
-          <label class="field-label" for="newOutGuardInput">Guard</label>
-          <div class="expr-wrap">
-            <input class="input mono" id="newOutGuardInput" type="text" placeholder="[gnd] == 0">
-            <div class="expr-list" id="newOutGuardList" hidden></div>
-          </div>
-          <div class="help">The output is driven only while the guard is true. Empty means always.</div>
-        </div>
-      </div>
     </div>
 
-    <!-- Add-action modal: dimmed and centred, pinned to the binding it opened
-         from. Closes on Escape, on a backdrop click, or on any detail switch. -->
-    <div id="apOverlay" hidden>
-      <div class="card picker" id="actionPicker" role="dialog" aria-modal="true" aria-labelledby="apTitle">
-        <div class="card-h">
-          <span id="apTitle">Add action</span>
-          <span class="sub" id="apContext">this binding</span>
-          <button class="close" id="apClose" type="button" aria-label="Close add-action panel">&times;</button>
+    <!-- Add-action editor: an inline card that openAp moves into the active
+         detail block, above its "Add action" button. Closes on Escape, on the
+         close button, or on any detail switch (it hides with its block). -->
+    <div class="card picker" id="actionPicker" hidden>
+      <div class="card-h">
+        <span id="apTitle">Add action</span>
+        <span class="sub" id="apContext">this binding</span>
+        <button class="close" id="apClose" type="button" aria-label="Close add-action panel">&times;</button>
+      </div>
+      <div class="card-b" style="padding:12px 16px">
+        <div class="field-label">Event</div>
+        <div class="seg full" id="apEventSeg" role="group" aria-label="Event">
+          <button type="button" class="active" data-event="Pressed">Pressed</button>
+          <button type="button" data-event="Released">Released</button>
         </div>
-        <div class="card-b" style="padding:12px 16px">
-          <div class="field-label">Action</div>
-          <div class="seg full" id="apKind" role="group" aria-label="Action">
-            <button type="button" class="active" data-kind="cmd">Send command</button>
-            <button type="button" data-kind="set">Set a value</button>
-          </div>
+        <div class="help">Pressed fires the action once, when the control goes down. Released fires once when it goes up.</div>
+      </div>
+      <div class="card-b" style="padding:12px 16px">
+        <div class="field-label">Action</div>
+        <div class="seg full" id="apKind" role="group" aria-label="Action">
+          <button type="button" class="active" data-kind="cmd">Send command</button>
+          <button type="button" data-kind="set">Set a value</button>
         </div>
-        <div class="card-b" style="padding:12px 16px">
-          <label class="field-label" for="apTarget">Target</label>
-          <input class="input mono" id="apTarget" type="text" placeholder="sim/autopilot/LNAV">
-          <div class="help" id="apTargetHint">Type the X-Plane dataref or MSFS var this command targets.</div>
-          <div class="ap-status" id="apStatus" hidden></div>
+      </div>
+      <div class="card-b" style="padding:12px 16px">
+        <label class="field-label" for="apTarget">Target</label>
+        <input class="input mono" id="apTarget" type="text" placeholder="sim/autopilot/LNAV">
+        <div class="help" id="apTargetHint">Type the X-Plane dataref or MSFS var this command targets.</div>
+      </div>
+      <div class="card-b" id="apPhaseCard" style="padding:12px 16px">
+        <div class="field-label">Phase</div>
+        <div class="seg full" id="apPhaseSeg" role="group" aria-label="Phase">
+          <button type="button" class="active" data-phase="trigger">Trigger</button>
+          <button type="button" data-phase="begin">Begin</button>
+          <button type="button" data-phase="end">End</button>
         </div>
-        <div class="card-b" id="apPhaseCard" style="padding:12px 16px">
-          <div class="field-label">Phase</div>
-          <div class="seg full" id="apPhaseSeg" role="group" aria-label="Phase">
-            <button type="button" class="active" data-phase="trigger">Trigger</button>
-            <button type="button" data-phase="begin">Begin</button>
-            <button type="button" data-phase="end">End</button>
-          </div>
-          <div class="help" id="apPhaseHelp">Trigger fires once on press. Begin and End only exist when the simulator command supports phases.</div>
+        <div class="help" id="apPhaseHelp">Trigger fires the action once. Begin and End pair a command's press and release sides.</div>
+      </div>
+      <div class="card-b" id="apValueCard" hidden style="padding:12px 16px">
+        <label class="field-label" for="apValueInput">Value</label>
+        <div class="seg full" id="apValueSeg" role="group" aria-label="Value mode">
+          <button type="button" class="active" data-mode="value">Value</button>
+          <button type="button" data-mode="ref">From ref</button>
+          <button type="button" data-mode="expr">Expression</button>
         </div>
-        <div class="card-b" id="apValueCard" hidden style="padding:12px 16px">
-          <label class="field-label" for="apValueInput">Value</label>
-          <div class="seg full" id="apValueSeg" role="group" aria-label="Value mode">
-            <button type="button" class="active" data-mode="value">Value</button>
-            <button type="button" data-mode="ref">From ref</button>
-            <button type="button" data-mode="expr">Expression</button>
-          </div>
-          <div class="expr-wrap" id="apValueWrap" style="margin-top:10px">
-            <input class="input mono" id="apValueInput" type="text" placeholder="1">
-            <div class="expr-list" id="apExprList" hidden></div>
-          </div>
-          <div class="help" id="apExprHelp" hidden>Type [ for a ref (input, self, variables) or a function name (Min, Max&hellip;).</div>
-          <div id="apRefList" hidden style="margin-top:10px"></div>
+        <div class="expr-wrap" id="apValueWrap" style="margin-top:10px">
+          <input class="input mono" id="apValueInput" type="text" placeholder="1">
+          <div class="expr-list" id="apExprList" hidden></div>
         </div>
-        <div class="card-foot" style="justify-content:flex-end">
-          <button class="btn primary" id="apAdd" type="button" disabled>Add action</button>
-        </div>
+        <div class="help" id="apExprHelp" hidden>Type [ for a ref (input, self, variables) or a function name (Min, Max&hellip;).</div>
+        <div id="apRefList" hidden style="margin-top:10px"></div>
+      </div>
+      <div class="card-foot" style="justify-content:flex-end">
+        <button class="btn primary" id="apAdd" type="button" disabled>Add action</button>
       </div>
     </div>
 
@@ -832,9 +860,9 @@
       kind: 'X-56', connected: true, controls: 6,
       inputs: [
         { c: 'button:7', ev: 'Pressed', b: 'CMD', x: 'sim/autopilot/hdg_sel_press', ph: 'trigger' },
-        { c: 'button:22', ev: 'Hold', b: 'CMD', x: 'sim/starters/engage_starter_1', ph: 'begin / end' },
+        { c: 'button:22', ev: 'Pressed', b: 'CMD', x: 'sim/starters/engage_starter_1', ph: 'trigger' },
         { c: 'button:30', ev: 'Modifier', b: 'SET', x: 'var:fn = 1  (0 on release)', live: '1' },
-        { c: 'button:18', ev: 'Hold', b: 'CMD', x: 'sim/starters/engage_starter_2', ph: 'begin / end' },
+        { c: 'button:18', ev: 'Pressed', b: 'CMD', x: 'sim/starters/engage_starter_2', ph: 'trigger' },
         { c: 'button:26', ev: 'Pressed', b: 'CMD', x: 'sim/gear/down', w: '[gnd] == 0', ph: 'trigger' },
       ],
       outputs: [],
@@ -847,7 +875,7 @@
         { c: 'button:14', ev: 'Pressed', b: 'SET', x: 'altitude_dial_ft = Min([alt_dial] + 100, 50000)', w: '[fn] == 0', live: '+100', detail: 'detailAlt' },
         { c: 'button:10', ev: 'Pressed', b: 'SET', x: 'heading_dial_deg = 270' },
         { c: 'button:lnav', ev: 'Pressed', b: 'CMD', x: 'sim/autopilot/LNAV', w: '[pwr] == 1', wp: true, problem: true, detail: 'detailLnav', ph: 'trigger' },
-        { c: 'button:ptt', ev: 'Hold', b: 'CMD', x: 'sim/audio/ptt', ph: 'begin / end', live: '1' },
+        { c: 'button:ptt', ev: 'Pressed', b: 'CMD', x: 'sim/audio/ptt', ph: 'trigger', live: '1' },
       ],
       outputs: [],
       addIn: [{ c: 'button:12', k: 'Button', d: 'press' }],
@@ -863,7 +891,7 @@
         { c: 'button:8', ev: 'Pressed', b: 'CMD', x: 'sim/cdu/menu', w: '[gnd] == 1', ph: 'trigger' },
       ],
       outputs: [
-        { c: 'screen:1', ev: 'Display', b: 'OUT', x: '24 × 14 cells · from sim' },
+        { c: 'screen:1', ev: 'Display', b: 'OUT', x: 'sim/cockpit2/gps/alt' },
       ],
       addIn: [{ c: 'button:1', k: 'Button', d: 'press' }],
       addOut: [],
@@ -1086,9 +1114,12 @@
 
   // ---- Detail switching -------------------------------------------------------
   function showDetail(id, title, kind, device) {
-    closeAp(); // a detail switch orphans the add-action modal
-    document.querySelectorAll('.detail-block').forEach(b => b.hidden = true);
     const block = $(id);
+    // A detail switch closes the add-action editor with its block; a live
+    // re-fill of the binding being edited (e.g. an event change) keeps it open.
+    const shown = title !== undefined ? title : ((block.querySelector('h2') || {}).textContent || null);
+    if (apRow !== shown) closeAp();
+    document.querySelectorAll('.detail-block').forEach(b => b.hidden = true);
     block.hidden = false;
     if (title !== undefined) {
       const h2 = block.querySelector('h2');
@@ -1099,6 +1130,10 @@
       if (ref) {
         ref.textContent = device;
         if (ref.tagName === 'A') ref.href = 'devices.html?device=' + device;
+      }
+      if (id === 'detailNewIn') {
+        const row = DEV[device].inputs.find(r => r.c === title);
+        $('newInGuardInput').value = (row && row.w) || '';
       }
     }
   }
@@ -1123,14 +1158,41 @@
       if (row.b === 'CMD' && row.ph) {
         $('gPhaseRow').hidden = false;
         $('gPhase').textContent = row.ph;
-        $('gPhaseHelp').textContent = row.ph === 'begin / end'
-          ? 'Press sends the begin command, release sends the end command. The sim holds the action while the control is held.'
-          : 'Sent once on press. This command has no end phase, so release is ignored.';
+        $('gPhaseHelp').textContent = row.ph === 'begin'
+          ? 'Fires on the begin side of the command.'
+          : row.ph === 'end'
+            ? 'Fires on the end side of the command.'
+            : (row.ev === 'Released'
+              ? 'Sent once on release. Press is ignored.'
+              : 'Sent once on press. Release is ignored.');
         $('gPhaseHelp').hidden = false;
       } else {
         $('gPhaseRow').hidden = true;
         $('gPhaseHelp').hidden = true;
       }
+      // Edit payload: clicking the card re-opens the editor with these values.
+      // Output rows show the Target and Transformation cards instead, so a save
+      // can never turn the row into a command.
+      const out = row.b === 'OUT';
+      const actCard = $('gActionCard');
+      actCard.hidden = out;
+      actCard.classList.toggle('act-card', !out);
+      actCard.title = out ? '' : 'Click to edit';
+      actCard.tabIndex = out ? -1 : 0;
+      if (!out) {
+        actCard.dataset.kind = row.b === 'SET' ? 'set' : 'cmd';
+        actCard.dataset.target = row.x || '';
+        actCard.dataset.phase = row.ph || 'trigger';
+        actCard.dataset.mode = row.b === 'SET' ? 'value' : '';
+        actCard.dataset.value = '';
+      }
+      $('gOutTargetCard').hidden = !out;
+      $('gOutTransformCard').hidden = !out;
+      if (out) {
+        $('gOutTargetInput').value = row.none ? '' : row.x;
+      }
+      // Adding actions is an input concern; keep the button off output rows.
+      document.querySelector('#detailGeneric .add-action').style.display = out ? 'none' : '';
     }
     if (row.w) {
       $('gGuardInput').value = row.w;
@@ -1149,13 +1211,13 @@
   }
 
   // ---- Middle column rendering -------------------------------------------------
-  function rowHtml(r, dimmed) {
+  function rowHtml(r) {
     const warn = r.problem
       ? '<span class="warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></span>'
       : (r.live ? `<span class="live">${esc(r.live)}</span>` : '');
     const none = r.none ? ' none' : '';
     const phase = r.b === 'CMD' && r.ph
-      ? `<span class="kind-chip phase${r.ph === 'begin / end' ? ' on' : ''}">${esc(r.ph)}</span>`
+      ? `<span class="kind-chip phase">${esc(r.ph)}</span>`
       : '';
     return `<div class="binding-row${r.sel ? ' selected' : ''}" role="button" tabindex="0" data-c="${esc(r.c)}" data-detail="${detailFor(r)}">
       <div class="l1">
@@ -1185,12 +1247,13 @@
              : `Outputs drive this device's LEDs and displays from the simulator.`}
            <button class="btn outline add" data-open-picker>+ Add ${tab === 'inputs' ? 'input' : 'output'}</button>
          </div>`;
-    area.classList.toggle('list-dimmed', !d.connected);
-
     area.querySelectorAll('.binding-row').forEach(row => {
       row.addEventListener('click', () => {
         area.querySelectorAll('.binding-row').forEach(r => r.classList.remove('selected'));
         row.classList.add('selected');
+        // Keep the selection in the data so re-renders (e.g. an event change)
+        // restore it.
+        DEV[current][tab].forEach(x => { x.sel = (x.c === row.dataset.c); });
         const r = DEV[current][tab].find(x => x.c === row.dataset.c);
         const id = row.dataset.detail;
         if (id === 'detailGeneric') fillGeneric(r, current);
@@ -1272,7 +1335,7 @@
       c: controlId,
       ev,
       b: tab === 'inputs' ? 'CMD' : 'OUT',
-      x: tab === 'inputs' ? '- no action yet' : '- no source yet',
+      x: tab === 'inputs' ? '- no action yet' : '- no target yet',
       none: true,
       kindGuess: kind,
       sel: true,
@@ -1286,59 +1349,37 @@
     const newRow = document.querySelector(`#rowsArea .binding-row[data-c="${CSS.escape(controlId)}"]`);
     if (newRow) newRow.scrollIntoView({ block: 'nearest' });
     showDetail(tab === 'inputs' ? 'detailNewIn' : 'detailNewOut', controlId, kind, current);
+    // New input events land straight in the editor with the target focused.
+    if (tab === 'inputs') openAp(undefined, newRow);
   }
 
-  // ---- Add-action picker ---------------------------------------------------------
-  // Type-driven: the user types the target (X-Plane dataref or MSFS var) and picks
-  // the phase. Known sample commands report whether they support begin / end.
-  const AP_PHASE_SUPPORT = [
-    { match: 'sim/autopilot/LNAV', ph: 'begin / end' },
-    { match: 'sim/autopilot/ALT_SEL', ph: 'begin / end' },
-    { match: 'sim/brakes/hold', ph: 'begin / end' },
-    { match: 'sim/starters/engage_starter_1', ph: 'begin / end' },
-    { match: 'sim/starters/engage_starter_2', ph: 'begin / end' },
-    { match: 'sim/audio/ptt', ph: 'begin / end' },
-    { match: 'sim/cdu/init', ph: 'trigger' },
-    { match: 'sim/cdu/menu', ph: 'trigger' },
-    { match: 'sim/wipers/blink', ph: 'trigger' },
-    { match: 'sim/gear/down', ph: 'trigger' },
-  ];
-  const AP = { kind: 'cmd', phase: 'trigger', mode: 'value', ref: null, locked: false };
+  // ---- Add-action editor (inline) --------------------------------------------
+  // Type-driven: the user types the target and picks the event (Pressed or
+  // Released) and the phase (Trigger, Begin or End). The choices are the
+  // user's; nothing is inferred from the target.
+  const AP = { kind: 'cmd', phase: 'trigger', mode: 'value', ref: null, event: 'Pressed' };
 
-  function apPhaseSupport(text) {
-    const key = text.trim().toLowerCase();
-    if (!key) return null;
-    return AP_PHASE_SUPPORT.find(t => t.match.toLowerCase() === key || t.match.toLowerCase().endsWith('/' + key)) || null;
+  function bindingRowFor(block) {
+    const h2 = block && block.querySelector('h2');
+    if (!h2) return null;
+    return DEV[current].inputs.find(r => r.c === h2.textContent) || null;
   }
 
-  function setApPhase(phase, lock) {
+  function setApEvent(ev) {
+    AP.event = ev;
+    $('apEventSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.event === ev));
+    const row = bindingRowFor(apBlock);
+    if (row) {
+      row.ev = ev;
+      renderRows();
+      // Keep the generic detail card in step with the binding it mirrors.
+      if (apBlock && apBlock.id === 'detailGeneric') fillGeneric(row, current);
+    }
+  }
+
+  function setApPhase(phase) {
     AP.phase = phase;
-    AP.locked = !!lock;
-    $('apPhaseSeg').classList.toggle('locked', lock);
     $('apPhaseSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.phase === phase));
-    $('apPhaseHelp').textContent = phase === 'trigger'
-      ? 'Fires once on press. Release is ignored.'
-      : phase === 'begin'
-        ? 'Fires on press. It pairs with the End action (on release).'
-        : 'Fires on release. It pairs with the Begin action (on press).';
-  }
-
-  function updateApStatus() {
-    const status = $('apStatus');
-    const t = AP.kind === 'cmd' ? apPhaseSupport($('apTarget').value) : null;
-    if (!t) {
-      status.hidden = true;
-      if (AP.locked) setApPhase(AP.phase, false);
-      return;
-    }
-    status.hidden = false;
-    if (t.ph === 'begin / end') {
-      status.innerHTML = '<span class="chip ok"><span class="dot"></span>supports begin / end</span><span>Pick Begin (on press) or End (on release).</span>';
-      if (AP.locked) setApPhase(AP.phase, false);
-    } else {
-      status.innerHTML = '<span class="chip">trigger only</span><span>No begin / end phases. Phase is set to Trigger.</span>';
-      setApPhase('trigger', true);
-    }
   }
 
   function setApKind(kind) {
@@ -1351,7 +1392,6 @@
     $('apTargetHint').textContent = cmd
       ? 'Type the X-Plane dataref or MSFS var this command targets.'
       : 'Type the X-Plane dataref, MSFS var, variable (var:) or output (out:) to set.';
-    updateApStatus();
     refreshApAdd();
   }
 
@@ -1392,15 +1432,21 @@
     $('apAdd').disabled = !ok;
   }
 
+  // esc() for attribute values: targets are user-typed, so quotes must go too.
+  const escAttr = s => esc(s).replace(/"/g, '&quot;');
+  const DASH = '\u2013';
+
   function buildApCard() {
     const target = $('apTarget').value.trim();
     if (AP.kind === 'cmd') {
-      const help = AP.phase === 'trigger'
-        ? 'One-shot command: fires on press; release is ignored.'
-        : AP.phase === 'begin'
-          ? 'Fires on press. The End action (on release) closes the command.'
-          : 'Fires on release. It pairs with the Begin action on press.';
-      return `<div class="card">
+      const help = AP.phase === 'begin'
+        ? 'Fires on the begin side of the command.'
+        : AP.phase === 'end'
+          ? 'Fires on the end side of the command.'
+          : (AP.event === 'Released'
+            ? 'Sent once on release. Press is ignored.'
+            : 'Sent once on press. Release is ignored.');
+      return `<div class="card act-card" tabindex="0" title="Click to edit" data-kind="cmd" data-target="${escAttr(target)}" data-phase="${AP.phase}">
         <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
         <div class="card-b" style="padding:12px 16px">
           <div class="kv"><span class="k">Target</span><span class="v mono">${esc(target)}</span></div>
@@ -1410,10 +1456,9 @@
       </div>`;
     }
     const mode = AP.mode === 'value' ? 'literal' : AP.mode === 'ref' ? 'from ref' : 'expression';
-    const val = AP.mode === 'ref'
-      ? (AP.ref || '&ndash;')
-      : $('apValueInput').value.trim() || '&ndash;';
-    return `<div class="card">
+    const rawVal = AP.mode === 'ref' ? (AP.ref || '') : $('apValueInput').value.trim();
+    const val = rawVal || DASH;
+    return `<div class="card act-card" tabindex="0" title="Click to edit" data-kind="set" data-target="${escAttr(target)}" data-mode="${AP.mode}" data-value="${escAttr(rawVal)}">
       <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="card-del" type="button" title="Remove action" aria-label="Remove action">&times;</button></div>
       <div class="card-b" style="padding:12px 16px">
         <div class="kv"><span class="k">Target</span><span class="v mono">${esc(target)}</span></div>
@@ -1422,63 +1467,98 @@
     </div>`;
   }
 
-  // The modal belongs to the binding it opened from: adding always lands on
-  // that block even if the user clicks around, and any detail switch closes it.
+  // The editor belongs to the binding it opened from: it is inserted into
+  // that block, so adding always lands on that block and a detail switch
+  // closes it with the block.
   let apBlock = null;
+  let apRow = null; // the binding (control id) the editor is open for
   let apTrigger = null;
-  function openAp(kind, trigger) {
-    const block = document.querySelector('.detail-block:not([hidden])');
-    apBlock = block;
-    apTrigger = trigger || null;
-    const h2 = block && block.querySelector('h2');
-    $('apContext').textContent = h2 ? h2.textContent : 'this binding';
-    $('apOverlay').hidden = false;
-    document.body.style.overflow = 'hidden';
+  let apEditCard = null; // committed action card being edited, or null when adding
+
+  // Reset the editor to its defaults for the binding it is open in: the
+  // binding's current event, an empty target, and a fresh CMD action.
+  function resetApForm() {
     $('apTarget').value = '';
     $('apValueInput').value = '';
     AP.ref = null;
     AP.mode = 'value';
     $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === 'value'));
-    setApPhase('trigger', false);
-    setApKind(kind || 'cmd');
+    const row = bindingRowFor(apBlock);
+    AP.event = row ? (row.ev || 'Pressed') : 'Pressed';
+    $('apEventSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.event === AP.event));
+    setApPhase('trigger');
+    setApKind('cmd');
     renderApRefs();
     syncApValueBody();
+    $('apAdd').textContent = 'Add action';
+    refreshApAdd();
+  }
+
+  // Fill the editor from a committed action card so it can be saved back over it.
+  function prefillApFrom(card) {
+    const d = card.dataset;
+    setApKind(d.kind === 'set' ? 'set' : 'cmd');
+    $('apTarget').value = d.target || '';
+    setApPhase(d.phase || 'trigger');
+    if (d.mode) {
+      AP.mode = d.mode;
+      $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === d.mode));
+      syncApValueBody();
+    }
+    AP.ref = d.mode === 'ref' ? (d.value || null) : null;
+    if (d.mode === 'ref') renderApRefs();
+    else $('apValueInput').value = d.value || '';
+    $('apAdd').textContent = 'Save changes';
+    refreshApAdd();
+  }
+
+  function openAp(kind, trigger, sourceCard) {
+    const block = document.querySelector('.detail-block:not([hidden])');
+    apBlock = block;
+    apTrigger = trigger || null;
+    apEditCard = sourceCard || null;
+    const h2 = block && block.querySelector('h2');
+    apRow = h2 ? h2.textContent : null;
+    $('apContext').textContent = h2 ? h2.textContent : 'this binding';
+    const picker = $('actionPicker');
+    if (picker.parentElement !== block) {
+      block.insertBefore(picker, block.querySelector('.add-action') || null);
+    }
+    picker.hidden = false;
+    const ph = block.querySelector('.action-placeholder');
+    if (ph) ph.hidden = true;
+    resetApForm();
+    if (sourceCard) prefillApFrom(sourceCard);
     $('apTarget').focus();
   }
   function closeAp() {
-    if ($('apOverlay').hidden) return;
-    $('apOverlay').hidden = true;
-    document.body.style.overflow = '';
-    if (apTrigger) apTrigger.focus();
+    if ($('actionPicker').hidden) return;
+    $('actionPicker').hidden = true;
+    const ph = apBlock && apBlock.querySelector('.action-placeholder');
+    if (ph) ph.hidden = false;
+    if (apTrigger && apTrigger.offsetParent !== null) apTrigger.focus();
     apTrigger = null;
+    apEditCard = null;
+    apBlock = null;
+    apRow = null;
   }
 
   $('apClose').addEventListener('click', closeAp);
-  // A click on the dimmed backdrop (not the dialog) dismisses the modal.
-  $('apOverlay').addEventListener('click', e => { if (e.target === $('apOverlay')) closeAp(); });
-  // Keep Tab inside the modal while it is open (R-32).
-  $('apOverlay').addEventListener('keydown', e => {
-    if (e.key !== 'Tab') return;
-    const focusables = [...$('actionPicker').querySelectorAll('button, input')].filter(x => !x.disabled && x.offsetParent !== null);
-    if (!focusables.length) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  });
   document.querySelectorAll('.add-action').forEach(b => b.addEventListener('click', e => openAp(undefined, e.currentTarget)));
   $('apKind').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (b) setApKind(b.dataset.kind);
   });
+  $('apEventSeg').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b) setApEvent(b.dataset.event);
+  });
   $('apTarget').addEventListener('input', () => {
-    updateApStatus();
     refreshApAdd();
   });
   $('apPhaseSeg').addEventListener('click', e => {
     const b = e.target.closest('button');
-    if (!b || AP.locked) return;
-    setApPhase(b.dataset.phase, false);
+    if (b) setApPhase(b.dataset.phase);
   });
   $('apValueSeg').addEventListener('click', e => {
     const b = e.target.closest('button');
@@ -1492,6 +1572,32 @@
     if ($('apAdd').disabled) return;
     const block = apBlock;
     if (!block) return;
+    if (apEditCard) {
+      unsaved++;
+      $('unsavedCount').textContent = unsaved;
+      if (apEditCard.id === 'gActionCard') {
+        // The generic card is shared by every generic row: write the values
+        // back to the binding and refresh the view instead of replacing it.
+        const row = bindingRowFor(block);
+        if (row) {
+          const target = $('apTarget').value.trim();
+          const value = AP.mode === 'ref' ? (AP.ref || '') : $('apValueInput').value.trim();
+          row.b = AP.kind === 'set' ? 'SET' : 'CMD';
+          row.ph = AP.kind === 'cmd' ? AP.phase : undefined;
+          row.x = AP.kind === 'set' ? (value ? target + ' = ' + value : target) : target;
+          renderRows();
+          fillGeneric(row, current);
+        }
+        closeAp();
+        return;
+      }
+      const holder = document.createElement('div');
+      holder.innerHTML = buildApCard();
+      apEditCard.replaceWith(holder.firstElementChild);
+      apEditCard = null;
+      closeAp();
+      return;
+    }
     const ph = block.querySelector('.action-placeholder');
     if (ph) ph.remove();
     const holder = document.createElement('div');
@@ -1501,29 +1607,26 @@
     if (addBtn) block.insertBefore(card, addBtn); else block.appendChild(card);
     unsaved++;
     $('unsavedCount').textContent = unsaved;
-    // Reset the form, keep the picker open: add the next action without reopening.
-    $('apTarget').value = '';
-    $('apValueInput').value = '';
-    AP.ref = null;
-    AP.mode = 'value';
-    $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === 'value'));
-    setApPhase('trigger', false);
-    setApKind('cmd');
-    renderApRefs();
-    syncApValueBody();
+    // Reset the form, keep the editor open: add the next action without reopening.
+    resetApForm();
     $('apTarget').focus();
   });
 
-  // Delegated: remove actions, add / remove sources, and the picker shortcuts.
+  // Delegated: remove actions, click-to-edit actions, add / remove sources,
+  // and the picker shortcuts.
   document.querySelector('.col.detail').addEventListener('click', e => {
     const t = e.target;
     const delBtn = t.closest('.card-del');
     if (delBtn) {
+      // Deleting the card being edited drops the in-flight edit.
+      if (apEditCard === delBtn.closest('.card')) closeAp();
       delBtn.closest('.card').remove();
       unsaved++;
       $('unsavedCount').textContent = unsaved;
       return;
     }
+    const actCard = t.closest('.act-card');
+    if (actCard) { openAp(null, actCard, actCard); return; }
     const srcDel = t.closest('.src-del');
     if (srcDel) {
       const item = srcDel.closest('.src-item');
@@ -1548,10 +1651,18 @@
     const openApLink = t.closest('[data-open-ap]');
     if (openApLink) {
       e.preventDefault();
-      // The placeholder card's action choice decides which mode the picker opens in.
+      // The placeholder card's action choice decides which mode the editor opens in.
       const blockEl = openApLink.closest('.detail-block');
       const segBtn = blockEl && blockEl.querySelector('.seg[data-group="newin-kind"] button.active');
       openAp(segBtn ? segBtn.dataset.kind : openApLink.dataset.openAp, openApLink);
+    }
+  });
+  // Keyboard parity for click-to-edit: Enter / Space on a focused card.
+  document.querySelector('.col.detail').addEventListener('keydown', e => {
+    const card = e.target.closest('.act-card');
+    if (card && e.target === card && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      openAp(null, card, card);
     }
   });
 
@@ -1563,6 +1674,7 @@
   attachExprAutocomplete($('lnavGuardInput'), $('lnavGuardList'));
   attachExprAutocomplete($('gGuardInput'), $('gGuardList'));
   attachExprAutocomplete($('newOutGuardInput'), $('newOutGuardList'));
+  attachExprAutocomplete($('newInGuardInput'), $('newInGuardList'));
 
   // ---- Guard (When) expressions ------------------------------------------------
   // A guard is a boolean expression over known refs. A name the profile does not
@@ -1585,6 +1697,17 @@
     if ((row.w || '') === v) return;
     row.w = v || undefined;
     row.wp = v ? unknownRefs(v).length > 0 : false;
+    row.sel = true; // the re-render must keep this row highlighted
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    renderRows();
+  }
+  // The output's Target: the sim variable it reads from. Commits to row.x.
+  function commitTarget(input, row) {
+    const v = input.value.trim();
+    if ((row.x || '') === v) return;
+    row.x = v || '- no target yet';
+    row.none = !v;
     row.sel = true; // the re-render must keep this row highlighted
     unsaved++;
     $('unsavedCount').textContent = unsaved;
@@ -1622,6 +1745,18 @@
   $('newOutGuardInput').addEventListener('change', () => {
     const row = DEV[current].outputs.find(x => x.c === $('newOutTitle').textContent);
     if (row) commitGuard($('newOutGuardInput'), row);
+  });
+  $('newOutTargetInput').addEventListener('change', () => {
+    const row = DEV[current].outputs.find(x => x.c === $('newOutTitle').textContent);
+    if (row) commitTarget($('newOutTargetInput'), row);
+  });
+  $('newInGuardInput').addEventListener('change', () => {
+    const row = DEV[current].inputs.find(x => x.c === $('newInTitle').textContent);
+    if (row) commitGuard($('newInGuardInput'), row);
+  });
+  $('gOutTargetInput').addEventListener('change', () => {
+    const row = DEV[current].outputs.find(x => x.c === $('gTitle').textContent);
+    if (row) commitTarget($('gOutTargetInput'), row);
   });
   // The lnav guard is the profile's known problem: fixing or clearing it resolves
   // the "left out at load" state; re-introducing an unknown name re-raises it.
@@ -1726,7 +1861,7 @@
   // Escape closes an open picker.
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      if (!$('apOverlay').hidden) { closeAp(); return; }
+      if (!$('actionPicker').hidden) { closeAp(); return; }
       if (!$('picker').hidden) togglePicker(false);
       return;
     }
