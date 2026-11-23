@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck - Profiles, calm v4</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
+
+  .app { grid-template-columns: 92px 1fr 420px; }
+
+  /* ============ Top bar, rail, columns, inputs: see design-system.css ============ */
+
+  .col.main { grid-column: 2; border-right: 1px solid var(--line-soft); }
+  .col.detail { grid-column: 3; background: var(--panel); }
+
+  .col-head .actions { margin-left: auto; align-self: center; display: flex; align-items: center; gap: 8px; }
+  .col-head .actions .btn.add { margin-left: 0; }
+
+  .import-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    border: 1px dashed var(--cyan-line);
+    background: var(--cyan-bg);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    color: var(--text-2);
+    font-size: 12.5px;
+    margin-bottom: 14px;
+    cursor: pointer;
+  }
+  .import-zone:hover { border-color: var(--cyan); }
+  .import-zone[hidden] { display: none; }
+  .import-zone svg { color: var(--cyan); }
+  .import-zone .src { color: var(--text-3); font-size: 11.5px; font-family: var(--font-mono); }
+
+  /* ============ Profile cards ============ */
+
+  .profile-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    box-shadow: var(--shadow-0);
+  }
+  .profile-card:hover { border-color: #33405a; }
+  .profile-card.selected {
+    border-color: var(--cyan-line);
+    background: #152031;
+  }
+  .profile-card .top { display: flex; align-items: center; gap: 9px; }
+  .profile-card .name { font-size: 14px; font-weight: 600; }
+  .profile-card .top .chip { margin-left: auto; }
+  .profile-card .meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin-top: 5px;
+  }
+  .profile-card .desc { color: var(--text-2); font-size: 12px; margin-top: 4px; }
+  .profile-card .desc.empty { color: var(--text-3); font-style: italic; }
+  .profile-card .foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 10px;
+  }
+  .profile-card .count { color: var(--text-3); font-size: 11.5px; }
+  .profile-card .foot .chip { margin-left: auto; }
+  .profile-card[hidden] { display: none; }
+
+  .no-match {
+    padding: 14px 16px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
+  /* ============ Cards, notes, stats: see design-system.css ============ */
+
+  .card-foot { justify-content: flex-end; }
+  .kv .v.dim { font-style: italic; }
+
+  /* ============ Detail column ============ */
+
+  /* The detail column stacks notes above fields; the system primitive has no margin. */
+  .note-line { margin-bottom: 14px; }
+
+  .open-action {
+    width: 100%;
+    border: 1px solid var(--cyan-line);
+    background: var(--cyan-bg);
+    color: var(--cyan);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+    text-decoration: none;
+  }
+  .open-action:hover { filter: brightness(1.08); text-decoration: none; }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+    padding: 0 2px;
+  }
+  .action-row a { font-size: 12.5px; font-weight: 600; color: var(--text-3); }
+  .action-row a:hover { color: var(--text-2); }
+  .action-row a.danger:hover { color: var(--amber); }
+  .action-row .push { margin-left: auto; }
+
+  /* ============ Aircraft association ============ */
+
+  .aircraft-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  .aircraft-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--violet);
+    background: var(--violet-bg);
+    border: 1px solid var(--violet-line);
+    border-radius: 999px;
+    padding: 3px 5px 3px 11px;
+  }
+  .aircraft-chip .rm {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--violet);
+    font-size: 12px;
+    line-height: 1;
+  }
+  .aircraft-chip .rm:hover { color: var(--amber); background: var(--amber-bg); }
+  .aircraft-empty { color: var(--text-3); font-size: 12px; font-style: italic; }
+  .aircraft-add { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .aircraft-add .input { flex: 1; }
+  .aircraft-add .btn { flex: none; }
+
+  /* ============ Runtime (start / stop) ============ */
+
+  .runtime-state { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .runtime-state .dot { width: 8px; height: 8px; }
+  .runtime-running { color: var(--green); }
+  .runtime-stopped { color: var(--text-3); }
+  .status-pill.off { color: var(--text-3); background: var(--inset); border: 1px solid var(--line); }
+
+  /* Scrollbars: see design-system.css. */
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <div class="brand">Crossdeck</div>
+    <div class="profile-chip">
+      <span class="name" id="topbarProfileName">Zibo 737 - Bravo + PAP3</span>
+      <span class="sim" id="topbarProfileSim">X-Plane &middot; B738</span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </div>
+    <span class="status-pill ok" id="topbarSimPill"><span class="dot"></span>X-Plane ready &middot; B738</span>
+    <span class="status-pill warn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      1 left out
+    </span>
+    <span class="spacer"></span>
+    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
+    <button class="btn outline" id="learnBtn">Learn</button>
+    <button class="btn primary">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </header>
+
+  <!-- ============ Rail (Profiles active, cross-page navigation) ============ -->
+  <nav class="rail">
+    <a class="rail-item active" href="profiles-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Profiles
+    </a>
+    <a class="rail-item" href="devices-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+      Devices
+    </a>
+    <a class="rail-item" href="editor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Editor
+    </a>
+    <a class="rail-item" href="variables-v4.html">
+      <span class="glyph-braces">{ }</span>
+      Variables
+    </a>
+    <a class="rail-item" href="monitor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+      Monitor
+      <span class="rail-badge">3</span>
+    </a>
+    <span class="push"></span>
+    <a class="rail-item" href="settings-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+      Settings
+    </a>
+  </nav>
+  <!-- ============ Main column: profile list ============ -->
+  <main class="col main">
+    <div class="col-head">
+      <h1>Profiles</h1>
+      <span class="sub">a saved setup for one simulator and aircraft</span>
+      <div class="actions">
+        <button class="btn secondary add" id="importBtn">Import</button>
+        <button class="btn outline add" id="newProfileBtn">+ New profile</button>
+      </div>
+    </div>
+
+    <div class="import-zone" id="importZone" hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+      Drop a profile file here, or click to browse
+      <span class="src">Crossdeck profiles are JSON: devices, bindings, variables</span>
+    </div>
+
+    <input class="input" id="filterInput" type="text" placeholder="Filter profiles, simulators, aircraft&#8230;">
+
+    <div id="rowsArea" style="margin-top:14px"></div>
+  </main>
+
+  <!-- ============ Detail column ============ -->
+  <aside class="col detail">
+    <div id="detailArea"></div>
+  </aside>
+
+</div>
+
+<script>
+  // ---- Sample data -----------------------------------------------------------
+  // Mirrors the Profile record: name, simulator (XPlane | MSFS), aircraft match,
+  // device slots with inputs, outputs, variables. Load health comes from the
+  // last apply of the profile.
+  const PROFILES = [
+    {
+      name: 'Zibo 737 - Bravo + PAP3',
+      sim: 'X-Plane',
+      aircraft: ['B738'],
+      active: true,
+      devices: ['bravo', 'pap3', 'mcdu'],
+      bindings: 12,
+      variables: 2,
+      applied: '2 h ago',
+      times: 14,
+      modified: 'today 09:14',
+      leftOut: 1,
+      problem: 'pap3 button:lnav · Only when: unknown name [pwr]',
+    },
+    {
+      name: 'MSFS A220 - CDU',
+      sim: 'MSFS',
+      aircraft: ['A220'],
+      active: false,
+      devices: ['mcdu'],
+      bindings: 4,
+      variables: 0,
+      applied: null,
+      times: 0,
+      modified: '3 d ago',
+      leftOut: 0,
+    },
+    {
+      name: 'Cessna 172 - Throttle',
+      sim: 'X-Plane',
+      aircraft: ['C172'],
+      active: false,
+      devices: ['throttle'],
+      bindings: 6,
+      variables: 1,
+      applied: '3 d ago',
+      times: 5,
+      modified: 'yesterday 18:02',
+      leftOut: 0,
+    },
+  ];
+
+  // Aircraft codes the simulator is known to run, per sim. Feeds the
+  // "add a known aircraft" list; any other code can be typed in.
+  const SIM_AIRCRAFT = {
+    'X-Plane': ['B738', 'C172', 'B747', 'A220'],
+    'MSFS': ['B738', 'A220', 'C172', 'B747'],
+  };
+
+  let selected = 0;
+  let unsaved = 3;
+  let newSeq = 0;
+  let importSeq = 0;
+  let filter = '';
+
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // ---- List rendering ---------------------------------------------------------
+  function cardHtml(p, i) {
+    const chip = p.active ? '<span class="chip active"><span class="dot"></span>active</span>' : '';
+    const meta = p.sim + ' · ' + (p.aircraft.length ? p.aircraft.join(', ') : 'any aircraft');
+    const desc = p.devices.length
+      ? p.devices.join(', ')
+      : 'no devices yet';
+    const applied = p.applied ? 'applied ' + p.applied : 'never applied';
+    const warn = p.leftOut
+      ? `<span class="chip warn">${p.leftOut} left out</span>`
+      : '';
+    const imported = p.imported ? '<span class="chip">imported</span>' : '';
+    return `<div class="profile-card${i === selected ? ' selected' : ''}" data-i="${i}">
+      <div class="top">
+        <span class="name">${esc(p.name)}</span>
+        ${chip}
+      </div>
+      <div class="meta">${esc(meta)}</div>
+      <div class="desc${p.devices.length ? '' : ' empty'}">${esc(desc)}</div>
+      <div class="foot">
+        <span class="count">${p.bindings} bindings · ${p.variables} variables</span>
+        <span class="count">${applied}</span>
+        ${warn}${imported}
+      </div>
+    </div>`;
+  }
+
+  function matchesFilter(p) {
+    if (!filter) return true;
+    const hay = (p.name + ' ' + p.sim + ' ' + p.aircraft.join(' ')).toLowerCase();
+    return hay.includes(filter.toLowerCase());
+  }
+
+  function renderList() {
+    const area = $('rowsArea');
+    if (!PROFILES.length) {
+      area.innerHTML = `<div class="empty-state">
+          No profiles yet.<br>
+          A profile is a saved setup for one simulator and aircraft.
+        </div>`;
+      return;
+    }
+    const visible = PROFILES.map((p, i) => i).filter(i => matchesFilter(PROFILES[i]));
+    area.innerHTML = visible.map(i => cardHtml(PROFILES[i], i)).join('')
+      + (visible.length ? '' : '<div class="no-match">No profiles match the filter.</div>');
+    area.querySelectorAll('.profile-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selected = +card.dataset.i;
+        render();
+      });
+    });
+  }
+  // ---- Detail rendering ---------------------------------------------------------
+  const infoIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
+  function renderDetail() {
+    const area = $('detailArea');
+    const p = PROFILES[selected];
+    if (!p) {
+      area.innerHTML = '<div class="detail-empty">Select a profile to see its details.</div>';
+      return;
+    }
+    const note = p.imported
+      ? `<div class="note-line info">
+           ${infoIcon}
+           <span>Imported from ${esc(p.imported)}. It has not been applied yet, so the simulator is not loading it.
+             <span class="fixes"><a href="editor-v4.html">Open in editor</a><a href="#" id="discardLink" class="ghost">Discard import</a></span>
+           </span>
+         </div>`
+      : p.isNew
+      ? `<div class="note-line info">
+           ${infoIcon}
+           <span>Just created. Add a device to start binding it.
+             <span class="fixes"><a href="devices-v4.html?add=1">Add a device</a><a href="#" class="ghost">Set a name</a></span>
+           </span>
+         </div>`
+      : (!p.active
+        ? `<div class="note-line info">
+             ${infoIcon}
+             <span>Stopped. Start it to apply the profile and take over from the running one.
+               <span class="fixes"><a href="#" id="makeActiveLink">Start profile</a></span>
+             </span>
+           </div>`
+        : '');
+    const atLoad = p.applied
+      ? `<div class="stat-row">
+           <div class="stat"><div class="n">${p.bindings - p.leftOut}</div><div class="l">bindings running</div></div>
+           <div class="stat${p.leftOut ? ' amber' : ''}"><div class="n">${p.leftOut}</div><div class="l">left out</div></div>
+           <div class="stat cyan"><div class="n">${p.variables}</div><div class="l">variables</div></div>
+         </div>
+         ${p.leftOut ? `<div class="problem-line"><span class="txt">${esc(p.problem)}</span><a href="editor-v4.html?device=pap3&binding=lnav">Show</a></div>` : ''}`
+      : `<div class="conn-note">
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+           Never applied. Apply it once to see what loads.
+         </div>`;
+    const knownAircraft = SIM_AIRCRAFT[p.sim] || [];
+    area.innerHTML = `
+      <div class="detail-head">
+        <h1>${esc(p.name)}</h1>
+        <span class="chip">${esc(p.sim)}</span>
+        <span class="chip">${p.aircraft.length ? esc(p.aircraft.join(', ')) : 'any'}</span>
+      </div>
+      ${note}
+      <div class="dsec" style="margin-top:0">
+        <div class="field-label">Name</div>
+        <input class="input" id="pNameInput" type="text" value="${esc(p.name)}">
+        <div class="help">Renaming updates the top bar and every page that shows this profile.</div>
+      </div>
+      <div class="dsec">
+        <div class="field-label">Simulator</div>
+        <div class="seg full" data-group="sim">
+          <button type="button"${p.sim === 'X-Plane' ? ' class="active"' : ''}>X-Plane</button>
+          <button type="button"${p.sim === 'MSFS' ? ' class="active"' : ''}>MSFS</button>
+        </div>
+        <div class="help">Which simulator this profile is built for.</div>
+      </div>
+      <div class="dsec">
+        <div class="field-label">Aircraft</div>
+        ${p.aircraft.length
+          ? `<div class="aircraft-list">${p.aircraft.map(code =>
+              `<span class="aircraft-chip">${esc(code)}<span class="rm" data-rm="${esc(code)}" title="Remove aircraft">&times;</span></span>`).join('')}</div>`
+          : `<div class="aircraft-empty">Not tied to an aircraft. It applies to every aircraft in ${esc(p.sim)}.</div>`}
+        <div class="aircraft-add">
+          <select class="input" id="pAircraftAdd">
+            <option value="" selected>+ add a known ${esc(p.sim)} aircraft&hellip;</option>
+            ${knownAircraft.map(c => `<option value="${esc(c)}"${p.aircraft.includes(c) ? ' disabled' : ''}>${esc(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="aircraft-add">
+          <input class="input mono" id="pAircraftCustom" type="text" placeholder="Other code, e.g. A320">
+          <button class="btn outline add" id="pAircraftCustomBtn" type="button">Add</button>
+        </div>
+        <div class="help">The profile applies when the simulator is running one of these aircraft. Leave the list empty for every aircraft.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Contents<span class="sub">in this profile</span></div>
+        <div class="card-b">
+          <div class="kv"><span class="k">Devices</span><span class="v${p.devices.length ? '' : ' dim'}">${p.devices.length ? esc(p.devices.join(', ')) : 'none'}</span></div>
+          <div class="kv"><span class="k">Bindings</span><span class="v mono">${p.bindings}</span></div>
+          <div class="kv"><span class="k">Variables</span><span class="v mono">${p.variables}</span></div>
+        </div>
+        <div class="card-foot">
+          <a class="link" href="devices-v4.html">Devices</a>
+          <a class="link" href="editor-v4.html?tab=bindings">Editor</a>
+          <a class="link" href="variables-v4.html">Variables</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">At load</div>
+        ${atLoad}
+      </div>
+
+      <div class="card">
+        <div class="card-h">Runtime<span class="sub">${p.active ? 'running' : 'stopped'}</span></div>
+        <div class="card-b">
+          <div class="kv"><span class="k">State</span><span class="v"><span class="runtime-state ${p.active ? 'runtime-running' : 'runtime-stopped'}"><span class="dot"></span>${p.active ? 'Running' : 'Stopped'}</span></span></div>
+          <div class="kv"><span class="k">Simulator</span><span class="v">${esc(p.sim)} &middot; ${p.aircraft.length ? esc(p.aircraft.join(', ')) : 'any aircraft'}</span></div>
+        </div>
+        <div class="card-foot">
+          <button class="btn ${p.active ? 'secondary' : 'primary'}" id="runtimeToggle" type="button">${p.active ? 'Stop profile' : 'Start profile'}</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">History</div>
+        <div class="card-b">
+          <div class="kv"><span class="k">Last applied</span><span class="v${p.applied ? '' : ' dim'}">${p.applied ? esc(p.applied) : 'never'}</span></div>
+          <div class="kv"><span class="k">Times applied</span><span class="v mono">${p.times}</span></div>
+          <div class="kv"><span class="k">Modified</span><span class="v mono">${esc(p.modified)}</span></div>
+        </div>
+      </div>
+
+      <a class="open-action" href="editor-v4.html">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        Open in editor
+      </a>
+      <div class="action-row">
+        <a href="#" id="dupBtn">Duplicate</a>
+        <a href="#" id="delBtn" class="danger">Delete profile</a>
+      </div>`;
+
+    const makeActive = $('makeActiveLink');
+    if (makeActive) makeActive.addEventListener('click', () => startProfile(selected));
+    const discard = $('discardLink');
+    if (discard) discard.addEventListener('click', () => removeProfile(selected));
+    $('dupBtn').addEventListener('click', () => duplicateProfile(selected));
+    $('delBtn').addEventListener('click', () => removeProfile(selected));
+    $('pNameInput').addEventListener('change', () => { unsaved++; refreshUnsaved(); });
+    $('pAircraftAdd').addEventListener('change', e => {
+      if (e.target.value && !p.aircraft.includes(e.target.value)) {
+        p.aircraft.push(e.target.value);
+        unsaved++;
+        refreshUnsaved();
+        render();
+      }
+    });
+    $('pAircraftCustomBtn').addEventListener('click', () => {
+      const code = $('pAircraftCustom').value.trim().toUpperCase();
+      if (code && !p.aircraft.includes(code)) {
+        p.aircraft.push(code);
+        unsaved++;
+        refreshUnsaved();
+        render();
+      }
+    });
+    area.querySelectorAll('.aircraft-chip .rm').forEach(el => {
+      el.addEventListener('click', ev => {
+        ev.stopPropagation();
+        p.aircraft = p.aircraft.filter(c => c !== el.dataset.rm);
+        unsaved++;
+        refreshUnsaved();
+        render();
+      });
+    });
+    $('runtimeToggle').addEventListener('click', () => {
+      if (p.active) stopActiveProfile(); else startProfile(selected);
+    });
+    area.querySelectorAll('.seg[data-group]').forEach(seg => {
+      seg.addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+
+  function render() {
+    renderList();
+    renderDetail();
+  }
+
+  // ---- Profile actions -----------------------------------------------------------
+  function syncTopbar() {
+    const p = PROFILES.find(x => x.active);
+    $('topbarProfileName').textContent = p ? p.name : 'No profile';
+    $('topbarProfileSim').textContent = p
+      ? p.sim + ' · ' + (p.aircraft.length ? p.aircraft.join(', ') : 'any aircraft')
+      : '—';
+    const pill = $('topbarSimPill');
+    if (p) {
+      pill.className = 'status-pill ok';
+      pill.innerHTML = '<span class="dot"></span>' + p.sim + ' ready · ' + (p.aircraft.length ? p.aircraft.join(', ') : 'any aircraft');
+    } else {
+      pill.className = 'status-pill off';
+      pill.innerHTML = 'No profile running';
+    }
+  }
+
+  // Start: apply this profile to the simulator (ProfileRuntime.Activate).
+  function startProfile(i) {
+    PROFILES.forEach((p, j) => p.active = j === i);
+    const p = PROFILES[i];
+    p.applied = 'just now';
+    p.times = (p.times || 0) + 1;
+    p.modified = 'just now';
+    syncTopbar();
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  // Stop: nothing runs (ProfileRuntime.Deactivate).
+  function stopActiveProfile() {
+    PROFILES.forEach(p => p.active = false);
+    syncTopbar();
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  function duplicateProfile(i) {
+    const p = PROFILES[i];
+    PROFILES.splice(i + 1, 0, {
+      name: p.name + ' (copy)',
+      sim: p.sim,
+      aircraft: p.aircraft.slice(),
+      active: false,
+      devices: p.devices.slice(),
+      bindings: p.bindings,
+      variables: p.variables,
+      applied: null,
+      times: 0,
+      modified: 'just now',
+      leftOut: 0,
+    });
+    selected = i + 1;
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  function removeProfile(i) {
+    const wasActive = PROFILES[i].active;
+    PROFILES.splice(i, 1);
+    if (wasActive && PROFILES.length) {
+      PROFILES[0].active = true;
+      selected = 0;
+    } else {
+      selected = Math.min(i, PROFILES.length - 1);
+    }
+    syncTopbar();
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  function newProfile() {
+    newSeq++;
+    PROFILES.forEach(p => p.active = false);
+    PROFILES.push({
+      name: newSeq === 1 ? 'New profile' : 'New profile ' + newSeq,
+      sim: 'X-Plane',
+      aircraft: [],
+      active: true,
+      devices: [],
+      bindings: 0,
+      variables: 0,
+      applied: null,
+      times: 0,
+      modified: 'just now',
+      leftOut: 0,
+      isNew: true,
+    });
+    selected = PROFILES.length - 1;
+    syncTopbar();
+    unsaved++;
+    refreshUnsaved();
+    render();
+    const card = document.querySelector(`#rowsArea .profile-card[data-i="${selected}"]`);
+    if (card) card.scrollIntoView({ block: 'nearest' });
+  }
+
+  function doImport() {
+    importSeq++;
+    PROFILES.unshift({
+      name: 'Zibo 737 - CDU' + (importSeq > 1 ? ' ' + importSeq : ''),
+      sim: 'X-Plane',
+      aircraft: ['B738'],
+      active: false,
+      devices: ['cdu'],
+      bindings: 8,
+      variables: 1,
+      applied: null,
+      times: 0,
+      modified: 'just now',
+      leftOut: 0,
+      imported: 'zibo737-cdu.json',
+    });
+    selected = 0;
+    toggleImportZone(false);
+    unsaved++;
+    refreshUnsaved();
+    render();
+    const card = document.querySelector(`#rowsArea .profile-card[data-i="0"]`);
+    if (card) card.scrollIntoView({ block: 'start' });
+  }
+
+  function toggleImportZone(show) {
+    $('importZone').hidden = !show;
+    $('importBtn').classList.toggle('active', show);
+  }
+
+  // ---- Unsaved tracking ----------------------------------------------------------
+  function pulseUnsaved() {
+    const el = document.querySelector('.unsaved');
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+  }
+
+  function refreshUnsaved() {
+    $('unsavedCount').textContent = unsaved;
+    pulseUnsaved();
+  }
+
+  // ---- Wiring --------------------------------------------------------------------
+  $('newProfileBtn').addEventListener('click', newProfile);
+  $('importBtn').addEventListener('click', () => toggleImportZone($('importZone').hidden));
+  $('importZone').addEventListener('click', doImport);
+  $('filterInput').addEventListener('input', e => {
+    filter = e.target.value.trim();
+    renderList();
+  });
+
+  // Keep the prototype's placeholder links from jumping the page.
+  document.addEventListener('click', e => {
+    if (e.target.closest('a[href="#"]')) e.preventDefault();
+  });
+
+  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  const params = new URLSearchParams(location.search);
+  const fit = params.get('fit');
+  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
+
+  // Initial state, with review params: ?profile=1|msfs, ?new=1, ?empty=1, ?import=1.
+  if (params.get('empty')) PROFILES.length = 0;
+  if (params.get('import')) toggleImportZone(true);
+  if (params.get('new')) newProfile();
+  else {
+    const pp = params.get('profile');
+    if (pp !== null) {
+      let i = parseInt(pp, 10);
+      if (Number.isNaN(i)) i = PROFILES.findIndex(x => x.name.toLowerCase().includes(pp.toLowerCase()));
+      if (i >= 0 && i < PROFILES.length) selected = i;
+    }
+    render();
+  }
+</script>
+</body>
+</html>

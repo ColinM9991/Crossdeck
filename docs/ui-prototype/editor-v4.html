@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck - Editor, calm v4</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
+
+  .app { grid-template-columns: 92px 400px 1fr 420px; }
+
+  /* ============ Top bar, rail, columns: see design-system.css ============ */
+
+  .col.devices { grid-column: 2; border-right: 1px solid var(--line-soft); }
+  .col.bindings { grid-column: 3; border-right: 1px solid var(--line-soft); }
+  .col.detail { grid-column: 4; }
+
+  /* ============ Devices column ============ */
+
+  .device-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .device-card:hover { border-color: #33405a; }
+  .device-card.selected {
+    border-color: var(--cyan-line);
+    background: #152031;
+  }
+  .device-card .top { display: flex; align-items: center; gap: 9px; }
+  .device-card .name { font-size: 14px; font-weight: 600; }
+  .device-card .top .chip { margin-left: auto; }
+  .device-card .meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin-top: 5px;
+  }
+  .device-card .desc { color: var(--text-2); font-size: 12px; margin-top: 4px; }
+  .device-card .foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 10px;
+  }
+  .device-card .count { color: var(--text-3); font-size: 11.5px; }
+
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin: 18px 2px 9px;
+  }
+
+  /* ============ Bindings column ============ */
+
+  .bindings-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .bindings-head h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .bindings-head .count { color: var(--text-3); font-size: 12px; margin-left: auto; }
+
+  .tab-row .btn.add { margin-left: auto; }
+
+  /* The editor stacks its notes above cards; the system primitives have no margin. */
+  .learn-note { margin-bottom: 12px; }
+  .conn-note { margin-bottom: 12px; }
+
+  .binding-row {
+    padding: 11px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+  }
+  .binding-row + .binding-row { border-top: 1px solid var(--line-soft); }
+  .binding-row:hover { background: var(--inset); }
+  .binding-row.selected {
+    background: var(--cyan-bg);
+    box-shadow: inset 2px 0 0 var(--cyan);
+  }
+  .binding-row .l1 { display: flex; align-items: baseline; gap: 10px; }
+  .binding-row .ctrl { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+  .binding-row .ctrl.problem { color: var(--amber); }
+  .binding-row .event { color: var(--text-3); font-size: 12px; }
+  .binding-row .live {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .binding-row .warn { margin-left: auto; color: var(--amber); display: flex; }
+  .binding-row .l2 {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 5px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-2);
+    min-width: 0;
+  }
+  .binding-row .l2 .expr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .binding-row .l2 .expr.none { color: var(--text-3); font-style: italic; }
+  .binding-row .l2 .when { margin-left: auto; flex: none; font-size: 11.5px; color: var(--text-3); }
+  .binding-row .l2 .when.problem { color: var(--amber); }
+  .binding-row .l2 .kind-chip.phase.on { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-bg); }
+  .list-dimmed { opacity: 0.55; }
+
+  .kind-chip {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-line);
+    border-radius: 4px;
+    padding: 1.5px 7px;
+    flex: none;
+  }
+
+  .empty-state .btn { margin-top: 14px; display: inline-flex; }
+
+  /* ============ Picker ============ */
+
+  .picker { margin-bottom: 14px; }
+  .picker[hidden] { display: none; }
+  .picker-list { padding: 4px 0; }
+  .picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    border-radius: 7px;
+    margin: 0 6px;
+  }
+  .picker-row:hover { background: var(--inset); }
+  .picker-row .pid { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; }
+  .picker-row .pdesc { color: var(--text-3); font-size: 12px; }
+  .picker-row .pplus {
+    margin-left: auto;
+    color: var(--cyan);
+    font-weight: 700;
+    font-size: 14px;
+    opacity: 0;
+  }
+  .picker-row:hover .pplus { opacity: 1; }
+  .picker-empty {
+    padding: 14px 16px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
+  /* ============ Add-action picker (detail column) ============ */
+
+  .kind-chip.phase.on { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-bg); }
+  #actionPicker > .card-b + .card-b { border-top: 1px solid var(--line-soft); }
+  #actionPicker .ap-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 9px;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  #actionPicker .ap-status .chip { flex: none; }
+  #actionPicker .ap-status[hidden] { display: none; }
+  .seg.locked button { opacity: 0.35; pointer-events: none; }
+  .seg.locked button.active { opacity: 1; pointer-events: auto; }
+  #actionPicker .picker-row { margin: 2px 0; padding: 8px 0; }
+  #actionPicker .picker-row.selected { background: var(--cyan-bg); box-shadow: inset 2px 0 0 var(--cyan); }
+
+  /* ============ Action cards and Sources (detail column) ============ */
+
+  .card-h .card-del {
+    margin-left: auto;
+    color: var(--text-3);
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 6px;
+    border-radius: 6px;
+  }
+  .card-h .card-del:hover { color: var(--amber); background: var(--amber-bg); }
+  .card-h .more + .card-del { margin-left: 0; }
+
+  .src-item { position: relative; }
+  .src-item + .src-item { border-top: 1px solid var(--line-soft); }
+  .src-item .kv { padding-right: 36px; }
+  .src-del {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    color: var(--text-3);
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0;
+  }
+  .src-item:hover .src-del { opacity: 1; }
+  .src-del:hover { color: var(--amber); background: var(--amber-bg); }
+  .card[data-srcs] .src-add .picker-row { margin: 2px 0; padding: 8px 16px; }
+
+  /* ============ Expression autocomplete ============ */
+
+  .expr-wrap { position: relative; }
+  .expr-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    z-index: 30;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    max-height: 230px;
+    overflow-y: auto;
+  }
+  .expr-list[hidden] { display: none; }
+  .expr-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .expr-row + .expr-row { border-top: 1px solid var(--line-soft); }
+  .expr-row .expr-name { font-family: var(--font-mono); font-size: 12px; font-weight: 600; flex: none; }
+  .expr-row .expr-desc {
+    margin-left: auto;
+    color: var(--text-3);
+    font-size: 11.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .expr-row.active { background: var(--cyan-bg); }
+
+  /* ============ Detail column ============ */
+
+  .detail-head .device-ref { margin-left: auto; color: var(--text-3); font-size: 12.5px; }
+  .detail-head a.device-ref { text-decoration: none; }
+  .detail-head a.device-ref:hover { color: var(--text-2); text-decoration: underline; }
+
+  /* The editor stacks notes above cards; the system primitive has no margin. */
+  .note-line { margin-bottom: 14px; }
+
+  .card-h .kind-chip { margin-left: 0; }
+  .card-h .more {
+    margin-left: auto;
+    color: var(--text-3);
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    padding: 1px 7px;
+    border-radius: 6px;
+  }
+  .card-h .more:hover { color: var(--text-2); background: var(--chip-bg); }
+
+  .kv .v .eval-dim { color: var(--text-3); }
+  .kv .v .arrow { color: var(--text-3); }
+  .kv .v .out { color: var(--text); }
+  .kv .v.dim { color: var(--text-2); }
+
+  .add-action {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .add-action:hover { border-color: #33405a; }
+  .add-action svg { color: var(--text-3); }
+
+  .detail-block[hidden] { display: none; }
+
+  /* Scrollbars: see design-system.css. */
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <div class="brand">Crossdeck</div>
+    <a class="profile-chip" href="profiles-v4.html">
+      <span class="name">Zibo 737 - Bravo + PAP3</span>
+      <span class="sim">X-Plane &middot; B738</span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </a>
+    <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
+    <span class="status-pill warn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      1 left out
+    </span>
+    <span class="spacer"></span>
+    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
+    <button class="btn outline" id="learnBtn">Learn</button>
+    <button class="btn primary">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </header>
+
+  <!-- ============ Rail (cross-page navigation) ============ -->
+  <nav class="rail">
+    <a class="rail-item" href="profiles-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Profiles
+    </a>
+    <a class="rail-item" href="devices-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+      Devices
+    </a>
+    <a class="rail-item active" href="editor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Editor
+    </a>
+    <a class="rail-item" href="variables-v4.html">
+      <span class="glyph-braces">{ }</span>
+      Variables
+    </a>
+    <a class="rail-item" href="monitor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+      Monitor
+      <span class="rail-badge">3</span>
+    </a>
+    <span class="push"></span>
+    <a class="rail-item" href="settings-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+      Settings
+    </a>
+  </nav>
+
+  <!-- ============ Devices column ============ -->
+  <main class="col devices">
+    <div class="col-head">
+      <h1>Devices</h1>
+      <span class="sub">in this profile</span>
+    </div>
+
+    <input class="input" type="text" placeholder="Filter devices, controls, refs&#8230;">
+
+    <div style="height:14px"></div>
+
+    <div class="device-card" data-device="bravo">
+      <div class="top">
+        <span class="name">bravo</span>
+        <span class="chip ok"><span class="dot"></span>connected</span>
+      </div>
+      <div class="meta">294B:1901 &middot; sn=A1B2C3D4</div>
+      <div class="desc">Buttons &middot; LEDs</div>
+      <div class="foot"><span class="count">5 bindings</span></div>
+    </div>
+
+    <div class="device-card selected" data-device="pap3">
+      <div class="top">
+        <span class="name">pap3</span>
+        <span class="chip ok"><span class="dot"></span>connected</span>
+      </div>
+      <div class="meta">4098:BF0F &middot; sn=0042</div>
+      <div class="desc">Buttons &middot; LEDs, displays</div>
+      <div class="foot"><span class="count">4 bindings</span></div>
+    </div>
+
+    <div class="device-card" data-device="mcdu">
+      <div class="top">
+        <span class="name">mcdu</span>
+        <span class="chip off"><span class="ring"></span>not connected</span>
+      </div>
+      <div class="meta">4098:BB36 &middot; role Captain</div>
+      <div class="desc">Buttons &middot; LEDs &middot; screen 24 &times; 14</div>
+      <div class="foot"><span class="count">Bindings are kept. Nothing runs until connected.</span></div>
+    </div>
+
+    <div class="section-label">At load</div>
+    <div class="card" style="margin-bottom:0">
+      <div class="stat-row">
+        <div class="stat"><div class="n">12</div><div class="l">bindings running</div></div>
+        <div class="stat amber"><div class="n">1</div><div class="l">left out</div></div>
+        <div class="stat cyan"><div class="n">2</div><div class="l">variables</div></div>
+      </div>
+      <div class="problem-line">
+        <span class="txt">pap3 button:lnav &middot; Only when: unknown name [pwr]</span>
+        <a href="#" id="showProblem">Show</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ Bindings column ============ -->
+  <main class="col bindings">
+    <div class="bindings-head">
+      <h1 id="bindingDeviceName">pap3</h1>
+      <span class="chip" id="bindingDeviceKind">PFP-3</span>
+      <span class="chip ok" id="bindingDevicePill"><span class="dot"></span>connected</span>
+      <span class="count" id="bindingControlsCount">4 controls</span>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab active" data-tab="inputs">Inputs<span class="tab-count" id="inputsCount">3</span></button>
+      <button class="tab" data-tab="outputs">Outputs<span class="tab-count" id="outputsCount">0</span></button>
+      <button class="btn outline add" id="addBtn">+ Add input</button>
+    </div>
+
+    <div class="learn-note" id="learnNote" hidden>
+      <span class="pulse"></span>
+      Learning on <b id="learnDevice">pap3</b> &mdash; press a control to capture its binding.
+      <a href="#" id="stopLearn">Stop</a>
+    </div>
+
+    <div class="conn-note" id="connNote" hidden>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Bindings are kept. Nothing runs until the device is connected.
+    </div>
+
+    <div class="card picker" id="picker" hidden>
+      <div class="card-h">
+        <span id="pickerTitle">Pick an input</span>
+        <span class="sub" id="pickerDevice">pap3</span>
+        <button class="close" id="pickerClose">&times;</button>
+      </div>
+      <div class="picker-list" id="pickerList"></div>
+    </div>
+
+    <div id="rowsArea"></div>
+  </main>
+
+  <!-- ============ Detail column ============ -->
+  <aside class="col detail">
+
+    <div class="card picker" id="actionPicker" hidden>
+      <div class="card-h">
+        <span>Add action</span>
+        <span class="sub" id="apContext">this binding</span>
+        <button class="close" id="apClose" type="button">&times;</button>
+      </div>
+      <div class="card-b" style="padding:12px 16px">
+        <div class="field-label">Action</div>
+        <div class="seg full" id="apKind">
+          <button type="button" class="active" data-kind="cmd">Send command</button>
+          <button type="button" data-kind="set">Set a value</button>
+        </div>
+      </div>
+      <div class="card-b" style="padding:12px 16px">
+        <div class="field-label">Target</div>
+        <input class="input mono" id="apTarget" type="text" placeholder="sim/autopilot/LNAV">
+        <div class="help" id="apTargetHint">Type the X-Plane dataref or MSFS var this command targets.</div>
+        <div class="ap-status" id="apStatus" hidden></div>
+      </div>
+      <div class="card-b" id="apPhaseCard" style="padding:12px 16px">
+        <div class="field-label">Phase</div>
+        <div class="seg full" id="apPhaseSeg">
+          <button type="button" class="active" data-phase="trigger">Trigger</button>
+          <button type="button" data-phase="begin">Begin</button>
+          <button type="button" data-phase="end">End</button>
+        </div>
+        <div class="help" id="apPhaseHelp">Trigger fires once on press. Begin and End only exist when the simulator command supports phases.</div>
+      </div>
+      <div class="card-b" id="apValueCard" hidden style="padding:12px 16px">
+        <div class="field-label">Value</div>
+        <div class="seg full" id="apValueSeg">
+          <button type="button" class="active" data-mode="value">Value</button>
+          <button type="button" data-mode="ref">From ref</button>
+          <button type="button" data-mode="expr">Expression</button>
+        </div>
+        <div class="expr-wrap" id="apValueWrap" style="margin-top:10px">
+          <input class="input mono" id="apValueInput" type="text" placeholder="1">
+          <div class="expr-list" id="apExprList" hidden></div>
+        </div>
+        <div class="help" id="apExprHelp" hidden>Type [ for a ref (input, self, variables) or a function name (Min, Max&hellip;).</div>
+        <div id="apRefList" hidden style="margin-top:10px"></div>
+      </div>
+      <div class="card-foot" style="justify-content:flex-end">
+        <button class="btn primary" id="apAdd" type="button" disabled>Add action</button>
+      </div>
+    </div>
+
+    <div class="detail-block" id="detailAlt">
+      <div class="detail-head">
+        <h1>button:14</h1>
+        <span class="chip">Button</span>
+        <a class="device-ref" href="devices-v4.html?device=pap3">pap3</a>
+      </div>
+
+      <div class="card" data-srcs="detailAlt">
+        <div class="card-h">Sources</div>
+        <div class="card-b"></div>
+        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Only when</div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Guard</span>
+            <span class="v mono">[fn] == 0</span>
+          </div>
+        </div>
+        <div class="card-foot" style="justify-content:flex-end">
+          <span class="chip ok"><span class="dot"></span>true now</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="more" title="Action options">&hellip;</button><button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Target</span>
+            <span class="v mono">sim/cockpit2/autopilot/altitude_dial_ft</span>
+          </div>
+        </div>
+        <div class="card-b" style="padding:12px 16px">
+          <div class="field-label">Value</div>
+          <div class="seg full" data-group="value-mode">
+            <button>Value</button>
+            <button>From ref</button>
+            <button class="active">Expression</button>
+          </div>
+          <div class="expr-wrap" style="margin-top:10px">
+            <input class="input mono" id="altExprInput" type="text" value="Min([alt_dial] + 100, 50000)">
+            <div class="expr-list" id="altExprList" hidden></div>
+          </div>
+          <div class="help">Type [ for a ref or a function name.</div>
+        </div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Preview</span>
+            <span class="v mono"><span class="eval-dim">alt_dial 12000 &rarr;</span> <span class="out">12100</span></span>
+          </div>
+          <div class="kv">
+            <span class="k">Preset</span>
+            <span class="v dim">Increase by 100, max 50000</span>
+          </div>
+        </div>
+        <div class="card-foot" style="justify-content:flex-end"><a class="link" href="#">Edit preset</a></div>
+      </div>
+
+      <button class="add-action">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add action
+      </button>
+    </div>
+
+    <div class="detail-block" id="detailLnav" hidden>
+      <div class="detail-head">
+        <h1>button:lnav</h1>
+        <span class="chip">Button</span>
+        <a class="device-ref" href="devices-v4.html?device=pap3">pap3</a>
+      </div>
+
+      <div class="note-line">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+        <span>
+          Only when: unknown name [pwr]. The binding was left out at load.
+          <span class="fixes">
+            <a href="#" data-src-add>Add as source</a>
+            <a href="#" class="ghost">Fix name</a>
+            <a href="#" class="ghost">Ignore</a>
+          </span>
+        </span>
+      </div>
+
+      <div class="card" data-srcs="detailLnav">
+        <div class="card-h">Sources</div>
+        <div class="card-b"></div>
+        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Target</span>
+            <span class="v mono">sim/autopilot/LNAV</span>
+          </div>
+          <div class="kv">
+            <span class="k">Phase</span>
+            <span class="v mono">trigger</span>
+          </div>
+          <div class="help">Sent once on press. This command has no end phase, so release is ignored.</div>
+          <div class="kv">
+            <span class="k">Only when</span>
+            <span class="v mono" style="color:var(--amber)">[pwr] == 1</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="add-action">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add action
+      </button>
+    </div>
+
+    <div class="detail-block" id="detailGeneric" hidden>
+      <div class="detail-head">
+        <h1 id="gTitle">button:10</h1>
+        <span class="chip" id="gKind">Button</span>
+        <a class="device-ref" id="gRef" href="devices-v4.html?device=pap3">pap3</a>
+      </div>
+
+      <div class="card" data-srcs="detailGeneric">
+        <div class="card-h">Sources</div>
+        <div class="card-b"></div>
+        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="kind-chip" id="gActionKind">SET</span><span id="gActionTitle">Set a value</span><button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Target</span>
+            <span class="v mono" id="gTarget">&mdash;</span>
+          </div>
+          <div class="kv" id="gPhaseRow" hidden>
+            <span class="k">Phase</span>
+            <span class="v mono" id="gPhase">&mdash;</span>
+          </div>
+          <div class="help" id="gPhaseHelp" hidden></div>
+        </div>
+      </div>
+
+      <div class="card" id="gWhenCard" hidden>
+        <div class="card-h">Only when</div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Guard</span>
+            <span class="v mono" id="gWhenVal">&mdash;</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="add-action">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add action
+      </button>
+    </div>
+
+    <div class="detail-block" id="detailNewIn" hidden>
+      <div class="detail-head">
+        <h1 id="newInTitle">button:12</h1>
+        <span class="chip" id="newInKind">Button</span>
+        <a class="device-ref" id="newInDevice" href="devices-v4.html?device=pap3">pap3</a>
+      </div>
+
+      <div class="note-line info">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>
+          Just added. Pick an action so this binding does something.
+          <span class="fixes">
+            <a href="#" data-open-ap="cmd">Send a command</a>
+            <a href="#" class="ghost" data-open-ap="set">Set a value</a>
+          </span>
+        </span>
+      </div>
+
+      <div class="card" data-srcs="detailNewIn">
+        <div class="card-h">Sources</div>
+        <div class="card-b"></div>
+        <div class="card-foot"><a class="link" href="#" data-src-add>+ Add source</a></div>
+      </div>
+
+      <div class="card action-placeholder">
+        <div class="card-h">Action</div>
+        <div class="card-b" style="padding:12px 16px">
+          <div class="seg full" data-group="newin-kind">
+            <button class="active">Send command</button>
+            <button>Set a value</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Target</span>
+            <span class="v dim">&mdash; choose a command</span>
+          </div>
+        </div>
+        <div class="card-foot"><a class="link" href="#" data-open-ap="cmd">Choose target&hellip;</a></div>
+      </div>
+    </div>
+
+    <div class="detail-block" id="detailNewOut" hidden>
+      <div class="detail-head">
+        <h1 id="newOutTitle">led:keys</h1>
+        <span class="chip" id="newOutKind">LED</span>
+        <a class="device-ref" id="newOutDevice" href="devices-v4.html?device=pap3">pap3</a>
+      </div>
+
+      <div class="note-line info">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>
+          Just added. Choose what drives this output.
+          <span class="fixes">
+            <a href="#">From a ref</a>
+            <a href="#" class="ghost">From a device input</a>
+          </span>
+        </span>
+      </div>
+
+      <div class="card" data-srcs="detailNewOut" data-single>
+        <div class="card-h">Source</div>
+        <div class="card-b"></div>
+        <div class="card-foot"><a class="link" href="#" data-src-add>+ Choose source</a></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Transform</div>
+        <div class="card-b" style="padding:12px 16px">
+          <div class="seg full">
+            <button class="active">Raw</button>
+            <button>Expression</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="kv">
+            <span class="k">Preview</span>
+            <span class="v mono dim">&mdash; &rarr; 0</span>
+          </div>
+          <div class="kv">
+            <span class="k">Fallback</span>
+            <span class="v dim">Number &middot; 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<script>
+  // ---- Sample data -----------------------------------------------------------
+  const DEV = {
+    bravo: {
+      kind: 'X-56', connected: true, controls: 6,
+      inputs: [
+        { c: 'button:7', ev: 'Pressed', b: 'CMD', x: 'sim/autopilot/hdg_sel_press', ph: 'trigger' },
+        { c: 'button:22', ev: 'Hold', b: 'CMD', x: 'sim/starters/engage_starter_1', ph: 'begin / end' },
+        { c: 'button:30', ev: 'Modifier', b: 'SET', x: 'var:fn = 1  (0 on release)', live: '1' },
+        { c: 'button:18', ev: 'Hold', b: 'CMD', x: 'sim/starters/engage_starter_2', ph: 'begin / end' },
+        { c: 'button:26', ev: 'Pressed', b: 'CMD', x: 'sim/gear/down', w: '[gnd] == 0', ph: 'trigger' },
+      ],
+      outputs: [],
+      addIn: [{ c: 'button:12', k: 'Button', d: 'press / hold / modifier' }],
+      addOut: [{ c: 'led:trim', k: 'LED', d: 'trim indicator · 255 values' }],
+    },
+    pap3: {
+      kind: 'PFP-3', connected: true, controls: 4,
+      inputs: [
+        { c: 'button:14', ev: 'Pressed', b: 'SET', x: 'altitude_dial_ft = Min([alt_dial] + 100, 50000)', w: '[fn] == 0', live: '+100', detail: 'detailAlt' },
+        { c: 'button:10', ev: 'Pressed', b: 'SET', x: 'heading_dial_deg = 270' },
+        { c: 'button:lnav', ev: 'Pressed', b: 'CMD', x: 'sim/autopilot/LNAV', w: '[pwr] == 1', wp: true, problem: true, detail: 'detailLnav', ph: 'trigger' },
+        { c: 'button:ptt', ev: 'Hold', b: 'CMD', x: 'sim/audio/ptt', ph: 'begin / end', live: '1' },
+      ],
+      outputs: [],
+      addIn: [{ c: 'button:12', k: 'Button', d: 'press' }],
+      addOut: [
+        { c: 'led:keys', k: 'LED', d: 'backlight · keys · 255 values' },
+        { c: 'led:display', k: 'LED', d: 'display backlight' },
+      ],
+    },
+    mcdu: {
+      kind: 'CDU', connected: false, controls: 8,
+      inputs: [
+        { c: 'button:5', ev: 'Pressed', b: 'CMD', x: 'sim/cdu/init', ph: 'trigger' },
+        { c: 'button:8', ev: 'Pressed', b: 'CMD', x: 'sim/cdu/menu', w: '[gnd] == 1', ph: 'trigger' },
+      ],
+      outputs: [
+        { c: 'screen:1', ev: 'Display', b: 'OUT', x: '24 × 14 cells · from sim' },
+      ],
+      addIn: [{ c: 'button:1', k: 'Button', d: 'press' }],
+      addOut: [],
+    },
+  };
+
+  let current = 'pap3';
+  let tab = 'inputs';
+  let unsaved = 3;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // ---- Sources -----------------------------------------------------------------
+  // Refs a binding can draw from: the profile's variables, device outputs and
+  // sim refs. Feeds the "Sources" cards and the picker's "From ref" list.
+  const SRC_CANDIDATES = [
+    { id: 'var:fn', label: 'fn', k: 'VAR', d: 'modifier key', now: '0', href: 'variables-v4.html?var=fn' },
+    { id: 'var:presetAlt', label: 'presetAlt', k: 'VAR', d: 'preset altitude', now: '1000', href: 'variables-v4.html?var=presetAlt' },
+    { id: 'out:led:keys', label: 'led:keys', k: 'OUT', d: 'pap3 key backlight', now: '255' },
+    { id: 'sim/cockpit2/gps/alt', label: 'gps/alt', k: 'SIM', d: 'GPS altitude', now: '12000' },
+  ];
+  const SRC_EMPTY = {
+    detailAlt: 'none',
+    detailLnav: 'none &mdash; the guard uses [pwr], which is not a source',
+    detailGeneric: 'none',
+    detailNewIn: 'none',
+    detailNewOut: '&mdash; choose a source',
+  };
+  const srcState = { detailAlt: ['var:fn'], detailLnav: [], detailNewIn: [], detailNewOut: [] };
+  const genSrc = {}; // detailGeneric is shared between rows: source lists per control.
+
+  function srcListFor(blockId, ctrl) {
+    if (blockId === 'detailGeneric') return genSrc[ctrl] || (genSrc[ctrl] = []);
+    return srcState[blockId];
+  }
+
+  function renderSrcCard(blockId, ctrl) {
+    const card = $(blockId).querySelector('.card[data-srcs]');
+    if (!card) return;
+    const single = card.hasAttribute('data-single');
+    const list = srcListFor(blockId, blockId === 'detailGeneric' ? ctrl : undefined);
+    const kLabel = single ? 'From' : 'Source';
+    const items = list.map(id => {
+      const s = SRC_CANDIDATES.find(c => c.id === id);
+      const idHtml = s.href ? `<a href="${s.href}">${esc(id)}</a>` : esc(id);
+      return `<div class="src-item" data-src="${esc(id)}">
+        <div class="kv"><span class="k">${kLabel}</span><span class="v mono">${esc(s.label)} <span class="arrow">&rarr;</span> ${idHtml}</span></div>
+        <div class="kv"><span class="k">Value now</span><span class="v mono dim">${esc(s.now)}</span></div>
+        <button class="src-del" type="button" title="Remove source">&times;</button>
+      </div>`;
+    }).join('');
+    const empty = list.length
+      ? ''
+      : `<div class="kv"><span class="k">${kLabel}</span><span class="v dim">${SRC_EMPTY[blockId]}</span></div>`;
+    const avail = SRC_CANDIDATES.filter(c => !list.includes(c.id));
+    const addList = avail.length
+      ? `<div class="src-add" hidden>${avail.map(c =>
+          `<div class="picker-row" data-ref="${esc(c.id)}">
+             <span class="kind-chip">${c.k}</span>
+             <span class="pid">${esc(c.id)}</span>
+             <span class="pdesc">${esc(c.d)}</span>
+             <span class="pplus">+</span>
+           </div>`).join('')}</div>`
+      : '';
+    card.querySelector('.card-b').innerHTML = items + empty + addList;
+    const foot = card.querySelector('.card-foot');
+    if (foot) {
+      foot.style.display = avail.length ? '' : 'none';
+      const link = foot.querySelector('[data-src-add]');
+      if (link) link.textContent = single ? (list.length ? 'Change source' : '+ Choose source') : '+ Add source';
+    }
+  }
+
+  function addSource(blockId, ref, single) {
+    const ctrl = blockId === 'detailGeneric' ? $('gTitle').textContent : undefined;
+    const list = srcListFor(blockId, ctrl);
+    if (single && list.length) list.length = 0;
+    list.push(ref);
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    renderSrcCard(blockId, ctrl);
+  }
+
+  function removeSource(blockId, ref) {
+    const ctrl = blockId === 'detailGeneric' ? $('gTitle').textContent : undefined;
+    const list = srcListFor(blockId, ctrl);
+    list.splice(list.indexOf(ref), 1);
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    renderSrcCard(blockId, ctrl);
+  }
+
+  // ---- Expression autocomplete -------------------------------------------------
+  // Bracket refs complete to [name], function names to Name(. [input] is the
+  // control's hardware value, [self] the target's current value (the rest are
+  // the profile's variables and sim refs); functions are the standard NCalc set.
+  const EXPR_REFS = [
+    { name: 'input', d: 'the hardware value of this control' },
+    { name: 'self', d: 'the target\u2019s current value' },
+    { name: 'fn', d: 'variable \u00b7 modifier key' },
+    { name: 'presetAlt', d: 'variable \u00b7 preset altitude' },
+    { name: 'alt_dial', d: 'sim \u00b7 altitude dial (ft)' },
+    { name: 'gnd', d: 'sim \u00b7 on the ground' },
+  ];
+  const EXPR_FUNCS = [
+    { name: 'Min', d: 'smaller of a and b' },
+    { name: 'Max', d: 'larger of a and b' },
+    { name: 'Abs', d: 'absolute value' },
+    { name: 'Round', d: 'nearest whole number' },
+    { name: 'Floor', d: 'round down' },
+    { name: 'Ceil', d: 'round up' },
+    { name: 'Truncate', d: 'drop the decimals' },
+    { name: 'Mod', d: 'remainder of a / b' },
+    { name: 'Sqrt', d: 'square root' },
+    { name: 'Power', d: 'a to the power b' },
+    { name: 'Exp', d: 'e to the power x' },
+    { name: 'Log', d: 'logarithm, base 10' },
+    { name: 'Log2', d: 'logarithm, base 2' },
+    { name: 'Ln', d: 'natural logarithm' },
+    { name: 'IIf', d: 'if a then b else c' },
+    { name: 'And', d: 'true when both are true' },
+    { name: 'Or', d: 'true when either is true' },
+    { name: 'Not', d: 'inverts a condition' },
+    { name: 'Sin', d: 'sine, in radians' },
+    { name: 'Cos', d: 'cosine, in radians' },
+    { name: 'Tan', d: 'tangent, in radians' },
+    { name: 'PI', d: 'constant \u00b7 3.14159\u2026' },
+    { name: 'e', d: 'constant \u00b7 2.71828\u2026' },
+  ];
+
+  function attachExprAutocomplete(input, list, activeWhen) {
+    let items = [];
+    let active = -1;
+
+    function currentToken() {
+      const val = input.value;
+      const pos = input.selectionStart || 0;
+      let i = pos - 1;
+      while (i >= 0 && /[A-Za-z0-9_]/.test(val[i])) i--;
+      return { tok: val.slice(i + 1, pos), ref: i >= 0 && val[i] === '[', start: i + 1, pos };
+    }
+
+    function candidates() {
+      const t = currentToken();
+      if (t.ref) {
+        const q = t.tok.toLowerCase();
+        return EXPR_REFS.filter(r => r.name.toLowerCase().startsWith(q))
+          .map(r => ({ kind: 'ref', name: r.name, d: r.d }));
+      }
+      if (!t.tok) return [];
+      const q = t.tok.toLowerCase();
+      return EXPR_FUNCS.filter(f => f.name.toLowerCase().startsWith(q))
+        .map(f => ({ kind: 'fn', name: f.name, d: f.d }));
+    }
+
+    function render() {
+      items = candidates();
+      active = items.length ? 0 : -1;
+      list.innerHTML = items.map((c, i) =>
+        `<div class="expr-row${i === active ? ' active' : ''}" data-i="${i}">
+           <span class="kind-chip">${c.kind === 'ref' ? 'REF' : 'FN'}</span>
+           <span class="expr-name">${c.kind === 'ref' ? '[' + esc(c.name) + ']' : esc(c.name)}</span>
+           <span class="expr-desc">${esc(c.d)}</span>
+         </div>`).join('');
+      list.hidden = !items.length;
+    }
+
+    function choose(c) {
+      const t = currentToken();
+      const text = c.kind === 'ref' ? '[' + c.name + ']' : c.name + '(';
+      input.value = input.value.slice(0, t.start) + text + input.value.slice(t.pos);
+      const caret = t.start + text.length;
+      input.focus();
+      input.setSelectionRange(caret, caret);
+      hide();
+    }
+
+    function hide() {
+      list.hidden = true;
+      items = [];
+      active = -1;
+    }
+
+    function setActive(i) {
+      active = i;
+      list.querySelectorAll('.expr-row').forEach((r, j) => r.classList.toggle('active', j === i));
+    }
+
+    input.addEventListener('input', () => {
+      if (activeWhen && !activeWhen()) { hide(); return; }
+      render();
+    });
+    input.addEventListener('keydown', e => {
+      if (list.hidden || !items.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActive((active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length);
+      } else if (e.key === 'Tab' || e.key === 'Enter') {
+        if (active >= 0 && items[active]) { e.preventDefault(); choose(items[active]); }
+      } else if (e.key === 'Escape') {
+        hide();
+      }
+    });
+    input.addEventListener('blur', () => setTimeout(hide, 120));
+    list.addEventListener('mousedown', e => {
+      const row = e.target.closest('.expr-row');
+      if (!row) return;
+      e.preventDefault(); // keep the input focused
+      choose(items[+row.dataset.i]);
+    });
+  }
+
+  // ---- Detail switching -------------------------------------------------------
+  function showDetail(id, title, kind, device) {
+    document.querySelectorAll('.detail-block').forEach(b => b.hidden = true);
+    const block = $(id);
+    block.hidden = false;
+    if (title !== undefined) {
+      const h1 = block.querySelector('h1');
+      h1.textContent = title;
+      const chip = block.querySelector('.detail-head .chip');
+      if (chip) chip.textContent = kind;
+      const ref = block.querySelector('.device-ref');
+      if (ref) {
+        ref.textContent = device;
+        if (ref.tagName === 'A') ref.href = 'devices-v4.html?device=' + device;
+      }
+    }
+  }
+
+  function guessKind(c) {
+    if (c.startsWith('button')) return 'Button';
+    if (c.startsWith('led')) return 'LED';
+    if (c.startsWith('screen')) return 'Display';
+    return 'Control';
+  }
+
+  function fillGeneric(row, device) {
+    $('gTitle').textContent = row.c;
+    $('gKind').textContent = row.kindGuess || guessKind(row.c);
+    $('gRef').textContent = device;
+    $('gRef').href = 'devices-v4.html?device=' + device;
+    const aKind = $('gActionKind');
+    if (aKind) {
+      aKind.textContent = row.b;
+      $('gActionTitle').textContent = row.b === 'CMD' ? 'Send command' : row.b === 'SET' ? 'Set a value' : 'Output';
+      $('gTarget').textContent = row.x;
+      if (row.b === 'CMD' && row.ph) {
+        $('gPhaseRow').hidden = false;
+        $('gPhase').textContent = row.ph;
+        $('gPhaseHelp').textContent = row.ph === 'begin / end'
+          ? 'Press sends the begin command, release sends the end command. The sim holds the action while the control is held.'
+          : 'Sent once on press. This command has no end phase, so release is ignored.';
+        $('gPhaseHelp').hidden = false;
+      } else {
+        $('gPhaseRow').hidden = true;
+        $('gPhaseHelp').hidden = true;
+      }
+    }
+    if (row.w) {
+      $('gWhenCard').hidden = false;
+      const v = $('gWhenVal');
+      v.textContent = row.w;
+      v.style.color = row.wp ? 'var(--amber)' : '';
+    } else {
+      $('gWhenCard').hidden = true;
+    }
+    renderSrcCard('detailGeneric', row.c);
+    showDetail('detailGeneric');
+  }
+
+  function detailFor(row) {
+    if (row.detail) return row.detail;
+    if (row.isNew) return tab === 'inputs' ? 'detailNewIn' : 'detailNewOut';
+    return 'detailGeneric';
+  }
+
+  // ---- Middle column rendering -------------------------------------------------
+  function rowHtml(r, dimmed) {
+    const warn = r.problem
+      ? '<span class="warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></span>'
+      : (r.live ? `<span class="live">${esc(r.live)}</span>` : '');
+    const none = r.none ? ' none' : '';
+    const phase = r.b === 'CMD' && r.ph
+      ? `<span class="kind-chip phase${r.ph === 'begin / end' ? ' on' : ''}">${esc(r.ph)}</span>`
+      : '';
+    return `<div class="binding-row${r.sel ? ' selected' : ''}" data-c="${esc(r.c)}" data-detail="${detailFor(r)}">
+      <div class="l1">
+        <span class="ctrl${r.problem ? ' problem' : ''}">${esc(r.c)}</span>
+        <span class="event">${esc(r.ev || '')}</span>
+        ${warn}
+      </div>
+      <div class="l2">
+        <span class="kind-chip">${esc(r.b)}</span>
+        ${phase}
+        <span class="expr${none}">${esc(r.x)}</span>
+        ${r.w ? `<span class="when${r.wp ? ' problem' : ''}">${esc(r.w)}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function renderRows() {
+    const d = DEV[current];
+    const rows = tab === 'inputs' ? d.inputs : d.outputs;
+    const area = $('rowsArea');
+    area.innerHTML = rows.length
+      ? rows.map(r => rowHtml(r)).join('')
+      : `<div class="empty-state">
+           No ${tab === 'inputs' ? 'inputs' : 'outputs'} on ${current} yet.<br>
+           ${tab === 'inputs'
+             ? 'Add a control to start binding it.'
+             : `Outputs drive this device's LEDs and displays from the simulator.`}
+           <button class="btn outline add" data-open-picker>+ Add ${tab === 'inputs' ? 'input' : 'output'}</button>
+         </div>`;
+    area.classList.toggle('list-dimmed', !d.connected);
+
+    area.querySelectorAll('.binding-row').forEach(row => {
+      row.addEventListener('click', () => {
+        area.querySelectorAll('.binding-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        const r = DEV[current][tab].find(x => x.c === row.dataset.c);
+        const id = row.dataset.detail;
+        if (id === 'detailGeneric') fillGeneric(r, current);
+        else if (id === 'detailNewIn' || id === 'detailNewOut') {
+          showDetail(id, r.c, r.kindGuess || guessKind(r.c), current);
+        } else showDetail(id);
+      });
+    });
+
+    area.querySelectorAll('[data-open-picker]').forEach(b => b.addEventListener('click', () => togglePicker(true)));
+
+    $('inputsCount').textContent = d.inputs.length;
+    $('outputsCount').textContent = d.outputs.length;
+  }
+
+  function selectDevice(id) {
+    current = id;
+    const d = DEV[id];
+    document.querySelectorAll('.device-card[data-device]').forEach(c =>
+      c.classList.toggle('selected', c.dataset.device === id));
+    $('bindingDeviceName').textContent = id;
+    $('bindingDeviceKind').textContent = d.kind;
+    const pill = $('bindingDevicePill');
+    pill.className = 'chip ' + (d.connected ? 'ok' : 'off');
+    pill.innerHTML = d.connected ? '<span class="dot"></span>connected' : '<span class="ring"></span>not connected';
+    $('bindingControlsCount').textContent = d.controls + ' controls';
+    $('connNote').hidden = d.connected;
+    $('learnDevice').textContent = id;
+    const addBtn = $('addBtn');
+    addBtn.disabled = !d.connected;
+    addBtn.textContent = tab === 'inputs' ? '+ Add input' : '+ Add output';
+    togglePicker(false);
+    renderRows();
+    const first = DEV[id][tab][0];
+    if (first) {
+      const id2 = detailFor(first);
+      if (id2 === 'detailGeneric') fillGeneric(first, id);
+      else if (first.isNew) showDetail(id2, first.c, first.kindGuess || guessKind(first.c), id);
+      else showDetail(id2);
+      const el = document.querySelector(`#rowsArea .binding-row[data-c="${CSS.escape(first.c)}"]`);
+      if (el) el.classList.add('selected');
+    }
+  }
+
+  // ---- Picker ------------------------------------------------------------------
+  function togglePicker(open) {
+    const p = $('picker');
+    if (open && !DEV[current].connected) return;
+    p.hidden = !open;
+    if (!open) return;
+    const items = tab === 'inputs' ? DEV[current].addIn : DEV[current].addOut;
+    const taken = new Set((tab === 'inputs' ? DEV[current].inputs : DEV[current].outputs).map(r => r.c));
+    const avail = items.filter(i => !taken.has(i.c));
+    $('pickerTitle').textContent = tab === 'inputs' ? 'Pick an input' : 'Pick an output';
+    $('pickerDevice').textContent = current;
+    $('pickerList').innerHTML = avail.length
+      ? avail.map(i => `<div class="picker-row" data-pick="${esc(i.c)}" data-kind="${esc(i.k)}">
+            <span class="pid">${esc(i.c)}</span>
+            <span class="pdesc">${esc(i.k)} · ${esc(i.d)}</span>
+            <span class="pplus">+</span>
+          </div>`).join('')
+      : '<div class="picker-empty">All ' + (tab === 'inputs' ? 'inputs' : 'outputs') + ' on ' + current + ' are already added.</div>';
+    $('pickerList').querySelectorAll('.picker-row').forEach(row => {
+      row.addEventListener('click', () => addPick(row.dataset.pick, row.dataset.kind));
+    });
+  }
+
+  function addPick(controlId, kind) {
+    const d = DEV[current];
+    const item = (tab === 'inputs' ? d.addIn : d.addOut).find(i => i.c === controlId);
+    if (!item) return;
+    const ev = tab === 'inputs' ? 'Pressed' : kind;
+    const row = {
+      c: controlId,
+      ev,
+      b: tab === 'inputs' ? 'CMD' : 'OUT',
+      x: tab === 'inputs' ? '— no action yet' : '— no source yet',
+      none: true,
+      kindGuess: kind,
+      sel: true,
+      isNew: true,
+    };
+    if (tab === 'inputs') d.inputs.push(row); else d.outputs.push(row);
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    togglePicker(false);
+    renderRows();
+    const newRow = document.querySelector(`#rowsArea .binding-row[data-c="${CSS.escape(controlId)}"]`);
+    if (newRow) newRow.scrollIntoView({ block: 'nearest' });
+    showDetail(tab === 'inputs' ? 'detailNewIn' : 'detailNewOut', controlId, kind, current);
+  }
+
+  // ---- Add-action picker ---------------------------------------------------------
+  // Type-driven: the user types the target (X-Plane dataref or MSFS var) and picks
+  // the phase. Known sample commands report whether they support begin / end.
+  const AP_PHASE_SUPPORT = [
+    { match: 'sim/autopilot/LNAV', ph: 'begin / end' },
+    { match: 'sim/autopilot/ALT_SEL', ph: 'begin / end' },
+    { match: 'sim/brakes/hold', ph: 'begin / end' },
+    { match: 'sim/starters/engage_starter_1', ph: 'begin / end' },
+    { match: 'sim/starters/engage_starter_2', ph: 'begin / end' },
+    { match: 'sim/audio/ptt', ph: 'begin / end' },
+    { match: 'sim/cdu/init', ph: 'trigger' },
+    { match: 'sim/cdu/menu', ph: 'trigger' },
+    { match: 'sim/wipers/blink', ph: 'trigger' },
+    { match: 'sim/gear/down', ph: 'trigger' },
+  ];
+  const AP = { kind: 'cmd', phase: 'trigger', mode: 'value', ref: null, locked: false };
+
+  function apPhaseSupport(text) {
+    const key = text.trim().toLowerCase();
+    if (!key) return null;
+    return AP_PHASE_SUPPORT.find(t => t.match.toLowerCase() === key || t.match.toLowerCase().endsWith('/' + key)) || null;
+  }
+
+  function setApPhase(phase, lock) {
+    AP.phase = phase;
+    AP.locked = !!lock;
+    $('apPhaseSeg').classList.toggle('locked', lock);
+    $('apPhaseSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.phase === phase));
+    $('apPhaseHelp').textContent = phase === 'trigger'
+      ? 'Fires once on press. Release is ignored.'
+      : phase === 'begin'
+        ? 'Fires on press. It pairs with the End action (on release).'
+        : 'Fires on release. It pairs with the Begin action (on press).';
+  }
+
+  function updateApStatus() {
+    const status = $('apStatus');
+    const t = AP.kind === 'cmd' ? apPhaseSupport($('apTarget').value) : null;
+    if (!t) {
+      status.hidden = true;
+      if (AP.locked) setApPhase(AP.phase, false);
+      return;
+    }
+    status.hidden = false;
+    if (t.ph === 'begin / end') {
+      status.innerHTML = '<span class="chip ok"><span class="dot"></span>supports begin / end</span><span>Pick Begin (on press) or End (on release).</span>';
+      if (AP.locked) setApPhase(AP.phase, false);
+    } else {
+      status.innerHTML = '<span class="chip">trigger only</span><span>No begin / end phases. Phase is set to Trigger.</span>';
+      setApPhase('trigger', true);
+    }
+  }
+
+  function setApKind(kind) {
+    AP.kind = kind;
+    $('apKind').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.kind === kind));
+    const cmd = kind === 'cmd';
+    $('apPhaseCard').hidden = !cmd;
+    $('apValueCard').hidden = cmd;
+    $('apTarget').placeholder = cmd ? 'sim/autopilot/LNAV' : 'var:fn';
+    $('apTargetHint').textContent = cmd
+      ? 'Type the X-Plane dataref or MSFS var this command targets.'
+      : 'Type the X-Plane dataref, MSFS var, variable (var:) or output (out:) to set.';
+    updateApStatus();
+    refreshApAdd();
+  }
+
+  function renderApValuePlaceholder() {
+    const input = $('apValueInput');
+    if (document.activeElement === input) return;
+    input.placeholder = AP.mode === 'expr' ? 'Min([alt_dial] + 100, 50000)' : '1';
+  }
+
+  // "From ref" lists the refs the value can come from; pick one.
+  function renderApRefs() {
+    const list = $('apRefList');
+    list.innerHTML = SRC_CANDIDATES.map(c =>
+      `<div class="picker-row${AP.ref === c.id ? ' selected' : ''}" data-ref="${esc(c.id)}">
+         <span class="kind-chip">${c.k}</span>
+         <span class="pid">${esc(c.id)}</span>
+         <span class="pdesc">${esc(c.d)}</span>
+       </div>`).join('');
+    list.querySelectorAll('.picker-row').forEach(row => row.addEventListener('click', () => {
+      AP.ref = row.dataset.ref;
+      renderApRefs();
+      refreshApAdd();
+    }));
+  }
+
+  function syncApValueBody() {
+    const refMode = AP.kind === 'set' && AP.mode === 'ref';
+    const exprMode = AP.kind === 'set' && AP.mode === 'expr';
+    $('apValueWrap').hidden = refMode;
+    $('apExprHelp').hidden = !exprMode;
+    $('apRefList').hidden = !refMode;
+    if (!refMode) renderApValuePlaceholder();
+  }
+
+  function refreshApAdd() {
+    let ok = !!$('apTarget').value.trim();
+    if (AP.kind === 'set' && AP.mode === 'ref') ok = ok && !!AP.ref;
+    $('apAdd').disabled = !ok;
+  }
+
+  function buildApCard() {
+    const target = $('apTarget').value.trim();
+    if (AP.kind === 'cmd') {
+      const help = AP.phase === 'trigger'
+        ? 'One-shot command: fires on press; release is ignored.'
+        : AP.phase === 'begin'
+          ? 'Fires on press. The End action (on release) closes the command.'
+          : 'Fires on release. It pairs with the Begin action on press.';
+      return `<div class="card">
+        <div class="card-h"><span class="kind-chip">CMD</span>Send command<button class="card-del" type="button" title="Remove action">&times;</button></div>
+        <div class="card-b" style="padding:12px 16px">
+          <div class="kv"><span class="k">Target</span><span class="v mono">${esc(target)}</span></div>
+          <div class="kv"><span class="k">Phase</span><span class="v mono">${AP.phase}</span></div>
+          <div class="help">${help}</div>
+        </div>
+      </div>`;
+    }
+    const mode = AP.mode === 'value' ? 'literal' : AP.mode === 'ref' ? 'from ref' : 'expression';
+    const val = AP.mode === 'ref'
+      ? (AP.ref || '&mdash;')
+      : $('apValueInput').value.trim() || '&mdash;';
+    return `<div class="card">
+      <div class="card-h"><span class="kind-chip">SET</span>Set a value<button class="card-del" type="button" title="Remove action">&times;</button></div>
+      <div class="card-b" style="padding:12px 16px">
+        <div class="kv"><span class="k">Target</span><span class="v mono">${esc(target)}</span></div>
+        <div class="kv"><span class="k">Value</span><span class="v mono">${esc(val)}  (${mode})</span></div>
+      </div>
+    </div>`;
+  }
+
+  function openAp(kind) {
+    const block = document.querySelector('.detail-block:not([hidden])');
+    const h1 = block && block.querySelector('h1');
+    $('apContext').textContent = h1 ? h1.textContent : 'this binding';
+    $('actionPicker').hidden = false;
+    $('apTarget').value = '';
+    $('apValueInput').value = '';
+    AP.ref = null;
+    AP.mode = 'value';
+    $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === 'value'));
+    setApPhase('trigger', false);
+    setApKind(kind || 'cmd');
+    renderApRefs();
+    syncApValueBody();
+    $('apTarget').focus();
+  }
+  function closeAp() { $('actionPicker').hidden = true; }
+
+  $('apClose').addEventListener('click', closeAp);
+  document.querySelectorAll('.add-action').forEach(b => b.addEventListener('click', () => openAp()));
+  $('apKind').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b) setApKind(b.dataset.kind);
+  });
+  $('apTarget').addEventListener('input', () => {
+    updateApStatus();
+    refreshApAdd();
+  });
+  $('apPhaseSeg').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || AP.locked) return;
+    setApPhase(b.dataset.phase, false);
+  });
+  $('apValueSeg').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    AP.mode = b.dataset.mode;
+    $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    syncApValueBody();
+    refreshApAdd();
+  });
+  $('apAdd').addEventListener('click', () => {
+    if ($('apAdd').disabled) return;
+    const block = document.querySelector('.detail-block:not([hidden])');
+    if (!block) return;
+    const ph = block.querySelector('.action-placeholder');
+    if (ph) ph.remove();
+    const card = buildApCard();
+    const addBtn = block.querySelector('.add-action');
+    if (addBtn) block.insertBefore(card, addBtn); else block.appendChild(card);
+    unsaved++;
+    $('unsavedCount').textContent = unsaved;
+    // Reset the form, keep the picker open: add the next action without reopening.
+    $('apTarget').value = '';
+    $('apValueInput').value = '';
+    AP.ref = null;
+    AP.mode = 'value';
+    $('apValueSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.mode === 'value'));
+    setApPhase('trigger', false);
+    setApKind('cmd');
+    renderApRefs();
+    syncApValueBody();
+    $('apTarget').focus();
+  });
+
+  // Delegated: remove actions, add / remove sources, and the picker shortcuts.
+  document.querySelector('.col.detail').addEventListener('click', e => {
+    const t = e.target;
+    const delBtn = t.closest('.card-del');
+    if (delBtn) {
+      delBtn.closest('.card').remove();
+      unsaved++;
+      $('unsavedCount').textContent = unsaved;
+      return;
+    }
+    const srcDel = t.closest('.src-del');
+    if (srcDel) {
+      const item = srcDel.closest('.src-item');
+      removeSource(item.closest('.detail-block').id, item.dataset.src);
+      return;
+    }
+    const srcAdd = t.closest('[data-src-add]');
+    if (srcAdd) {
+      e.preventDefault();
+      const blockEl = srcAdd.closest('.detail-block');
+      const cardEl = srcAdd.closest('.card[data-srcs]') || blockEl.querySelector('.card[data-srcs]');
+      const add = cardEl && cardEl.querySelector('.src-add');
+      if (add) add.hidden = !add.hidden;
+      return;
+    }
+    const srcRow = t.closest('.src-add .picker-row');
+    if (srcRow) {
+      const card = srcRow.closest('.card[data-srcs]');
+      addSource(card.closest('.detail-block').id, srcRow.dataset.ref, card.hasAttribute('data-single'));
+      return;
+    }
+    const openApLink = t.closest('[data-open-ap]');
+    if (openApLink) {
+      e.preventDefault();
+      openAp(openApLink.dataset.openAp);
+    }
+  });
+
+  // Expression autocomplete: the picker (expressions only) and the seeded
+  // expression input on the alt-up card.
+  attachExprAutocomplete($('apValueInput'), $('apExprList'), () => AP.kind === 'set' && AP.mode === 'expr');
+  attachExprAutocomplete($('altExprInput'), $('altExprList'));
+
+  // ---- Wiring --------------------------------------------------------------------
+  document.querySelectorAll('.device-card[data-device]').forEach(card => {
+    card.addEventListener('click', () => selectDevice(card.dataset.device));
+  });
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      tab = t.dataset.tab;
+      const d = DEV[current];
+      $('addBtn').textContent = tab === 'inputs' ? '+ Add input' : '+ Add output';
+      $('addBtn').disabled = !d.connected;
+      togglePicker(false);
+      renderRows();
+    });
+  });
+
+  $('addBtn').addEventListener('click', () => togglePicker(!$('picker').hidden));
+  $('pickerClose').addEventListener('click', () => togglePicker(false));
+
+  // "Show" in the At-load problem line.
+  $('showProblem').addEventListener('click', e => {
+    e.preventDefault();
+    selectDevice('pap3');
+    tab = 'inputs';
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === 'inputs'));
+    renderRows();
+    const lnav = document.querySelector('#rowsArea .binding-row[data-c="button:lnav"]');
+    if (lnav) {
+      document.querySelectorAll('#rowsArea .binding-row').forEach(r => r.classList.remove('selected'));
+      lnav.classList.add('selected');
+      lnav.scrollIntoView({ block: 'nearest' });
+      showDetail('detailLnav');
+    }
+  });
+
+  // Learn mode.
+  const learnBtn = $('learnBtn');
+  const learnNote = $('learnNote');
+  const setLearn = on => {
+    learnNote.hidden = !on;
+    learnBtn.classList.toggle('active', on);
+  };
+  learnBtn.addEventListener('click', () => setLearn(learnNote.hidden));
+  $('stopLearn').addEventListener('click', e => { e.preventDefault(); setLearn(false); });
+
+  // Segmented controls.
+  document.querySelectorAll('.seg[data-group]').forEach(seg => {
+    seg.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  const params = new URLSearchParams(location.search);
+  const fit = params.get('fit');
+  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
+
+  // Initial state.
+  ['detailAlt', 'detailLnav', 'detailNewIn', 'detailNewOut'].forEach(id => renderSrcCard(id));
+  selectDevice('pap3');
+
+  // ?device=bravo|pap3|mcdu, ?tab=outputs, ?add=1 open alternate states for review.
+  const deviceParam = params.get('device');
+  if (deviceParam && DEV[deviceParam]) selectDevice(deviceParam);
+  if (params.get('tab') === 'outputs') document.querySelector('.tab[data-tab="outputs"]').click();
+  if (params.get('add')) togglePicker(true);
+</script>
+</body>
+</html>

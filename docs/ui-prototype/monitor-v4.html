@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck - Monitor, calm v4</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
+
+  .app { grid-template-columns: 92px 1fr; }
+
+  .col.main { grid-column: 2; }
+
+  .col-head .actions { margin-left: auto; align-self: center; display: flex; align-items: center; gap: 8px; }
+
+  /* ============ Stats ============ */
+
+  .stat-row { grid-template-columns: repeat(4, 1fr); }
+
+  /* ============ Filters ============ */
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .filter-row .input { width: 220px; }
+  .kind-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .kind-chip { cursor: pointer; }
+  .kind-chip:not(.active) { opacity: 0.45; }
+
+  /* ============ Event stream ============ */
+
+  .chip.cyan { color: var(--cyan); background: var(--cyan-bg); border-color: var(--cyan-line); }
+  .chip.vio { color: var(--violet); background: var(--violet-bg); border-color: var(--violet-line); }
+  .card-h .chip { margin-left: auto; }
+
+  .event-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 12px;
+  }
+  .event-row:last-child { border-bottom: none; }
+  .event-row:hover { background: var(--inset); }
+  .event-row.flash { animation: event-in 0.9s ease; }
+  @keyframes event-in {
+    0% { background: var(--cyan-bg); }
+    100% { background: transparent; }
+  }
+
+  .e-time { width: 70px; flex: none; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); }
+  .e-dev {
+    width: 165px;
+    flex: none;
+    font-weight: 600;
+    font-size: 12.5px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .e-vid { color: var(--text-3); font-size: 10.5px; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .e-ctl { width: 120px; flex: none; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-2); }
+  .e-kind { width: 90px; flex: none; justify-content: center; }
+  .e-val { width: 56px; flex: none; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-2); text-align: right; }
+  .e-route { margin-left: auto; font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+  .e-route.set { color: var(--cyan); }
+  .e-route.warn { color: var(--amber); }
+  .e-route.dim { color: var(--text-3); font-style: italic; }
+
+  .stream-empty { padding: 26px 16px; color: var(--text-3); font-size: 12.5px; text-align: center; }
+
+  .stream-help { margin-top: 10px; }
+
+  /* Scrollbars: see design-system.css. */
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <div class="brand">Crossdeck</div>
+    <a class="profile-chip" href="profiles-v4.html">
+      <span class="name">Zibo 737 - Bravo + PAP3</span>
+      <span class="sim">X-Plane &middot; B738</span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </a>
+    <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
+    <span class="status-pill warn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      1 left out
+    </span>
+    <span class="spacer"></span>
+    <span class="unsaved" id="unsavedEl" hidden><span id="unsavedCount">0</span> unsaved</span>
+    <button class="btn outline" id="learnBtn">Learn</button>
+    <button class="btn primary">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </header>
+
+  <!-- ============ Rail (Monitor active, cross-page navigation) ============ -->
+  <nav class="rail">
+    <a class="rail-item" href="profiles-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Profiles
+    </a>
+    <a class="rail-item" href="devices-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+      Devices
+    </a>
+    <a class="rail-item" href="editor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Editor
+    </a>
+    <a class="rail-item" href="variables-v4.html">
+      <span class="glyph-braces">{ }</span>
+      Variables
+    </a>
+    <a class="rail-item active" href="monitor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+      Monitor
+      <span class="rail-badge" id="railBadge">0</span>
+    </a>
+    <span class="push"></span>
+    <a class="rail-item" href="settings-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+      Settings
+    </a>
+  </nav>
+
+  <!-- ============ Main column: live event stream ============ -->
+  <main class="col main">
+    <div class="col-head">
+      <h1>Monitor</h1>
+      <span class="sub">every device input event, replayed as it happens</span>
+      <div class="actions">
+        <button class="btn secondary" id="pauseBtn" type="button">Pause</button>
+        <button class="btn outline" id="clearBtn" type="button">Clear</button>
+      </div>
+    </div>
+
+    <div class="problem-line">
+      <span class="txt">pap3 button:lnav &middot; Only when: unknown name [pwr] &middot; 1 control left out of the profile</span>
+      <a href="editor-v4.html?device=pap3">Fix in Editor</a>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat cyan">
+        <div class="n" id="statEvents">0</div>
+        <div class="l">events in buffer</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="statRate">0.0</div>
+        <div class="l">per second</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="statDevices">0</div>
+        <div class="l">devices reporting</div>
+      </div>
+      <div class="stat amber">
+        <div class="n" id="statRouted">0</div>
+        <div class="l">routed to bindings</div>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <input class="input" id="filterInput" type="text" placeholder="Filter device, control&#8230;">
+      <div class="kind-chips" id="kindChips">
+        <button class="chip kind-chip active" data-kind="Pressed" type="button">Pressed</button>
+        <button class="chip kind-chip active" data-kind="Released" type="button">Released</button>
+        <button class="chip kind-chip active" data-kind="Increment" type="button">Increment</button>
+        <button class="chip kind-chip active" data-kind="Decrement" type="button">Decrement</button>
+        <button class="chip kind-chip active" data-kind="HatChanged" type="button">Hat</button>
+        <button class="chip kind-chip active" data-kind="AxisChanged" type="button">Axis</button>
+        <button class="chip kind-chip active" data-kind="PositionChanged" type="button">Position</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">Events<span class="sub">newest first</span><span class="chip ok" id="streamState"><span class="dot"></span>live</span></div>
+      <div id="streamArea"></div>
+    </div>
+    <div class="help stream-help">Replays IInputMonitor.Recent: a bounded buffer of the last 256 events, oldest dropped. Pause to freeze the stream; the rail badge counts buffered events.</div>
+  </main>
+
+</div>
+
+<script>
+  // Mirrors DeviceInputEvent(Identity, Control, Kind, Value, Timestamp) from
+  // Crossdeck.Core.Devices.Models. IInputMonitor.Recent is InputDispatcher's
+  // bounded (256, DropOldest) replay channel; the scripted feed below simulates
+  // that stream. Route hints reuse the profile's known input bindings.
+  const BUFFER_CAP = 256;
+
+  const DEVICES = {
+    bravo: '294B:1901',
+    pap3: '4098:BF0F',
+    r5: '011C:1111',
+  };
+
+  // Which binding an event hits in the active profile (bnd-fn, bnd-alt-btn),
+  // or the left-out control from the profile load.
+  const ROUTES = {
+    'bravo:button:30': { text: 'sets fn' },
+    'pap3:button:14': { text: 'alt \u00b7 only when fn == 0' },
+    'pap3:button:lnav': { text: 'left out \u00b7 unknown [pwr]', cls: 'warn' },
+  };
+
+  // InputEventKind: Pressed, Released, Increment, Decrement, HatChanged,
+  // AxisChanged, PositionChanged.
+  const KINDS = {
+    Pressed: { short: 'Pressed', cls: 'ok' },
+    Released: { short: 'Released', cls: '' },
+    Increment: { short: 'Inc', cls: 'cyan' },
+    Decrement: { short: 'Dec', cls: 'cyan' },
+    HatChanged: { short: 'Hat', cls: 'vio' },
+    AxisChanged: { short: 'Axis', cls: 'cyan' },
+    PositionChanged: { short: 'Pos', cls: 'vio' },
+  };
+
+  // [device, control, kind, value]. mcdu is not connected and winctrl has no
+  // inputs, so neither reports.
+  const SCRIPT = [
+    ['bravo', 'button:30', 'Pressed', null],
+    ['r5', 'axis:steer', 'AxisChanged', 0.42],
+    ['pap3', 'button:14', 'Pressed', null],
+    ['bravo', 'button:30', 'Released', null],
+    ['r5', 'axis:steer', 'AxisChanged', -0.21],
+    ['pap3', 'button:lnav', 'Pressed', null],
+    ['pap3', 'button:14', 'Released', null],
+    ['bravo', 'button:7', 'Pressed', null],
+    ['r5', 'button:1', 'Pressed', null],
+    ['pap3', 'button:2', 'Pressed', null],
+    ['bravo', 'button:30', 'Pressed', null],
+    ['r5', 'axis:steer', 'AxisChanged', 0],
+  ];
+
+  const BUFFER = [];
+  let paused = false;
+  let scriptIdx = 0;
+  let activeKinds = new Set(Object.keys(KINDS));
+  let filter = '';
+
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // ---- Event feed --------------------------------------------------------------
+  function fmtTime(ts) {
+    const d = new Date(ts);
+    const p = n => String(n).padStart(2, '0');
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function makeEvent(ts) {
+    const [dev, control, kind, value] = SCRIPT[scriptIdx % SCRIPT.length];
+    scriptIdx++;
+    const t = ts != null ? ts : Date.now();
+    return { dev, control, kind, value, ts: t, time: fmtTime(t), vid: DEVICES[dev], route: ROUTES[dev + ':' + control] || null };
+  }
+
+  function scheduleNext() {
+    if (paused) return;
+    setTimeout(() => {
+      if (paused) return;
+      appendEvent();
+      scheduleNext();
+    }, 700 + Math.random() * 1400);
+  }
+
+  // ---- Rendering -----------------------------------------------------------------
+  function eventMatches(e) {
+    if (!activeKinds.has(e.kind)) return false;
+    if (!filter) return true;
+    return (e.dev + ' ' + e.vid + ' ' + e.control + ' ' + e.kind).toLowerCase().includes(filter);
+  }
+
+  function rowHtml(e, flash) {
+    const k = KINDS[e.kind];
+    const routeCls = e.route ? (e.route.cls === 'warn' ? 'warn' : 'set') : 'dim';
+    const routeTxt = e.route ? e.route.text : 'no binding';
+    return `<div class="event-row${flash ? ' flash' : ''}">
+      <span class="e-time">${e.time}</span>
+      <span class="e-dev">${esc(e.dev)}<span class="e-vid mono">${e.vid}</span></span>
+      <span class="e-ctl">${esc(e.control)}</span>
+      <span class="e-kind chip ${k.cls}">${k.short}</span>
+      <span class="e-val">${e.value != null ? e.value : '&ndash;'}</span>
+      <span class="e-route ${routeCls}">${esc(routeTxt)}</span>
+    </div>`;
+  }
+
+  function renderStream(flashFirst) {
+    const area = $('streamArea');
+    // Newest first: the buffer holds arrival order (the DropOldest ring),
+    // the view orders by timestamp.
+    const visible = BUFFER.filter(eventMatches).sort((a, b) => b.ts - a.ts);
+    area.innerHTML = visible.length
+      ? visible.map((e, i) => rowHtml(e, flashFirst && i === 0)).join('')
+      : '<div class="stream-empty">No events match &middot; waiting for device input&hellip;</div>';
+  }
+
+  function refreshStats() {
+    const now = Date.now();
+    $('statEvents').textContent = BUFFER.length;
+    $('statRate').textContent = (BUFFER.filter(e => now - e.ts < 10000).length / 10).toFixed(1);
+    $('statDevices').textContent = new Set(BUFFER.map(e => e.dev)).size;
+    $('statRouted').textContent = BUFFER.filter(e => e.route && e.route.cls !== 'warn').length;
+    $('railBadge').textContent = BUFFER.length;
+  }
+
+  function appendEvent() {
+    BUFFER.push(makeEvent());
+    if (BUFFER.length > BUFFER_CAP) BUFFER.shift(); // DropOldest
+    renderStream(true);
+    refreshStats();
+  }
+
+  // ---- Controls -------------------------------------------------------------------
+  $('pauseBtn').addEventListener('click', () => {
+    paused = !paused;
+    $('pauseBtn').textContent = paused ? 'Resume' : 'Pause';
+    $('pauseBtn').classList.toggle('active', paused);
+    const st = $('streamState');
+    if (paused) {
+      st.className = 'chip';
+      st.textContent = 'paused';
+    } else {
+      st.className = 'chip ok';
+      st.innerHTML = '<span class="dot"></span>live';
+      scheduleNext();
+    }
+  });
+
+  $('clearBtn').addEventListener('click', () => {
+    BUFFER.length = 0;
+    renderStream(false);
+    refreshStats();
+  });
+
+  $('filterInput').addEventListener('input', e => {
+    filter = e.target.value.trim().toLowerCase();
+    renderStream(false);
+  });
+
+  document.querySelectorAll('.kind-chip').forEach(c => c.addEventListener('click', () => {
+    const k = c.dataset.kind;
+    if (activeKinds.has(k)) { activeKinds.delete(k); c.classList.remove('active'); }
+    else { activeKinds.add(k); c.classList.add('active'); }
+    renderStream(false);
+  }));
+
+  // Keep the prototype's placeholder links from jumping the page.
+  document.addEventListener('click', e => {
+    if (e.target.closest('a[href="#"]')) e.preventDefault();
+  });
+
+  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  const params = new URLSearchParams(location.search);
+  const fit = params.get('fit');
+  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
+
+  // Review params: ?fill=1 backfills the buffer, ?paused=1 starts frozen.
+  if (params.get('fill')) {
+    for (let i = 12; i >= 1; i--) {
+      BUFFER.push(makeEvent(Date.now() - i * 900));
+    }
+    while (BUFFER.length > BUFFER_CAP) BUFFER.shift();
+    renderStream(false);
+    refreshStats();
+  }
+  if (params.get('paused')) {
+    paused = true;
+    $('pauseBtn').textContent = 'Resume';
+    $('pauseBtn').classList.add('active');
+    const st = $('streamState');
+    st.className = 'chip';
+    st.textContent = 'paused';
+  }
+  renderStream(false);
+  refreshStats();
+  scheduleNext();
+</script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck - Variables, calm v4</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
+
+  .app { grid-template-columns: 92px 1fr 420px; }
+
+  /* ============ Top bar, rail, columns: see design-system.css ============ */
+
+  .col.main { grid-column: 2; border-right: 1px solid var(--line-soft); }
+  .col.detail { grid-column: 3; background: var(--panel); }
+
+  .tab-row .btn.add { margin-left: auto; }
+
+  .phase-chip {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-line);
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
+  .tab .phase-chip { margin-left: 7px; }
+  .card-h .phase-chip { margin-left: 8px; }
+
+  /* ============ Variable table ============ */
+
+  .table-head,
+  .var-row {
+    display: grid;
+    grid-template-columns: 150px 64px 56px 1.15fr 1.35fr 24px;
+    column-gap: 14px;
+    align-items: center;
+  }
+  .table-head {
+    padding: 0 14px 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .var-row { padding: 11px 14px; border-radius: 8px; cursor: pointer; }
+  .var-row + .var-row { border-top: 1px solid var(--line-soft); }
+  .var-row:hover { background: var(--inset); }
+  .var-row.selected {
+    background: var(--cyan-bg);
+    box-shadow: inset 2px 0 0 var(--cyan);
+  }
+  .vname { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+  .vinit { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-2); }
+  .vlive { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--green); }
+  .vlive.off { font-weight: 400; color: var(--text-3); }
+  .vrefs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vnone { font-size: 11.5px; color: var(--text-3); font-style: italic; }
+  .row-del {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: var(--text-3);
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0;
+    flex: none;
+  }
+  .var-row:hover .row-del,
+  .var-row.selected .row-del { opacity: 1; }
+  .row-del:hover { color: var(--amber); background: var(--amber-bg); }
+
+  .chip.write, .chip.read { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.02em; }
+  .chip.write { color: var(--violet); background: var(--violet-bg); border-color: var(--violet-line); }
+  .chip.read { color: var(--cyan); background: var(--cyan-bg); border-color: var(--cyan-line); }
+  .chip.warn { font-size: 10.5px; }
+
+  .legend {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 12px 14px 0;
+    font-size: 11.5px;
+    color: var(--text-2);
+  }
+  .legend .swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+    margin-right: 7px;
+  }
+  .swatch.write { background: var(--violet); }
+  .swatch.read { background: var(--cyan); }
+  .lg-sub { color: var(--text-3); }
+  .lg-note { margin-left: auto; color: var(--text-3); }
+  /* ============ Cards and notes: see design-system.css ============ */
+
+  .logic-card { margin: 16px 0 0; }
+  .logic-body { padding: 13px 16px; color: var(--text-2); font-size: 12.5px; line-height: 1.55; }
+
+  /* ============ Detail column ============ */
+
+  .detail-head h1 {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+  .init-row { display: flex; align-items: center; gap: 10px; }
+  .init-row .input { width: 90px; flex: none; }
+
+  .ref-box {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    background: var(--inset);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 12px;
+    box-shadow: var(--shadow-0);
+  }
+  .ref-box + .ref-box { margin-top: 8px; }
+  .ref-id {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    flex: none;
+  }
+  .ref-box.write .ref-id { color: var(--violet); }
+  .ref-box.read .ref-id { color: var(--cyan); }
+  .ref-desc {
+    color: var(--text-3);
+    font-size: 12px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .refs-empty { color: var(--text-3); font-size: 12.5px; font-style: italic; }
+
+  .live-row { display: flex; align-items: baseline; gap: 10px; }
+  .live-value { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--green); }
+  .live-value.off { font-size: 16px; font-weight: 400; color: var(--text-3); }
+  .live-note { color: var(--text-3); font-size: 12px; }
+
+  .remove-action {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text-2);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+    box-shadow: var(--shadow-0);
+  }
+  .remove-action:hover { border-color: var(--amber-line); color: var(--amber); }
+  .remove-action svg { color: var(--text-3); }
+  .remove-action:hover svg { color: var(--amber); }
+
+  .save-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 10px;
+    color: var(--text-3);
+    font-size: 11.5px;
+  }
+  .save-hint[hidden] { display: none; }
+  .save-hint .dot { width: 6px; height: 6px; background: var(--amber); }
+  .save-hint .n { color: var(--amber); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <div class="brand">Crossdeck</div>
+    <a class="profile-chip" href="profiles-v4.html">
+      <span class="name">Zibo 737 - Bravo + PAP3</span>
+      <span class="sim">X-Plane · B738</span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </a>
+    <span class="status-pill ok"><span class="dot"></span>X-Plane ready · B738</span>
+    <span class="status-pill warn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      1 left out
+    </span>
+    <span class="spacer"></span>
+    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
+    <button class="btn outline" id="learnBtn">Learn</button>
+    <button class="btn primary">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </header>
+
+  <!-- ============ Rail (Variables active, cross-page navigation) ============ -->
+  <nav class="rail">
+    <a class="rail-item" href="profiles-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Profiles
+    </a>
+    <a class="rail-item" href="devices-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+      Devices
+    </a>
+    <a class="rail-item" href="editor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Editor
+    </a>
+    <a class="rail-item active" href="variables-v4.html">
+      <span class="glyph-braces">{ }</span>
+      Variables
+    </a>
+    <a class="rail-item" href="monitor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+      Monitor
+      <span class="rail-badge">3</span>
+    </a>
+    <span class="push"></span>
+    <a class="rail-item" href="settings-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+      Settings
+    </a>
+  </nav>
+  <!-- ============ Main column: variable table ============ -->
+  <main class="col main">
+    <div class="tab-row">
+      <button class="tab active" id="tabVars">Variables<span class="tab-count" id="varsCount">2</span></button>
+      <button class="tab disabled" id="tabLogic" title="Computed variables (a value worked out from other refs) arrive in phase 2.">
+        Logic<span class="phase-chip">phase 2</span>
+      </button>
+      <button class="btn outline add" id="newVarBtn">+ New variable</button>
+    </div>
+
+    <div id="rowsArea"></div>
+
+    <div class="legend">
+      <span><span class="swatch write"></span>written by <span class="lg-sub">(sets the value)</span></span>
+      <span><span class="swatch read"></span>read by <span class="lg-sub">(uses it as a source)</span></span>
+      <span class="lg-note">Variables live in Crossdeck only. They are never sent to the sim.</span>
+    </div>
+
+    <div class="card logic-card">
+      <div class="card-h">Logic<span class="phase-chip">phase 2</span></div>
+      <div class="logic-body">
+        Computed variables (a value worked out from other refs) come later. Today a variable is plain: a binding sets it, others read it.
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ Detail column ============ -->
+  <aside class="col detail">
+    <div id="detailArea"></div>
+  </aside>
+
+</div>
+<script>
+  // ---- Sample data -----------------------------------------------------------
+  const VARS = [
+    {
+      name: 'fn',
+      initial: '0',
+      live: '1',
+      liveNote: 'since bravo button:30 was pressed · 4 s ago',
+      writtenBy: [ { id: 'bnd-fn', desc: 'bravo button:30 · Modifier', href: 'editor-v4.html?device=bravo' } ],
+      readBy: [
+        { id: 'bnd-alt-btn', desc: 'pap3 button:14 · Only when', href: 'editor-v4.html?device=pap3' },
+        { id: 'out-fn', desc: 'bravo led:fn · Value', href: 'editor-v4.html?device=bravo&tab=outputs' },
+        { id: 'out-cmd-a', desc: 'pap3 lcmd-a · Show when', href: 'editor-v4.html?device=pap3&tab=outputs' },
+      ],
+    },
+    {
+      name: 'presetAlt',
+      initial: '1000',
+      live: '1000',
+      liveNote: 'set when the profile was applied · unchanged',
+      writtenBy: [],
+      readBy: [ { id: 'bnd-alt-preset', desc: 'pap3 button:alt · Value', href: 'editor-v4.html?device=pap3' } ],
+    },
+  ];
+
+  let selected = 0;
+  let unsaved = 3;
+  let newSeq = 0;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // ---- Table rendering ---------------------------------------------------------
+  function rowHtml(v, i) {
+    const written = v.writtenBy.length
+      ? v.writtenBy.map(w => `<span class="chip write">${esc(w.id)}</span>`).join('')
+      : '<span class="chip warn">nothing writes it</span>';
+    const read = v.readBy.length
+      ? v.readBy.map(r => `<span class="chip read">${esc(r.id)}</span>`).join('')
+      : '<span class="vnone">nothing reads it</span>';
+    const live = v.live === undefined
+      ? '<span class="vlive off">&mdash;</span>'
+      : `<span class="vlive">${esc(v.live)}</span>`;
+    return `<div class="var-row${i === selected ? ' selected' : ''}" data-i="${i}">
+      <span class="vname">var:${esc(v.name)}</span>
+      <span class="vinit">${esc(v.initial)}</span>
+      ${live}
+      <span class="vrefs">${written}</span>
+      <span class="vrefs">${read}</span>
+      <button class="row-del" data-del="${i}" type="button" title="Remove variable">&times;</button>
+    </div>`;
+  }
+
+  function renderRows() {
+    const area = $('rowsArea');
+    if (!VARS.length) {
+      area.innerHTML = `<div class="empty-state">
+          No variables in this profile yet.<br>
+          A variable lets a binding remember a value across controls.
+        </div>`;
+    } else {
+      area.innerHTML = `<div class="table-head">
+          <span>Name</span><span>Initial</span><span>Live</span><span>Written by</span><span>Read by</span>
+        </div>` + VARS.map((v, i) => rowHtml(v, i)).join('');
+      area.querySelectorAll('.var-row').forEach(row => {
+        row.addEventListener('click', () => {
+          selected = +row.dataset.i;
+          render();
+        });
+        const del = row.querySelector('.row-del');
+        if (del) del.addEventListener('click', e => {
+          e.stopPropagation();
+          removeVariable(+del.dataset.del);
+        });
+      });
+    }
+    $('varsCount').textContent = VARS.length;
+  }
+
+  // ---- Detail rendering ---------------------------------------------------------
+  function refBox(r, kind) {
+    return `<div class="ref-box ${kind}">
+      <a class="ref-id" href="${esc(r.href || '#')}">${esc(r.id)}</a>
+      <span class="ref-desc">${esc(r.desc)}</span>
+    </div>`;
+  }
+
+  function renderDetail() {
+    const area = $('detailArea');
+    const v = VARS[selected];
+    if (!v) {
+      area.innerHTML = '<div class="detail-empty">Select a variable to see its details.</div>';
+      return;
+    }
+    const writers = v.writtenBy.length
+      ? v.writtenBy.map(w => refBox(w, 'write')).join('')
+      : `<div class="note-line">
+           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+           <span>Nothing writes this variable. It keeps its initial value (${esc(v.initial)}).</span>
+         </div>`;
+    const readers = v.readBy.length
+      ? v.readBy.map(r => refBox(r, 'read')).join('')
+      : '<div class="refs-empty">Nothing reads it yet.</div>';
+    const live = v.live === undefined
+      ? '<span class="live-value off">&mdash;</span><span class="live-note">waiting for a write</span>'
+      : `<span class="live-value">${esc(v.live)}</span><span class="live-note">${esc(v.liveNote || '')}</span>`;
+    area.innerHTML = `
+      <div class="detail-head">
+        <h1>var:${esc(v.name)}</h1>
+        <span class="chip">plain</span>
+      </div>
+      ${v.isNew ? `<div class="note-line info" style="margin-bottom:18px">
+           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+           <span>Just added. A variable does nothing until a binding writes to it.
+             <span class="fixes"><a href="editor-v4.html?device=pap3">Pick a writer</a></span>
+           </span>
+         </div>` : ''}
+      <div class="dsec" style="margin-top:0">
+        <div class="field-label">Name</div>
+        <input class="input mono" id="varNameInput" type="text" value="${esc(v.name)}">
+        <div class="help">Renaming updates every binding that uses it.</div>
+      </div>
+      <div class="dsec">
+        <div class="field-label">Initial value</div>
+        <div class="init-row">
+          <input class="input mono" id="varInitInput" type="text" value="${esc(v.initial)}">
+          <span class="chip">Number</span>
+        </div>
+        <div class="help">Set when the profile is applied.</div>
+      </div>
+      <div class="dsec">
+        <div class="field-label">Written by</div>
+        ${writers}
+      </div>
+      <div class="dsec">
+        <div class="field-label">Read by</div>
+        ${readers}
+      </div>
+      <div class="dsec">
+        <div class="field-label">Live</div>
+        <div class="live-row">${live}</div>
+      </div>
+      <button class="remove-action" id="removeVarBtn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Remove variable
+      </button>
+      <div class="save-hint" id="saveHint"${unsaved ? '' : ' hidden'}>
+        <span class="dot"></span>
+        <span><span class="n">${unsaved}</span> unsaved changes &middot; Save and apply in the top bar</span>
+      </div>`;
+    ['varNameInput', 'varInitInput'].forEach(id => {
+      const el = $(id);
+      if (el) el.addEventListener('change', () => {
+        unsaved++;
+        refreshUnsaved();
+      });
+    });
+  }
+
+  function render() {
+    renderRows();
+    renderDetail();
+  }
+
+  // ---- Unsaved tracking --------------------------------------------------------
+  function pulseUnsaved() {
+    const el = document.querySelector('.unsaved');
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+  }
+
+  function refreshUnsaved() {
+    $('unsavedCount').textContent = unsaved;
+    const hint = $('saveHint');
+    if (hint) {
+      hint.hidden = unsaved === 0;
+      const n = hint.querySelector('.n');
+      if (n) n.textContent = unsaved;
+    }
+    pulseUnsaved();
+  }
+  // ---- Add a variable ----------------------------------------------------------
+  function addVariable() {
+    newSeq++;
+    VARS.push({
+      name: newSeq === 1 ? 'new' : 'new-' + newSeq,
+      initial: '0',
+      live: undefined,
+      liveNote: 'waiting for a write',
+      writtenBy: [],
+      readBy: [],
+      isNew: true,
+    });
+    selected = VARS.length - 1;
+    unsaved++;
+    refreshUnsaved();
+    render();
+    const row = document.querySelector(`#rowsArea .var-row[data-i="${selected}"]`);
+    if (row) row.scrollIntoView({ block: 'nearest' });
+  }
+
+  function removeVariable(i) {
+    VARS.splice(i, 1);
+    if (VARS.length) {
+      selected = i < selected ? i : selected;
+      if (selected >= VARS.length) selected = VARS.length - 1;
+    } else {
+      selected = 0;
+    }
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  $('newVarBtn').addEventListener('click', addVariable);
+
+  // Keep the prototype's placeholder links from jumping the page,
+  // and route the detail's remove button to the selected variable.
+  document.addEventListener('click', e => {
+    if (e.target.closest('a[href="#"]')) e.preventDefault();
+    if (e.target.closest('#removeVarBtn')) removeVariable(selected);
+  });
+
+  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  const params = new URLSearchParams(location.search);
+  const fit = params.get('fit');
+  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
+
+  // Initial state, with review params: ?var=presetAlt, ?new=1, ?empty=1.
+  if (params.get('empty')) VARS.length = 0;
+  if (params.get('new')) addVariable();
+  else {
+    const varParam = params.get('var');
+    if (varParam) {
+      const i = VARS.findIndex(v => v.name === varParam);
+      if (i >= 0) selected = i;
+    }
+    render();
+  }
+</script>
+</body>
+</html>

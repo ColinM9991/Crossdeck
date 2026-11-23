@@ -1,9 +1,10 @@
+using Crossdeck.Application.Profiles.Validation;
 using Crossdeck.Core.Profiles;
 using Crossdeck.Core.Profiles.Models;
 using FluentValidation;
 using FluentValidation.Results;
 
-namespace Crossdeck.Application.Profiles.Validation;
+namespace Crossdeck.Application.Profiles;
 
 public sealed class ProfileValidator : IProfileValidator
 {

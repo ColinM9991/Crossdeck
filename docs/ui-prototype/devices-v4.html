@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck - Devices, calm v4</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page-specific styles. Shared tokens and primitives live in design-system.css. */
+
+  .app { grid-template-columns: 92px 1fr 420px; }
+  .app.preview-wide { grid-template-columns: 92px 1fr 780px; }
+
+  /* ============ Top bar, rail, columns: see design-system.css ============ */
+
+  .col.main { grid-column: 2; border-right: 1px solid var(--line-soft); }
+  .col.detail { grid-column: 3; background: var(--panel); }
+
+  .col-head .actions { margin-left: auto; align-self: center; display: flex; align-items: center; gap: 8px; }
+  .col-head .actions .btn.add { margin-left: 0; }
+
+  /* ============ Device cards ============ */
+
+  .device-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    box-shadow: var(--shadow-0);
+  }
+  .device-card:hover { border-color: #33405a; }
+  .device-card.selected {
+    border-color: var(--cyan-line);
+    background: #152031;
+  }
+  .device-card .top { display: flex; align-items: center; gap: 9px; }
+  .device-card .name { font-size: 14px; font-weight: 600; }
+  .device-card .top .chip { margin-left: auto; }
+  .device-card .meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin-top: 5px;
+  }
+  .device-card .desc { color: var(--text-2); font-size: 12px; margin-top: 4px; }
+  .device-card .foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 10px;
+  }
+  .device-card .count { color: var(--text-3); font-size: 11.5px; }
+  .device-card .foot .chip { margin-left: auto; }
+  .device-card[hidden] { display: none; }
+
+  .row-del {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: var(--text-3);
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0;
+    flex: none;
+  }
+  .device-card:hover .row-del { opacity: 1; }
+  .row-del:hover { color: var(--amber); background: var(--amber-bg); }
+
+  .no-match {
+    padding: 14px 16px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
+  /* ============ Picker (add device) ============ */
+
+  .picker { margin-bottom: 14px; }
+  .picker[hidden] { display: none; }
+  .picker .card-h { cursor: default; }
+  .picker-list { padding: 4px 0; }
+  .picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    border-radius: 7px;
+    margin: 0 6px;
+  }
+  .picker-row:hover { background: var(--inset); }
+  .picker-row .pid { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; }
+  .picker-row .pdesc { color: var(--text-3); font-size: 12px; }
+  .picker-row .pplus {
+    margin-left: auto;
+    color: var(--cyan);
+    font-weight: 700;
+    font-size: 14px;
+    opacity: 0;
+  }
+  .picker-row:hover .pplus { opacity: 1; }
+  .picker-empty {
+    padding: 14px 16px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
+  /* ============ Cards and notes: see design-system.css ============ */
+
+  .stat-row.two { grid-template-columns: 1fr 1fr; }
+  .kv .v.dim { font-style: italic; }
+  .kv .v.chips { white-space: normal; }
+  .kv .v .chip { font-family: var(--font-mono); font-size: 10.5px; }
+  .kv .v .chip + .chip { margin-left: 6px; }
+
+  /* ============ Detail column ============ */
+
+  .detail-head h1 {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+
+  /* The detail column stacks notes above fields; the system primitive has no margin. */
+  .note-line { margin-bottom: 14px; }
+
+  .hw-row { display: flex; align-items: center; gap: 10px; }
+  .hw-id { font-size: 12.5px; color: var(--text-2); }
+  .refs-empty { color: var(--text-3); font-size: 12.5px; font-style: italic; }
+
+  /* ============ Detail body: properties + display preview ============ */
+
+  .detail-body { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+  .detail-body.with-preview { grid-template-columns: minmax(0, 1fr) 320px; }
+  .detail-body .props { min-width: 0; }
+
+  .preview { min-width: 0; }
+  .preview-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 256px;
+    min-height: 270px;
+    border-radius: 8px;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-1);
+  }
+
+  /* FMC character page (CDU): the IDENT page of the 24 x 14 character grid */
+  .screen.fmc {
+    background: #030504;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    aspect-ratio: 24 / 14;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px 12px;
+    font-family: var(--font-mono);
+  }
+  .fmc-head { display: flex; align-items: baseline; justify-content: center; position: relative; }
+  .fmc-title { color: #c4d1c8; font-size: 12.5px; letter-spacing: 0.22em; }
+  .fmc-page { position: absolute; right: 0; color: #5d6b64; font-size: 11px; }
+  .fmc-cols { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 14px 0 12px; }
+  .fmc-col { min-width: 0; }
+  .fmc-l { color: #66756d; font-size: 9.5px; letter-spacing: 0.14em; margin-top: 10px; white-space: nowrap; }
+  .fmc-l:first-child { margin-top: 0; }
+  .fmc-l.sp { margin-top: 24px; }
+  .fmc-v { color: #57e08a; font-size: 12.5px; margin-top: 3px; white-space: nowrap; text-shadow: 0 0 7px rgba(87, 224, 138, 0.45); }
+  .fmc-v.dim { color: #66756d; text-shadow: none; }
+  .fmc-v.r { text-align: right; }
+  .fmc-v.mt { margin-top: 10px; }
+  .fmc-div { border-top: 1px dashed #37453d; }
+  .fmc-keys { display: flex; justify-content: space-between; padding-top: 9px; color: #8b9a92; font-size: 11px; letter-spacing: 0.06em; }
+
+  /* Segment readout (PFP / standalone displays) */
+  .screen.seg {
+    background: #141008;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+  }
+  .seg-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-family: var(--font-mono); }
+  .seg-k { font-size: 10px; letter-spacing: 0.2em; color: rgba(245, 176, 76, 0.55); }
+  .seg-v { font-size: 26px; font-weight: 700; color: var(--amber); text-shadow: 0 0 10px rgba(245, 168, 60, 0.4); }
+
+  .preview-note { font-size: 11px; color: var(--text-3); text-align: center; }
+
+  .open-action {
+    width: 100%;
+    border: 1px solid var(--cyan-line);
+    background: var(--cyan-bg);
+    color: var(--cyan);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+    text-decoration: none;
+  }
+  .open-action:hover { filter: brightness(1.08); text-decoration: none; }
+
+  .remove-action {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text-2);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    box-shadow: var(--shadow-0);
+  }
+  .remove-action:hover { border-color: var(--amber-line); color: var(--amber); }
+  .remove-action svg { color: var(--text-3); }
+  .remove-action:hover svg { color: var(--amber); }
+
+  .save-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 10px;
+    color: var(--text-3);
+    font-size: 11.5px;
+  }
+  .save-hint[hidden] { display: none; }
+  .save-hint .dot { width: 6px; height: 6px; background: var(--amber); }
+  .save-hint .n { color: var(--amber); font-weight: 600; }
+
+  /* Scrollbars: see design-system.css. */
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <div class="brand">Crossdeck</div>
+    <a class="profile-chip" href="profiles-v4.html">
+      <span class="name">Zibo 737 - Bravo + PAP3</span>
+      <span class="sim">X-Plane &middot; B738</span>
+      <span class="chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </a>
+    <span class="status-pill ok"><span class="dot"></span>X-Plane ready &middot; B738</span>
+    <span class="status-pill warn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      1 left out
+    </span>
+    <span class="spacer"></span>
+    <span class="unsaved"><span id="unsavedCount">3</span> unsaved</span>
+    <button class="btn outline" id="learnBtn">Learn</button>
+    <button class="btn primary">Save and apply
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </header>
+
+  <!-- ============ Rail (Devices active, cross-page navigation) ============ -->
+  <nav class="rail">
+    <a class="rail-item" href="profiles-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Profiles
+    </a>
+    <a class="rail-item active" href="devices-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/></svg>
+      Devices
+    </a>
+    <a class="rail-item" href="editor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Editor
+    </a>
+    <a class="rail-item" href="variables-v4.html">
+      <span class="glyph-braces">{ }</span>
+      Variables
+    </a>
+    <a class="rail-item" href="monitor-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 12 9 5 14 19 17 12 22 12"/></svg>
+      Monitor
+      <span class="rail-badge">3</span>
+    </a>
+    <span class="push"></span>
+    <a class="rail-item" href="settings-v4.html">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+      Settings
+    </a>
+  </nav>
+  <!-- ============ Main column: device list ============ -->
+  <main class="col main">
+    <div class="col-head">
+      <h1>Devices</h1>
+      <span class="sub">in this profile</span>
+      <div class="actions">
+        <button class="btn outline add" id="addDeviceBtn">+ Add device</button>
+      </div>
+    </div>
+
+    <div class="picker card" id="picker" hidden>
+      <div class="card-h">Add device<span class="sub">detected hardware</span>
+        <button class="close" id="pickerClose" type="button">&times;</button>
+      </div>
+      <div class="picker-list" id="pickerList"></div>
+    </div>
+
+    <input class="input" id="filterInput" type="text" placeholder="Filter devices, hardware&#8230;">
+
+    <div id="rowsArea" style="margin-top:14px"></div>
+  </main>
+
+  <!-- ============ Detail column ============ -->
+  <aside class="col detail">
+    <div id="detailArea"></div>
+  </aside>
+
+</div>
+
+<script>
+  // ---- Sample data -----------------------------------------------------------
+  // Mirrors DeviceSlot: a model (vid/pid) with inputs and outputs, an assigned
+  // DeviceIdentity when the hardware is plugged in, and an optional screen role.
+  // Input kinds are buttons only at the current hardware stage (encoders and
+  // switches are a later virtual layer). OutputKind: led, level, state, display, flag.
+  const DEVICES = [
+    {
+      id: 'bravo',
+      name: 'bravo',
+      model: 'X-56',
+      vid: '294B',
+      pid: '1901',
+      identity: '294B:1901:serial=A1B2C3D4',
+      transport: 'HID',
+      product: 'Bravo X-56 quadrant',
+      connected: true,
+      screen: null,
+      inputs: [ ['Button', 32] ],
+      outputs: [ ['LED', 32] ],
+      bindings: 5,
+      leftOut: 0,
+      meta: '294B:1901 &middot; sn=A1B2C3D4',
+      desc: 'Buttons &middot; LEDs',
+    },
+    {
+      id: 'pap3',
+      name: 'pap3',
+      model: 'PFP-3',
+      vid: '4098',
+      pid: 'BF0F',
+      identity: '4098:BF0F:serial=0042',
+      transport: 'HID',
+      product: 'PFP-3 primary flight panel',
+      connected: true,
+      screen: 'FirstOfficer',
+      inputs: [ ['Button', 12] ],
+      outputs: [ ['LED', 12], ['Display', 1] ],
+      bindings: 4,
+      leftOut: 1,
+      problem: 'pap3 button:lnav &middot; Only when: unknown name [pwr]',
+      meta: '4098:BF0F &middot; sn=0042',
+      desc: 'Buttons &middot; LEDs, displays',
+    },
+    {
+      id: 'mcdu',
+      name: 'mcdu',
+      model: 'CDU',
+      vid: '4098',
+      pid: 'BB36',
+      identity: null,
+      transport: 'HID',
+      product: 'CDU control display unit',
+      connected: false,
+      screen: 'Captain',
+      inputs: [ ['Button', 40] ],
+      outputs: [ ['LED', 16], ['Display', 1] ],
+      bindings: 3,
+      leftOut: 0,
+      meta: '4098:BB36 &middot; role Captain',
+      desc: 'Buttons &middot; LEDs &middot; screen 24 &times; 14',
+    },
+  ];
+
+  // Detected hardware not in the profile yet (DeviceDescriptor from the watcher).
+  const DETECTED = [
+    {
+      id: 'winctrl',
+      name: 'winctrl',
+      model: 'Segment',
+      vid: '10C4',
+      pid: 'EA60',
+      identity: '10C4:EA60:serial=COM3',
+      transport: 'Serial',
+      product: 'WinCtrl segment display',
+      connected: true,
+      inputs: [],
+      outputs: [ ['LED', 16], ['Display', 1] ],
+      bindings: 0,
+      leftOut: 0,
+      meta: '10C4:EA60 &middot; COM3',
+      desc: 'Segment display &middot; LEDs',
+    },
+    {
+      id: 'r5',
+      name: 'r5',
+      model: 'R5 Wheel',
+      vid: '011C',
+      pid: '1111',
+      identity: '011C:1111:usage=0x4C',
+      transport: 'HID',
+      product: 'Moza R5 steering wheel',
+      connected: true,
+      inputs: [ ['Button', 8] ],
+      outputs: [],
+      bindings: 0,
+      leftOut: 0,
+      meta: '011C:1111 &middot; usage=0x4C',
+      desc: 'Buttons',
+    },
+  ];
+
+  let selected = 0;
+  let unsaved = 3;
+  let addSeq = 0;
+  let filter = '';
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const infoIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  function infoNote(txt, fix) {
+    return `<div class="note-line info">${infoIcon}<span>${txt}${fix ? `<span class="fixes">${fix}</span>` : ''}</span></div>`;
+  }
+
+  // ---- Display preview ---------------------------------------------------------
+  // The CDU's FMC IDENT page (24 x 14 character grid), as it reads in the
+  // simulator once the profile is applied.
+  const FMC_IDENT = `
+    <div class="fmc-head"><span class="fmc-title">IDENT</span><span class="fmc-page">1/2</span></div>
+    <div class="fmc-cols">
+      <div class="fmc-col">
+        <div class="fmc-l">MODEL</div>
+        <div class="fmc-v">737-800W</div>
+        <div class="fmc-l">NAV DATA</div>
+        <div class="fmc-v">WORLD2511</div>
+        <div class="fmc-l sp">OP PROGRAM</div>
+        <div class="fmc-v">737 U12.0</div>
+      </div>
+      <div class="fmc-col">
+        <div class="fmc-l">ENG RATING</div>
+        <div class="fmc-v">26K</div>
+        <div class="fmc-l">ACTIVE</div>
+        <div class="fmc-v dim r">INACTIVE</div>
+        <div class="fmc-v mt">NOV27DEC24</div>
+      </div>
+    </div>
+    <div class="fmc-div"></div>
+    <div class="fmc-keys"><span>&lt;INDEX</span><span>POS INIT&gt;</span></div>`;
+
+  function previewHtml(d) {
+    if (!d.outputs.some(x => x[0] === 'Display')) return '';
+    let screen;
+    if (d.model === 'CDU') {
+      screen = `<div class="screen fmc">${FMC_IDENT}</div>`;
+    } else {
+      screen = `<div class="screen seg">
+                  <div class="seg-row"><span class="seg-k">ALT</span><span class="seg-v">350</span></div>
+                  <div class="seg-row"><span class="seg-k">HDG</span><span class="seg-v">270</span></div>
+                  <div class="seg-row"><span class="seg-k">SPD</span><span class="seg-v">248</span></div>
+                </div>`;
+    }
+    const note = d.connected
+      ? 'Live &middot; updates as the sim changes'
+      : 'Preview &middot; how it will look once connected';
+    return `<div class="preview">
+      <div class="card">
+        <div class="card-h">Display<span class="sub">as it appears in the sim</span></div>
+        <div class="preview-body">
+          ${screen}
+          <div class="preview-note">${note}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---- List rendering ---------------------------------------------------------
+  function cardHtml(d, i) {
+    const status = d.connected
+      ? '<span class="chip ok"><span class="dot"></span>connected</span>'
+      : '<span class="chip off"><span class="ring"></span>not connected</span>';
+    const warn = d.leftOut
+      ? `<span class="chip warn">${d.leftOut} left out</span>`
+      : '';
+    const foot = d.connected
+      ? `<span class="count">${d.bindings} binding${d.bindings === 1 ? '' : 's'}</span>${warn}`
+      : '<span class="count">Bindings are kept. Nothing runs until connected.</span>';
+    return `<div class="device-card${i === selected ? ' selected' : ''}" data-i="${i}">
+      <div class="top">
+        <span class="name">${esc(d.name)}</span>
+        ${status}
+        <button class="row-del" data-del="${i}" type="button" title="Remove device">&times;</button>
+      </div>
+      <div class="meta">${d.meta}</div>
+      <div class="desc">${d.desc}</div>
+      <div class="foot">${foot}</div>
+    </div>`;
+  }
+
+  function matchesFilter(d) {
+    if (!filter) return true;
+    const hay = (d.name + ' ' + d.model + ' ' + d.vid + ':' + d.pid + ' ' + (d.identity || '') + ' ' + (d.product || '')).toLowerCase();
+    return hay.includes(filter.toLowerCase());
+  }
+
+  function renderList() {
+    const area = $('rowsArea');
+    if (!DEVICES.length) {
+      area.innerHTML = `<div class="empty-state">
+          No devices in this profile yet.<br>
+          Add one to start binding it.
+        </div>`;
+      return;
+    }
+    const visible = DEVICES.map((d, i) => i).filter(i => matchesFilter(DEVICES[i]));
+    area.innerHTML = visible.map(i => cardHtml(DEVICES[i], i)).join('')
+      + (visible.length ? '' : '<div class="no-match">No devices match the filter.</div>');
+    area.querySelectorAll('.device-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selected = +card.dataset.i;
+        render();
+      });
+      const del = card.querySelector('.row-del');
+      if (del) del.addEventListener('click', e => {
+        e.stopPropagation();
+        removeDevice(+del.dataset.del);
+      });
+    });
+  }
+
+  // ---- Detail rendering ---------------------------------------------------------
+  function chips(list, empty) {
+    return list.length
+      ? list.map(x => `<span class="chip">${x[0]} ${x[1]}</span>`).join('')
+      : `<span class="refs-empty">${empty}</span>`;
+  }
+
+  function renderDetail() {
+    const area = $('detailArea');
+    const d = DEVICES[selected];
+    if (!d) {
+      area.innerHTML = '<div class="detail-empty">Select a device to see its details.</div>';
+      document.querySelector('.app').classList.remove('preview-wide');
+      return;
+    }
+    const statusChip = d.connected
+      ? '<span class="chip ok"><span class="dot"></span>connected</span>'
+      : '<span class="chip off"><span class="ring"></span>not connected</span>';
+    const note = d.isNew
+      ? infoNote('Just added from detected hardware. It is connected, so its bindings run as soon as you save.',
+          `<a href="editor-v4.html?device=${esc(d.id)}">Open in editor</a>`)
+      : (!d.connected
+        ? infoNote('Not connected. Bindings are kept; nothing runs until the hardware is plugged in.')
+        : '');
+    const hardware = d.connected
+      ? `<div class="hw-row"><span class="hw-id mono">${esc(d.identity)}</span><span class="chip">${esc(d.transport)}</span></div>
+         <div class="help">The identity matches the physical unit to this slot.</div>`
+      : `<div class="refs-empty">No hardware plugged in.</div>
+         <div class="help">Plug in the matching unit and it will be assigned automatically.</div>`;
+    const hasDisplay = d.outputs.some(x => x[0] === 'Display');
+    const screen = hasDisplay
+      ? `<div class="dsec">
+           <div class="field-label">Screen</div>
+           <div class="seg full" data-group="screen">
+             <button type="button"${d.screen === 'Captain' ? ' class="active"' : ''}>Captain</button>
+             <button type="button"${d.screen === 'FirstOfficer' ? ' class="active"' : ''}>First Officer</button>
+             <button type="button"${d.screen === 'Observer' ? ' class="active"' : ''}>Observer</button>
+           </div>
+           <div class="help">Cockpit seat this device's screen belongs to.</div>
+         </div>`
+      : '';
+    const preview = previewHtml(d);
+    area.innerHTML = `
+      <div class="detail-body${preview ? ' with-preview' : ''}">
+        <div class="props">
+      <div class="detail-head">
+        <h1>${esc(d.name)}</h1>
+        <span class="chip">${esc(d.model)}</span>
+        ${statusChip}
+      </div>
+      ${note}
+      <div class="dsec" style="margin-top:0">
+        <div class="field-label">Name</div>
+        <input class="input mono" id="devNameInput" type="text" value="${esc(d.name)}">
+        <div class="help">Renaming updates every binding and page that shows this device.</div>
+      </div>
+      <div class="dsec">
+        <div class="field-label">Hardware</div>
+        ${hardware}
+      </div>
+      ${screen}
+
+      <div class="card">
+        <div class="card-h">Signals<span class="sub">on this device</span></div>
+        <div class="card-b">
+          <div class="kv"><span class="k">Inputs</span><span class="v chips">${chips(d.inputs, 'none')}</span></div>
+          <div class="kv"><span class="k">Outputs</span><span class="v chips">${chips(d.outputs, 'none')}</span></div>
+        </div>
+        <div class="stat-row two">
+          <div class="stat cyan"><div class="n">${d.bindings}</div><div class="l">bindings</div></div>
+          <div class="stat${d.leftOut ? ' amber' : ''}"><div class="n">${d.leftOut}</div><div class="l">left out</div></div>
+        </div>
+        ${d.leftOut ? `<div class="problem-line"><span class="txt">${d.problem}</span><a href="editor-v4.html?device=${esc(d.id)}">Show</a></div>` : ''}
+      </div>
+
+      <div class="card">
+        <div class="card-h">Connection</div>
+        <div class="card-b">
+          <div class="kv"><span class="k">Model</span><span class="v">${esc(d.model)}</span></div>
+          <div class="kv"><span class="k">Transport</span><span class="v">${esc(d.transport)}</span></div>
+          <div class="kv"><span class="k">Identity</span><span class="v mono${d.connected ? '' : ' dim'}">${d.connected ? esc(d.identity) : 'not connected'}</span></div>
+          <div class="kv"><span class="k">Product</span><span class="v${d.product ? '' : ' dim'}">${d.product ? esc(d.product) : 'unknown'}</span></div>
+        </div>
+      </div>
+
+      <a class="open-action" href="editor-v4.html?device=${esc(d.id)}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        Open in editor
+      </a>
+      <button class="remove-action" id="removeDeviceBtn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Remove device
+      </button>
+      <div class="save-hint" id="saveHint"${unsaved ? '' : ' hidden'}>
+        <span class="dot"></span>
+        <span><span class="n">${unsaved}</span> unsaved changes &middot; Save and apply in the top bar</span>
+      </div>
+        </div>
+      ${preview}
+      </div>`;
+
+    document.querySelector('.app').classList.toggle('preview-wide', !!preview);
+
+    const nameInput = $('devNameInput');
+    if (nameInput) nameInput.addEventListener('change', () => { unsaved++; refreshUnsaved(); });
+    area.querySelectorAll('.seg[data-group]').forEach(seg => {
+      seg.addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        unsaved++;
+        refreshUnsaved();
+      });
+    });
+  }
+
+  function render() {
+    renderList();
+    renderDetail();
+  }
+
+  // ---- Device actions ----------------------------------------------------------
+  function removeDevice(i) {
+    DEVICES.splice(i, 1);
+    if (DEVICES.length) {
+      selected = i < selected ? i : selected;
+      if (selected >= DEVICES.length) selected = DEVICES.length - 1;
+    } else {
+      selected = 0;
+    }
+    unsaved++;
+    refreshUnsaved();
+    render();
+  }
+
+  function addDevice(item) {
+    addSeq++;
+    DEVICES.push(Object.assign({
+      isNew: true,
+    }, item, {
+      id: addSeq > 1 ? item.id + '-' + addSeq : item.id,
+    }));
+    selected = DEVICES.length - 1;
+    togglePicker(false);
+    unsaved++;
+    refreshUnsaved();
+    render();
+    const card = document.querySelector(`#rowsArea .device-card[data-i="${selected}"]`);
+    if (card) card.scrollIntoView({ block: 'nearest' });
+  }
+
+  // ---- Picker ------------------------------------------------------------------
+  function togglePicker(open) {
+    const p = $('picker');
+    p.hidden = !open;
+    $('addDeviceBtn').classList.toggle('active', open);
+    if (!open) return;
+    $('pickerList').innerHTML = DETECTED.length
+      ? DETECTED.map(i => `<div class="picker-row" data-pick="${esc(i.id)}">
+            <span class="pid">${esc(i.identity)}</span>
+            <span class="pdesc">${esc(i.product)} &middot; ${esc(i.transport)}</span>
+            <span class="pplus">+</span>
+          </div>`).join('')
+      : '<div class="picker-empty">No new hardware detected. Plug in a device and it will appear here.</div>';
+    $('pickerList').querySelectorAll('.picker-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const item = DETECTED.find(x => x.id === row.dataset.pick);
+        if (item) addDevice(item);
+      });
+    });
+  }
+
+  // ---- Unsaved tracking --------------------------------------------------------
+  function pulseUnsaved() {
+    const el = document.querySelector('.unsaved');
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+  }
+
+  function refreshUnsaved() {
+    $('unsavedCount').textContent = unsaved;
+    const hint = $('saveHint');
+    if (hint) {
+      hint.hidden = unsaved === 0;
+      const n = hint.querySelector('.n');
+      if (n) n.textContent = unsaved;
+    }
+    pulseUnsaved();
+  }
+
+  // ---- Wiring --------------------------------------------------------------------
+  $('addDeviceBtn').addEventListener('click', () => togglePicker(!$('picker').hidden));
+  $('pickerClose').addEventListener('click', () => togglePicker(false));
+  $('filterInput').addEventListener('input', e => {
+    filter = e.target.value.trim();
+    renderList();
+  });
+
+  // Keep the prototype's placeholder links from jumping the page,
+  // and route the detail's remove button to the selected device.
+  document.addEventListener('click', e => {
+    if (e.target.closest('a[href="#"]')) e.preventDefault();
+    if (e.target.closest('#removeDeviceBtn')) removeDevice(selected);
+  });
+
+  // ?fit=1 scales the 1920px design down to fit a narrow window.
+  const params = new URLSearchParams(location.search);
+  const fit = params.get('fit');
+  if (fit) document.documentElement.style.zoom = fit === '1' ? Math.min(1, window.innerWidth / 1920) : fit;
+
+  // Initial state, with review params: ?device=mcdu, ?add=1, ?empty=1.
+  if (params.get('empty')) DEVICES.length = 0;
+  const devParam = params.get('device');
+  if (devParam) {
+    const i = DEVICES.findIndex(x => x.id === devParam);
+    if (i >= 0) selected = i;
+  }
+  if (params.get('add')) togglePicker(true);
+  render();
+</script>
+</body>
+</html>
