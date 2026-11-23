@@ -1,4 +1,4 @@
-using Crossdeck.Application.Profiles.Validation;
+using Crossdeck.Application.Profiles;
 using Crossdeck.Core.Profiles.Models;
 using FluentValidation;
 using FluentValidation.Results;
@@ -25,7 +25,7 @@ public sealed class ProfileValidatorTests
         ProfileValidator sut)
     {
         // Arrange
-        validator.Validate(profile).Returns(new FluentValidation.Results.ValidationResult());
+        validator.Validate(profile).Returns(new ValidationResult());
 
         // Act
         var problems = sut.Validate(profile);
@@ -162,8 +162,5 @@ public sealed class ProfileValidatorTests
         Assert.Equal([firstMessage, secondMessage], problems.Select(p => p.Message));
     }
 
-    private static void StubFailures(IValidator<Profile> validator, Profile profile, params ValidationFailure[] failures)
-    {
-        validator.Validate(profile).Returns(new FluentValidation.Results.ValidationResult(failures));
-    }
+    private static void StubFailures(IValidator<Profile> validator, Profile profile, params ValidationFailure[] failures) => validator.Validate(profile).Returns(new FluentValidation.Results.ValidationResult(failures));
 }

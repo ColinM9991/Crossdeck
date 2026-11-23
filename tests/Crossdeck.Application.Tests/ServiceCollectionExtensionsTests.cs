@@ -1,4 +1,5 @@
 using Crossdeck.Application.Devices;
+using Crossdeck.Application.Profiles;
 using Crossdeck.Application.Profiles.Validation;
 using Crossdeck.Application.Routing;
 using Crossdeck.Application.Routing.Input;
