@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Variables page</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html" class="active" aria-current="page">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Variables page <span class="cls">.var-row, .ref-box, .live-value</span></h1>
+  <p class="page-sub">The shared variable table, its detail column, and the write/read reference boxes.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">selected</a>, <a href="states.html">problem</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Components</h2>
+
+<div class="example stack">
+      <div style="width:100%">
+        <div class="var-row" style="display:grid; grid-template-columns:150px 64px 56px 1.15fr 1.35fr 24px; column-gap:14px; align-items:center; padding:11px 14px; border-radius:8px; background:var(--cyan-bg); box-shadow:inset 2px 0 0 var(--cyan)">
+          <span class="vname" style="font-family:var(--font-mono); font-size:13px; font-weight:600">var:fn</span>
+          <span class="vinit" style="font-family:var(--font-mono); font-size:12.5px; color:var(--text-2)">0</span>
+          <span class="vlive" style="font-family:var(--font-mono); font-size:12.5px; font-weight:600; color:var(--green)">1</span>
+          <span style="display:flex; gap:6px; flex-wrap:wrap"><span class="chip" style="color:var(--violet); background:var(--violet-bg); border-color:var(--violet-line); font-family:var(--font-mono); font-size:10.5px">bnd-fn</span></span>
+          <span style="display:flex; gap:6px; flex-wrap:wrap"><span class="chip" style="color:var(--cyan); background:var(--cyan-bg); border-color:var(--cyan-line); font-family:var(--font-mono); font-size:10.5px">bnd-alt-btn</span></span>
+          <span aria-hidden="true" style="opacity:1">&times;</span>
+        </div>
+      </div>
+      <div class="ref-box" style="display:flex; align-items:baseline; gap:10px; background:var(--inset); border:1px solid var(--line); border-radius:8px; padding:9px 12px; box-shadow:var(--shadow-0); width:100%; max-width:420px">
+        <span style="font-family:var(--font-mono); font-size:12.5px; font-weight:600; color:var(--violet)">bnd-fn</span>
+        <span style="color:var(--text-3); font-size:12px">bravo button:30 &middot; Modifier</span>
+      </div>
+      <span class="cap">A selected variable table row (writers and readers as pills) and a write reference box.</span>
+    </div>
+
+  <h3>Row <span class="cls">.var-row</span></h3>
+  <ul class="spec-list">
+    <li>A six-column grid (name 150 / init 64 / live 56 / writers 1.15 / readers 1.35 / remove 24, 14 column gap)</li>
+    <li>Under an uppercase 10.5px head</li>
+    <li>Hover: <code>--inset</code></li>
+    <li><code>.selected</code> fills <code>--cyan-bg</code> with a 2px inset <code>--cyan</code> left bar</li>
+    <li>Name (<code>.vname</code>) mono 13 600; init (<code>.vinit</code>) mono 12.5 <code>--text-2</code></li>
+    <li>Live (<code>.vlive</code>) mono 12.5 600 <code>--green</code> (an <code>.off</code> value drops to 400 <code>--text-3</code>)</li>
+    <li>The writers and readers cells (<code>.vrefs</code>) wrap 10.5px mono pills, violet for writes and cyan for reads</li>
+    <li>An empty writes cell renders a <code>.chip.warn</code> "nothing writes it" and an empty reads cell an italic <code>.vnone</code></li>
+  </ul>
+  <h3>Remove <span class="cls">.row-del</span></h3>
+  <ul class="spec-list">
+    <li>A 22px hover-revealed remove</li>
+    <li>Amber on hover, a 44px hit area, always visible at 640</li>
+  </ul>
+  <h3>Reference box <span class="cls">.ref-box</span></h3>
+  <ul class="spec-list">
+    <li><code>--inset</code> / <code>--line</code>, radius 8, 9/12 padding, <code>--shadow-0</code>, contents 10 apart</li>
+    <li>The reference id (<code>.ref-id</code>) is mono 12.5 600 coloured by role</li>
+    <li>The description (<code>.ref-desc</code>) is 12px <code>--text-3</code>, ellipsized</li>
+  </ul>
+  <h3>Live value <span class="cls">.live-value</span></h3>
+  <ul class="spec-list">
+    <li>22px 700 <code>--font-mono</code> in <code>--green</code> with a 12px <code>.live-note</code></li>
+    <li>The <code>.off</code> form is 16px 400 <code>--text-3</code> reading "waiting for a write"</li>
+  </ul>
+  <h3>Phase chip <span class="cls">.phase-chip</span></h3>
+  <ul class="spec-list">
+    <li>11px 600, <code>--chip-*</code>, radius 999, 1/7 padding</li>
+    <li>Marks "phase 2" on <a href="tabs.html">tabs</a> and card heads</li>
+  </ul>
+  <h3>Legend <span class="cls">.legend</span></h3>
+  <ul class="spec-list">
+    <li>8px <code>.swatch</code> squares (violet write, cyan read)</li>
+    <li>A right-aligned <code>.lg-note</code></li>
+  </ul>
+  <h3>Remove action <span class="cls">.remove-action</span></h3>
+  <ul class="spec-list">
+    <li>The full-width destructive CTA</li>
+    <li>Radius 10, 10 padding, 13px 600, <code>--shadow-0</code>, 24 above</li>
+    <li>Hover amber border, text and icon</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .var-row         Row
+  .row-del         Remove
+  .ref-box         Reference box
+  .live-value      Live value
+  .phase-chip      Phase chip
+  .legend          Legend
+  .remove-action   Remove action</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--inset</code> <code>--cyan-bg</code> <code>--cyan</code> <code>--text-2</code> <code>--green</code> <code>--text-3</code> <code>--line</code> <code>--shadow-0</code> <code>--font-mono</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: the page-local <code>&lt;style&gt;</code> block in <a href="../../ui-prototype/variables.html">docs/ui-prototype/variables.html</a>, on top of the shared tokens and primitives in <a href="../../ui-prototype/design-system.css">design-system.css</a>; values quoted verbatim from those stylesheets.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

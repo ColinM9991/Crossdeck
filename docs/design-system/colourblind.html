@@ -42,7 +42,7 @@
   <p class="page-sub">Four repalette modes for the known colour-vision deficiencies. Each mode is a layer on top of the active theme that remaps the four semantic roles (accent, ok, warn, info) to hues that stay distinguishable under that deficiency.</p>
 
   <h2>How it works</h2>
-  <p>A mode is a single attribute, <code>html[data-cb="..."]</code>, layered over <code>data-theme</code>. Only 14 tokens change per mode: the three variants of each role (<code>--role</code>, <code>--role-line</code>, <code>--role-bg</code>) plus <code>--selected-bg</code> and <code>--on-accent</code>, which are derived from the accent. Surfaces, text and line tokens keep the theme's values, so the layout is untouched. Because the layers only ever redefine token keys, the combination <em>every theme × every mode</em> is valid by construction.</p>
+  <p>A mode is a single attribute, <code>html[data-cb="..."]</code>, layered over <code>data-theme</code>. Only 14 tokens change per mode: the three variants of each role (<code>--role</code>, <code>--role-line</code>, <code>--role-bg</code>) plus <code>--selected-bg</code> and <code>--on-accent</code>, which are derived from the accent. Surfaces, text and line tokens keep the theme's values, so the layout is untouched. Because the layers only ever redefine token keys, the combination <em>every theme × every mode</em> is valid by construction. The base value of each of those 14 keys in every theme is on the <a href="tokens.html">tokens page</a>; the tables below list only what each mode changes.</p>
   <p>The modes split into two surface classes in the selectors. The <strong>dark class</strong> (the <code>:not([data-theme="light"]):not([data-theme="sepia"])</code> selector) covers <em>dark and dusk</em>; the <strong>light class</strong> selector covers <em>light and sepia</em>. Dusk therefore uses the same colourblind values as dark. Each mode below gives both.</p>
 
   <h2>The four modes</h2>
@@ -51,64 +51,64 @@
   <p>The red-green axis is broken. The system moves to the Okabe-Ito colour-blind-safe set: a blue accent, a blue-green ok, an orange warn, and a reddish-purple info. The light class uses darker variants of the same hues to hold contrast on white and cream.</p>
   <table class="spec">
     <tr><th>Token</th><th>Dark class (dark, dusk)</th><th>Light class (light, sepia)</th></tr>
-    <tr><td><code>--cyan</code></td><td class="hex">#56b4e9</td><td class="hex">#00649c</td></tr>
-    <tr><td><code>--cyan-line</code></td><td class="hex">rgba(86, 180, 233, 0.40)</td><td class="hex">rgba(0, 100, 156, 0.40)</td></tr>
-    <tr><td><code>--cyan-bg</code></td><td class="hex">rgba(86, 180, 233, 0.08)</td><td class="hex">rgba(0, 100, 156, 0.05)</td></tr>
-    <tr><td><code>--selected-bg</code></td><td class="hex">#304c69</td><td class="hex">#d6e6ef</td></tr>
-    <tr><td><code>--on-accent</code></td><td class="hex">#0a1a2a</td><td class="hex">#ffffff</td></tr>
-    <tr><td><code>--green</code></td><td class="hex">#1ab187</td><td class="hex">#006e55</td></tr>
-    <tr><td><code>--green-bg</code></td><td class="hex">rgba(26, 177, 135, 0.05)</td><td class="hex">rgba(0, 110, 85, 0.05)</td></tr>
-    <tr><td><code>--green-line</code></td><td class="hex">rgba(26, 177, 135, 0.35)</td><td class="hex">rgba(0, 110, 85, 0.35)</td></tr>
-    <tr><td><code>--amber</code></td><td class="hex">#e69f00</td><td class="hex">#8a4a00</td></tr>
-    <tr><td><code>--amber-bg</code></td><td class="hex">rgba(230, 159, 0, 0.08)</td><td class="hex">rgba(138, 74, 0, 0.05)</td></tr>
-    <tr><td><code>--amber-line</code></td><td class="hex">rgba(230, 159, 0, 0.35)</td><td class="hex">rgba(138, 74, 0, 0.35)</td></tr>
-    <tr><td><code>--violet</code></td><td class="hex">#d186b0</td><td class="hex">#7c3a64</td></tr>
-    <tr><td><code>--violet-bg</code></td><td class="hex">rgba(209, 134, 176, 0.06)</td><td class="hex">rgba(124, 58, 100, 0.05)</td></tr>
-    <tr><td><code>--violet-line</code></td><td class="hex">rgba(209, 134, 176, 0.30)</td><td class="hex">rgba(124, 58, 100, 0.30)</td></tr>
+    <tr><td><code>--cyan</code></td><td class="hex"><span class="sw" style="background:#56b4e9"></span>#56b4e9</td><td class="hex"><span class="sw" style="background:#00649c"></span>#00649c</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex"><span class="sw" style="background:rgba(86, 180, 233, 0.40)"></span>rgba(86, 180, 233, 0.40)</td><td class="hex"><span class="sw" style="background:rgba(0, 100, 156, 0.40)"></span>rgba(0, 100, 156, 0.40)</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex"><span class="sw" style="background:rgba(86, 180, 233, 0.08)"></span>rgba(86, 180, 233, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(0, 100, 156, 0.05)"></span>rgba(0, 100, 156, 0.05)</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex"><span class="sw" style="background:#304c69"></span>#304c69</td><td class="hex"><span class="sw" style="background:#d6e6ef"></span>#d6e6ef</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex"><span class="sw" style="background:#0a1a2a"></span>#0a1a2a</td><td class="hex"><span class="sw" style="background:#ffffff"></span>#ffffff</td></tr>
+    <tr><td><code>--green</code></td><td class="hex"><span class="sw" style="background:#1ab187"></span>#1ab187</td><td class="hex"><span class="sw" style="background:#006e55"></span>#006e55</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex"><span class="sw" style="background:rgba(26, 177, 135, 0.05)"></span>rgba(26, 177, 135, 0.05)</td><td class="hex"><span class="sw" style="background:rgba(0, 110, 85, 0.05)"></span>rgba(0, 110, 85, 0.05)</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex"><span class="sw" style="background:rgba(26, 177, 135, 0.35)"></span>rgba(26, 177, 135, 0.35)</td><td class="hex"><span class="sw" style="background:rgba(0, 110, 85, 0.35)"></span>rgba(0, 110, 85, 0.35)</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex"><span class="sw" style="background:#e69f00"></span>#e69f00</td><td class="hex"><span class="sw" style="background:#8a4a00"></span>#8a4a00</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex"><span class="sw" style="background:rgba(230, 159, 0, 0.08)"></span>rgba(230, 159, 0, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(138, 74, 0, 0.05)"></span>rgba(138, 74, 0, 0.05)</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex"><span class="sw" style="background:rgba(230, 159, 0, 0.35)"></span>rgba(230, 159, 0, 0.35)</td><td class="hex"><span class="sw" style="background:rgba(138, 74, 0, 0.35)"></span>rgba(138, 74, 0, 0.35)</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex"><span class="sw" style="background:#d186b0"></span>#d186b0</td><td class="hex"><span class="sw" style="background:#7c3a64"></span>#7c3a64</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex"><span class="sw" style="background:rgba(209, 134, 176, 0.06)"></span>rgba(209, 134, 176, 0.06)</td><td class="hex"><span class="sw" style="background:rgba(124, 58, 100, 0.05)"></span>rgba(124, 58, 100, 0.05)</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex"><span class="sw" style="background:rgba(209, 134, 176, 0.30)"></span>rgba(209, 134, 176, 0.30)</td><td class="hex"><span class="sw" style="background:rgba(124, 58, 100, 0.30)"></span>rgba(124, 58, 100, 0.30)</td></tr>
   </table>
 
   <h3>Tritanopia</h3>
   <p>The blue-yellow axis is broken. The accent moves to orange and the warn moves to bright yellow, where a tritanope can separate it from the green ok; the info role keeps its reddish-purple.</p>
   <table class="spec">
     <tr><th>Token</th><th>Dark class (dark, dusk)</th><th>Light class (light, sepia)</th></tr>
-    <tr><td><code>--cyan</code></td><td class="hex">#f08a30</td><td class="hex">#a33000</td></tr>
-    <tr><td><code>--cyan-line</code></td><td class="hex">rgba(240, 138, 48, 0.40)</td><td class="hex">rgba(163, 48, 0, 0.40)</td></tr>
-    <tr><td><code>--cyan-bg</code></td><td class="hex">rgba(240, 138, 48, 0.08)</td><td class="hex">rgba(163, 48, 0, 0.05)</td></tr>
-    <tr><td><code>--selected-bg</code></td><td class="hex">#524340</td><td class="hex">#f0ded6</td></tr>
-    <tr><td><code>--on-accent</code></td><td class="hex">#160a00</td><td class="hex">#ffffff</td></tr>
-    <tr><td><code>--green</code></td><td class="hex">#3ddc91 (unchanged)</td><td class="hex">#0e754f (unchanged)</td></tr>
-    <tr><td><code>--green-bg</code></td><td class="hex">rgba(61, 220, 145, 0.08)</td><td class="hex">rgba(14, 117, 79, 0.05)</td></tr>
-    <tr><td><code>--green-line</code></td><td class="hex">rgba(61, 220, 145, 0.35)</td><td class="hex">rgba(14, 117, 79, 0.35)</td></tr>
-    <tr><td><code>--amber</code></td><td class="hex">#f5d44a</td><td class="hex">#6a5c00</td></tr>
-    <tr><td><code>--amber-bg</code></td><td class="hex">rgba(245, 212, 74, 0.08)</td><td class="hex">rgba(106, 92, 0, 0.05)</td></tr>
-    <tr><td><code>--amber-line</code></td><td class="hex">rgba(245, 212, 74, 0.35)</td><td class="hex">rgba(106, 92, 0, 0.35)</td></tr>
-    <tr><td><code>--violet</code></td><td class="hex">#d186b0</td><td class="hex">#7c3a64</td></tr>
-    <tr><td><code>--violet-bg</code></td><td class="hex">rgba(209, 134, 176, 0.06)</td><td class="hex">rgba(124, 58, 100, 0.05)</td></tr>
-    <tr><td><code>--violet-line</code></td><td class="hex">rgba(209, 134, 176, 0.30)</td><td class="hex">rgba(124, 58, 100, 0.30)</td></tr>
+    <tr><td><code>--cyan</code></td><td class="hex"><span class="sw" style="background:#f08a30"></span>#f08a30</td><td class="hex"><span class="sw" style="background:#a33000"></span>#a33000</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex"><span class="sw" style="background:rgba(240, 138, 48, 0.40)"></span>rgba(240, 138, 48, 0.40)</td><td class="hex"><span class="sw" style="background:rgba(163, 48, 0, 0.40)"></span>rgba(163, 48, 0, 0.40)</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex"><span class="sw" style="background:rgba(240, 138, 48, 0.08)"></span>rgba(240, 138, 48, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(163, 48, 0, 0.05)"></span>rgba(163, 48, 0, 0.05)</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex"><span class="sw" style="background:#524340"></span>#524340</td><td class="hex"><span class="sw" style="background:#f0ded6"></span>#f0ded6</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex"><span class="sw" style="background:#160a00"></span>#160a00</td><td class="hex"><span class="sw" style="background:#ffffff"></span>#ffffff</td></tr>
+    <tr><td><code>--green</code></td><td class="hex"><span class="sw" style="background:#3ddc91"></span>#3ddc91 (unchanged)</td><td class="hex"><span class="sw" style="background:#0e754f"></span>#0e754f (unchanged)</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex"><span class="sw" style="background:rgba(61, 220, 145, 0.08)"></span>rgba(61, 220, 145, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(14, 117, 79, 0.05)"></span>rgba(14, 117, 79, 0.05)</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex"><span class="sw" style="background:rgba(61, 220, 145, 0.35)"></span>rgba(61, 220, 145, 0.35)</td><td class="hex"><span class="sw" style="background:rgba(14, 117, 79, 0.35)"></span>rgba(14, 117, 79, 0.35)</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex"><span class="sw" style="background:#f5d44a"></span>#f5d44a</td><td class="hex"><span class="sw" style="background:#6a5c00"></span>#6a5c00</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex"><span class="sw" style="background:rgba(245, 212, 74, 0.08)"></span>rgba(245, 212, 74, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(106, 92, 0, 0.05)"></span>rgba(106, 92, 0, 0.05)</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex"><span class="sw" style="background:rgba(245, 212, 74, 0.35)"></span>rgba(245, 212, 74, 0.35)</td><td class="hex"><span class="sw" style="background:rgba(106, 92, 0, 0.35)"></span>rgba(106, 92, 0, 0.35)</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex"><span class="sw" style="background:#d186b0"></span>#d186b0</td><td class="hex"><span class="sw" style="background:#7c3a64"></span>#7c3a64</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex"><span class="sw" style="background:rgba(209, 134, 176, 0.06)"></span>rgba(209, 134, 176, 0.06)</td><td class="hex"><span class="sw" style="background:rgba(124, 58, 100, 0.05)"></span>rgba(124, 58, 100, 0.05)</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex"><span class="sw" style="background:rgba(209, 134, 176, 0.30)"></span>rgba(209, 134, 176, 0.30)</td><td class="hex"><span class="sw" style="background:rgba(124, 58, 100, 0.30)"></span>rgba(124, 58, 100, 0.30)</td></tr>
   </table>
 
   <h3>Achromatopsia</h3>
   <p>No hue perception. Roles stop differing in hue and instead form a lightness ladder: on dark surfaces the ladder runs from near-white warn down through light greys; on light surfaces it is the inverse, from near-black warn up through mid greys. The system's non-colour channels (text labels, icons, shapes) do the identifying work here.</p>
   <table class="spec">
     <tr><th>Token</th><th>Dark class (dark, dusk)</th><th>Light class (light, sepia)</th></tr>
-    <tr><td><code>--cyan</code></td><td class="hex">#cecece</td><td class="hex">#484848</td></tr>
-    <tr><td><code>--cyan-line</code></td><td class="hex">rgba(206, 206, 206, 0.40)</td><td class="hex">rgba(72, 72, 72, 0.40)</td></tr>
-    <tr><td><code>--cyan-bg</code></td><td class="hex">rgba(206, 206, 206, 0.08)</td><td class="hex">rgba(72, 72, 72, 0.05)</td></tr>
-    <tr><td><code>--selected-bg</code></td><td class="hex">#4a5263</td><td class="hex">#e2e2e2</td></tr>
-    <tr><td><code>--on-accent</code></td><td class="hex">#0e1116</td><td class="hex">#ffffff</td></tr>
-    <tr><td><code>--green</code></td><td class="hex">#b3b3b3</td><td class="hex">#5f5f5f</td></tr>
-    <tr><td><code>--green-bg</code></td><td class="hex">rgba(179, 179, 179, 0.08)</td><td class="hex">rgba(95, 95, 95, 0.05)</td></tr>
-    <tr><td><code>--green-line</code></td><td class="hex">rgba(179, 179, 179, 0.35)</td><td class="hex">rgba(95, 95, 95, 0.35)</td></tr>
-    <tr><td><code>--amber</code></td><td class="hex">#f3f3f3</td><td class="hex">#272727</td></tr>
-    <tr><td><code>--amber-bg</code></td><td class="hex">rgba(243, 243, 243, 0.08)</td><td class="hex">rgba(39, 39, 39, 0.05)</td></tr>
-    <tr><td><code>--amber-line</code></td><td class="hex">rgba(243, 243, 243, 0.35)</td><td class="hex">rgba(39, 39, 39, 0.35)</td></tr>
-    <tr><td><code>--violet</code></td><td class="hex">#a0a0a0</td><td class="hex">#666666</td></tr>
-    <tr><td><code>--violet-bg</code></td><td class="hex">rgba(160, 160, 160, 0.07)</td><td class="hex">rgba(102, 102, 102, 0.05)</td></tr>
-    <tr><td><code>--violet-line</code></td><td class="hex">rgba(160, 160, 160, 0.30)</td><td class="hex">rgba(102, 102, 102, 0.30)</td></tr>
+    <tr><td><code>--cyan</code></td><td class="hex"><span class="sw" style="background:#cecece"></span>#cecece</td><td class="hex"><span class="sw" style="background:#484848"></span>#484848</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex"><span class="sw" style="background:rgba(206, 206, 206, 0.40)"></span>rgba(206, 206, 206, 0.40)</td><td class="hex"><span class="sw" style="background:rgba(72, 72, 72, 0.40)"></span>rgba(72, 72, 72, 0.40)</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex"><span class="sw" style="background:rgba(206, 206, 206, 0.08)"></span>rgba(206, 206, 206, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(72, 72, 72, 0.05)"></span>rgba(72, 72, 72, 0.05)</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex"><span class="sw" style="background:#4a5263"></span>#4a5263</td><td class="hex"><span class="sw" style="background:#e2e2e2"></span>#e2e2e2</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex"><span class="sw" style="background:#0e1116"></span>#0e1116</td><td class="hex"><span class="sw" style="background:#ffffff"></span>#ffffff</td></tr>
+    <tr><td><code>--green</code></td><td class="hex"><span class="sw" style="background:#b3b3b3"></span>#b3b3b3</td><td class="hex"><span class="sw" style="background:#5f5f5f"></span>#5f5f5f</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex"><span class="sw" style="background:rgba(179, 179, 179, 0.08)"></span>rgba(179, 179, 179, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(95, 95, 95, 0.05)"></span>rgba(95, 95, 95, 0.05)</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex"><span class="sw" style="background:rgba(179, 179, 179, 0.35)"></span>rgba(179, 179, 179, 0.35)</td><td class="hex"><span class="sw" style="background:rgba(95, 95, 95, 0.35)"></span>rgba(95, 95, 95, 0.35)</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex"><span class="sw" style="background:#f3f3f3"></span>#f3f3f3</td><td class="hex"><span class="sw" style="background:#272727"></span>#272727</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex"><span class="sw" style="background:rgba(243, 243, 243, 0.08)"></span>rgba(243, 243, 243, 0.08)</td><td class="hex"><span class="sw" style="background:rgba(39, 39, 39, 0.05)"></span>rgba(39, 39, 39, 0.05)</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex"><span class="sw" style="background:rgba(243, 243, 243, 0.35)"></span>rgba(243, 243, 243, 0.35)</td><td class="hex"><span class="sw" style="background:rgba(39, 39, 39, 0.35)"></span>rgba(39, 39, 39, 0.35)</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex"><span class="sw" style="background:#a0a0a0"></span>#a0a0a0</td><td class="hex"><span class="sw" style="background:#666666"></span>#666666</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex"><span class="sw" style="background:rgba(160, 160, 160, 0.07)"></span>rgba(160, 160, 160, 0.07)</td><td class="hex"><span class="sw" style="background:rgba(102, 102, 102, 0.05)"></span>rgba(102, 102, 102, 0.05)</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex"><span class="sw" style="background:rgba(160, 160, 160, 0.30)"></span>rgba(160, 160, 160, 0.30)</td><td class="hex"><span class="sw" style="background:rgba(102, 102, 102, 0.30)"></span>rgba(102, 102, 102, 0.30)</td></tr>
   </table>
 
   <h2>Contrast guarantee</h2>
-  <p>Every role-on-surface pair in every mode clears 4.5:1 on the worst surface of its theme class and on the role's own tint. The prototype verifies this programmatically before release, so the values above are not approximations.</p>
+  <p>Every role-on-surface pair in every mode clears 4.5:1 on the worst surface of its theme class (all 64 pairs), and on the role's own tint 62 of 64 do. The two exceptions, both under sepia (tritanopia green at 4.26:1, achromatopsia violet at 4.32:1), sit just under 4.5 but above the 3:1 large-text threshold; the checker flags them as <code>KNOWN</code>. <code>docs/tools/contrast-check.ps1</code> re-derives these numbers from the values in <code>design-system.css</code> (run <code>pwsh docs/tools/contrast-check.ps1</code> from the repo root), so the values above are checked, not approximations.</p>
 
   <h2>How the setting is exposed and stored</h2>
   <table class="spec">
@@ -135,12 +135,12 @@
   <h2>Guidance</h2>
   <ul>
     <li>Colourblind modes are a second layer, not the primary channel. Status in this system is never colour alone: pills carry a text label, notes carry an icon, and the warn role is reserved for things a user must act on. The modes make the colour channel itself safe for the four deficiencies.</li>
-    <li>When porting to Avalonia, keep the 14 remapped keys as one small override dictionary per mode. Merging it after the theme dictionary reproduces the layering exactly, and "off" simply means not merging it.</li>
+    <li>When porting to Avalonia, keep the 14 remapped keys as one small override dictionary per mode (two per mode: dark-class and light-class), merged after the theme dictionary, exactly as the <a href="themes.html#avalonia">theme build-up</a> describes. Merging it after the theme dictionary reproduces the layering, and "off" simply means not merging it.</li>
     <li>Do not add per-component colourblind special cases: if a component reads the role tokens, it is already correct under every mode.</li>
   </ul>
 </main>
 
-<footer class="docs-foot">Source: <a href="../ui-prototype/profiles.html">docs/ui-prototype</a> (design-system.css, theme.js and the six pages); values quoted verbatim from that stylesheet.</footer>
+<footer class="docs-foot">Source: <a href="../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the four colourblind blocks) and <a href="../ui-prototype/theme.js">theme.js</a>; values quoted verbatim and audited against that stylesheet.</footer>
 
 <script>
   const t = document.getElementById('themeSelect');

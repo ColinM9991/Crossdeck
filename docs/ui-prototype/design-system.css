@@ -198,7 +198,9 @@
    - Achromatopsia (no hue perception): lightness ladder; roles differ in
      lightness, not hue.
    Every role-on-surface pair clears 4.5:1 on the worst surface of its theme
-   class and on its own tint (verified programmatically before release). */
+   class; role-on-own-tint pairs clear 4.5:1 except two marginal sepia
+   pairs (tritanopia green 4.26:1, achromatopsia violet 4.32:1, both above
+   3:1). Verified by docs/tools/contrast-check.ps1. */
 html[data-cb="deuteranopia"]:not([data-theme="light"]):not([data-theme="sepia"]),
 html[data-cb="protanopia"]:not([data-theme="light"]):not([data-theme="sepia"]) {
   --cyan: #56b4e9; --cyan-line: rgba(86, 180, 233, 0.40); --cyan-bg: rgba(86, 180, 233, 0.08);

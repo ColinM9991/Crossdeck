@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Profiles page</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html" class="active" aria-current="page">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Profiles page <span class="cls">.profile-card, .import-zone, .open-action</span></h1>
+  <p class="page-sub">The profile list card and the detail pane's actions.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">selected</a>, <a href="states.html">problem</a>, <a href="states.html">hidden</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Components</h2>
+
+<div class="example stack">
+      <div class="profile-card" style="background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 15px; margin-bottom:0; cursor:pointer; box-shadow:var(--shadow-0); width:100%; max-width:420px">
+        <div class="top" style="display:flex; align-items:center; gap:9px"><span class="name" style="font-size:14px; font-weight:600">Zibo 737 - Bravo + PAP3</span><span class="chip active" style="margin-left:auto"><span class="dot"></span>active</span></div>
+        <div class="meta" style="font-family:var(--font-mono); font-size:11.5px; color:var(--text-3); margin-top:5px">X-Plane &middot; B738</div>
+        <div class="desc" style="color:var(--text-2); font-size:12px; margin-top:4px">Captain seat, full autopilot</div>
+        <div class="foot" style="display:flex; align-items:center; gap:9px; margin-top:10px"><span class="count" style="color:var(--text-3); font-size:11.5px">12 bindings &middot; 2 variables</span><span class="count" style="color:var(--text-3); font-size:11.5px">applied 2 h ago</span><span class="chip warn" style="margin-left:auto">1 left out</span></div>
+      </div>
+      <a class="open-action" href="#top" style="width:100%; border:1px solid var(--cyan-line); background:var(--cyan-bg); color:var(--cyan); border-radius:10px; padding:10px; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:0; text-decoration:none">Open in editor</a>
+      <span class="cap">A profile card and the full-width open action.</span>
+    </div>
+
+  <h3>Profile card <span class="cls">.profile-card</span></h3>
+  <ul class="spec-list">
+    <li>Card surface, 1px <code>--line</code>, radius 10, 13/15 padding, 12 below, <code>--shadow-0</code></li>
+    <li>Hover border <code>--hover-line</code></li>
+    <li><code>.selected</code> takes a <code>--cyan-line</code> border and <code>--selected-bg</code> fill (mirroring the detail pane)</li>
+    <li>The top row (<code>.top</code>) is 9 apart with the name (14 600) and a pill at the right edge</li>
+    <li>The meta line (<code>.meta</code>) is mono 11.5 <code>--text-3</code></li>
+    <li>The description (<code>.desc</code>) is 12 <code>--text-2</code> (an <code>.empty</code> description is italic <code>--text-3</code>)</li>
+    <li>The foot (<code>.foot</code>) is 9 apart, 10 below, with <code>.count</code> tags in 11.5 <code>--text-3</code></li>
+  </ul>
+  <h3>Import zone <span class="cls">.import-zone</span></h3>
+  <ul class="spec-list">
+    <li>A dashed <code>--cyan-line</code> import panel on <code>--cyan-bg</code></li>
+    <li>Radius 10, 18 padding, centred 12.5px <code>--text-2</code> with a cyan icon and a mono 11.5 <code>.src</code> caption</li>
+    <li>Hover a solid cyan border</li>
+    <li>Hidden by default, opened by the Import button or an <code>?import=1</code> parameter</li>
+  </ul>
+  <h3>Filter row <span class="cls">.filter-row</span></h3>
+  <ul class="spec-list">
+    <li>10 apart; a 11px 600 <code>--text-3</code> label and a full-width input</li>
+    <li>Stacks at 640</li>
+    <li>Shared with the <a href="devices.html">devices</a> and <a href="editor.html">editor</a> pages</li>
+  </ul>
+  <h3>No match <span class="cls">.no-match</span></h3>
+  <ul class="spec-list">
+    <li>14/16, 12.5px <code>--text-3</code>: "No profiles match the filter."</li>
+  </ul>
+  <h3>Open action <span class="cls">.open-action</span></h3>
+  <ul class="spec-list">
+    <li>The full-width accent CTA</li>
+    <li>1px <code>--cyan-line</code>, <code>--cyan-bg</code> fill, <code>--cyan</code> text, radius 10, 10 padding, 13px 600, centred and 8 apart, 18 above</li>
+    <li>Hover brightens to 1.08</li>
+    <li>Reused on the <a href="devices.html">devices</a> page</li>
+  </ul>
+  <h3>Action row <span class="cls">.action-row</span></h3>
+  <ul class="spec-list">
+    <li>A link row: 14 apart, 12 above</li>
+    <li>Links 12.5px 600 <code>--text-3</code> hovering to <code>--text-2</code></li>
+    <li>A <code>.danger</code> link hovers to <code>--amber</code></li>
+    <li><code>.push</code> right-aligns the last item (Delete)</li>
+  </ul>
+  <h3>Aircraft group</h3>
+  <ul class="spec-list">
+    <li>An <code>.aircraft-list</code> that wraps 7 apart</li>
+    <li>An <code>.aircraft-chip</code> is a violet-family pill (mono 12 600, 3/5/3/11 padding) with a 16px round <code>.rm</code> remove button (a 44px hit area, amber on hover)</li>
+    <li>An <code>.aircraft-empty</code> note is italic <code>--text-3</code></li>
+    <li><code>.aircraft-add</code> is a select row 10 below</li>
+  </ul>
+  <h3>Runtime state <span class="cls">.runtime-state</span></h3>
+  <ul class="spec-list">
+    <li>Inline status in the Runtime card: an 8px <code>.dot</code> plus a 600 label</li>
+    <li><code>.runtime-running</code> in <code>--green</code>, <code>.runtime-stopped</code> in <code>--text-3</code></li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .profile-card    Profile card
+  .import-zone     Import zone
+  .filter-row      Filter row
+  .no-match        No match
+  .open-action     Open action
+  .action-row      Action row
+  .runtime-state   Runtime state</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--line</code> <code>--shadow-0</code> <code>--hover-line</code> <code>--cyan-line</code> <code>--selected-bg</code> <code>--text-3</code> <code>--text-2</code> <code>--cyan-bg</code> <code>--cyan</code> <code>--amber</code> <code>--green</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: the page-local <code>&lt;style&gt;</code> block in <a href="../../ui-prototype/profiles.html">docs/ui-prototype/profiles.html</a>, on top of the shared tokens and primitives in <a href="../../ui-prototype/design-system.css">design-system.css</a>; values quoted verbatim from those stylesheets.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

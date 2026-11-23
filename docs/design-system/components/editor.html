@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Editor page</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html" class="active" aria-current="page">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Editor page <span class="cls">.binding-row, .device-card, .picker, .expr-list</span></h1>
+  <p class="page-sub">The binding editor: device cards, the two-line binding rows, kind tags, the picker and the expression autocomplete.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">selected</a>, <a href="states.html">problem</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Components</h2>
+
+<div class="example stack">
+      <div style="width:100%">
+        <div class="binding-row" style="padding:11px 14px; border-radius:8px; cursor:pointer; position:relative; background:var(--cyan-bg); box-shadow:inset 2px 0 0 var(--cyan)">
+          <div style="display:flex; align-items:baseline; gap:10px">
+            <span style="font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--amber)">button:lnav</span>
+            <span style="color:var(--text-3); font-size:12px">Pressed</span>
+            <span style="margin-left:auto; color:var(--amber); display:flex"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; margin-top:5px; font-family:var(--font-mono); font-size:12px; color:var(--text-2); min-width:0">
+            <span style="font-family:var(--font-ui); font-size:11px; font-weight:600; letter-spacing:0.05em; color:var(--chip-text); background:var(--chip-bg); border:1px solid var(--chip-line); border-radius:4px; padding:1.5px 7px; flex:none">CMD</span>
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">sim/autopilot/LNAV</span>
+            <span style="margin-left:auto; flex:none; font-size:11.5px; color:var(--amber)">[pwr] == 1</span>
+          </div>
+        </div>
+      </div>
+      <span class="cap">A selected two-line binding row: control, event, kind tag, expression and the guard.</span>
+    </div>
+
+  <h3>Binding row <span class="cls">.binding-row</span></h3>
+  <ul class="spec-list">
+    <li>11/14 padding, radius 8, a divider between rows</li>
+    <li>Hover <code>--inset</code></li>
+    <li><code>.selected</code> fills <code>--cyan-bg</code> with a 2px inset <code>--cyan</code> left bar</li>
+    <li>Line 1: the control (<code>.ctrl</code>) mono 13 600 (<code>.problem</code> in <code>--amber</code>), the event (<code>.event</code>) 12 <code>--text-3</code>, then a live value (<code>.live</code>, mono 12 <code>--text-2</code>) or a <code>.warn</code> triangle, pinned right</li>
+    <li>Line 2: kind pills, the expression (<code>.expr</code>, ellipsized; <code>.none</code> italic <code>--text-3</code>), and the guard (<code>.when</code>, 11.5 <code>--text-3</code>; <code>.problem</code> amber) pinned right</li>
+  </ul>
+  <h3>Kind tag <span class="cls">.kind-chip</span></h3>
+  <ul class="spec-list">
+    <li>The page's own square tag: 11px 600, letter-spacing 0.05em, <code>--chip-*</code> colours, radius 4, 1.5/7 padding</li>
+    <li>Distinct from the rounded <a href="pills.html">pill</a></li>
+    <li>It uses <code>--chip-text</code> rather than <code>--text-3</code> because dusk's <code>--text-3</code> measures 4.14:1 on <code>--chip-bg</code>, under the 4.5:1 standard</li>
+  </ul>
+  <h3>Device card <span class="cls">.device-card</span></h3>
+  <ul class="spec-list">
+    <li>Matches the <a href="profiles.html">profiles</a> card shape</li>
+    <li>A <code>.section-label</code> (11px 700 uppercase, 18/2/9 margins) above the "At load" stat card</li>
+  </ul>
+  <h3>Bindings head <span class="cls">.bindings-head</span></h3>
+  <ul class="spec-list">
+    <li>A 20px 700 device name, a kind pill, a connection pill</li>
+    <li>The <code>.count</code> at the right edge</li>
+  </ul>
+  <h3>Picker <span class="cls">.picker</span></h3>
+  <ul class="spec-list">
+    <li>Follows the <a href="devices.html">devices</a> page shape</li>
+    <li>The <code>#actionPicker</code> tightens its rows (2/0 margins, 8/0 padding) and adds a <code>.selected</code> state (cyan fill + left bar)</li>
+  </ul>
+  <h3>Action card <span class="cls">.act-card</span></h3>
+  <ul class="spec-list">
+    <li>A committed action card that re-opens the editor on click (hover <code>--hover-line</code>)</li>
+    <li>The <code>.card-del</code> and <code>.more</code> buttons in its head are the per-action remove and options buttons (amber and <code>--chip-bg</code> hovers, 44px hits)</li>
+  </ul>
+  <h3>Source item <span class="cls">.src-item</span></h3>
+  <ul class="spec-list">
+    <li>Rows divide with <code>--line-soft</code></li>
+    <li>Reserve 36 of right padding for the hover-revealed <code>.src-del</code> (20px, amber on hover)</li>
+  </ul>
+  <h3>Expression list <span class="cls">.expr-list</span></h3>
+  <ul class="spec-list">
+    <li>The autocomplete dropdown under the expression input</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .binding-row     Binding row
+  .kind-chip       Kind tag
+  .device-card     Device card
+  .bindings-head   Bindings head
+  .picker          Picker
+  .act-card        Action card
+  .src-item        Source item
+  .expr-list       Expression list</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--inset</code> <code>--cyan-bg</code> <code>--cyan</code> <code>--amber</code> <code>--text-3</code> <code>--text-2</code> <code>--chip-text</code> <code>--chip-bg</code> <code>--hover-line</code> <code>--line-soft</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: the page-local <code>&lt;style&gt;</code> block in <a href="../../ui-prototype/editor.html">docs/ui-prototype/editor.html</a>, on top of the shared tokens and primitives in <a href="../../ui-prototype/design-system.css">design-system.css</a>; values quoted verbatim from those stylesheets.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

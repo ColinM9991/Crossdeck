@@ -39,7 +39,7 @@
 
 <main class="docs-main">
   <h1>Themes</h1>
-  <p class="page-sub">Four themes: dark (default), light, sepia and dusk. A theme is a re-tuning of the tokens, not a different component set: 36 of the 39 tokens are overridden per theme (fonts stay shared).</p>
+  <p class="page-sub">Four themes: dark (default), light, sepia and dusk. A theme is a re-tuning of the tokens, not a different component set: 37 of the 39 tokens are overridden per theme (the two font stacks stay shared).</p>
 
   <h2>How a theme is applied</h2>
   <p>A theme is a single attribute on the document element, <code>html[data-theme="..."]</code>. Omitting the attribute is the dark theme. <code>theme.js</code> owns the whole cycle:</p>
@@ -120,19 +120,71 @@
   <ul>
     <li>Tertiary text was lightened in v5 specifically to clear WCAG AA: v4's <code>#6b7484</code> measured 3.70:1 on cards, under the 4.5:1 standard for normal text.</li>
     <li>The editor page's kind pill uses <code>--chip-text</code> rather than <code>--text-3</code> because dusk's <code>#8b98b3</code> on dusk <code>--chip-bg</code> measures 4.14:1, still under 4.5:1.</li>
-    <li>Every colourblind mode's role-on-surface pairs clear 4.5:1 on the worst surface of its theme class and on the role's own tint; the prototype verifies this programmatically before release.</li>
+    <li>Every colourblind mode's role-on-surface pairs clear 4.5:1 on the worst surface of their theme class; on the role's own tint all pairs clear 4.5:1 except two marginal sepia cases (tritanopia green 4.26:1, achromatopsia violet 4.32:1, both above 3:1). <code>docs/tools/contrast-check.ps1</code> re-verifies these numbers from the CSS values (<code>pwsh docs/tools/contrast-check.ps1</code> from the repo root), so the numbers are checked, not assumed.</li>
   </ul>
 
-  <h2>Modelling the themes in Avalonia</h2>
+  <h2 id="avalonia">Building the theme in Avalonia</h2>
+  <p>Everything below is what a manual Avalonia implementation needs: the resource keys, the base dictionary values, the merge order for the four themes and the four colourblind overrides, and the value-type notes. The per-theme values (37 keys each) are the master table on the <a href="tokens.html">tokens</a> page; the 14-key colourblind overrides are on the <a href="colourblind.html">colourblind</a> page. Both tables are audited verbatim against <code>design-system.css</code>.</p>
+
+  <h3>Resource keys</h3>
+  <p>One resource key per token: the token name without the <code>--</code> prefix, Pascal-cased. The base (dark) values are below, so the base dictionary can be written from this page; prefix the keys with a namespace (e.g. <code>Crossdeck.Cyan</code>) to avoid clashes with Fluent theme resources.</p>
+  <table class="spec">
+    <tr><th>Token</th><th>Avalonia key</th><th>Base (dark) value</th><th>Value type</th></tr>
+    <tr><td><code>--bg</code></td><td class="hex">Bg</td><td class="hex">#0e1116</td><td>Color</td></tr>
+    <tr><td><code>--card</code></td><td class="hex">Card</td><td class="hex">#141a24</td><td>Color</td></tr>
+    <tr><td><code>--inset</code></td><td class="hex">Inset</td><td class="hex">#10151d</td><td>Color</td></tr>
+    <tr><td><code>--line</code></td><td class="hex">Line</td><td class="hex">#252d3b</td><td>Color</td></tr>
+    <tr><td><code>--line-soft</code></td><td class="hex">LineSoft</td><td class="hex">#1e2531</td><td>Color</td></tr>
+    <tr><td><code>--text</code></td><td class="hex">Text</td><td class="hex">#e8ecf3</td><td>Color</td></tr>
+    <tr><td><code>--text-2</code></td><td class="hex">Text2</td><td class="hex">#9aa3b2</td><td>Color</td></tr>
+    <tr><td><code>--text-3</code></td><td class="hex">Text3</td><td class="hex">#828c9e</td><td>Color</td></tr>
+    <tr><td><code>--cyan</code></td><td class="hex">Cyan</td><td class="hex">#41d9f0</td><td>Color (accent)</td></tr>
+    <tr><td><code>--cyan-line</code></td><td class="hex">CyanLine</td><td class="hex">rgba(65, 217, 240, 0.45)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--cyan-bg</code></td><td class="hex">CyanBg</td><td class="hex">rgba(65, 217, 240, 0.07)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--green</code></td><td class="hex">Green</td><td class="hex">#3ddc91</td><td>Color (ok role)</td></tr>
+    <tr><td><code>--green-bg</code></td><td class="hex">GreenBg</td><td class="hex">rgba(61, 220, 145, 0.10)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--green-line</code></td><td class="hex">GreenLine</td><td class="hex">rgba(61, 220, 145, 0.30)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--amber</code></td><td class="hex">Amber</td><td class="hex">#f5a83c</td><td>Color (warn role)</td></tr>
+    <tr><td><code>--amber-bg</code></td><td class="hex">AmberBg</td><td class="hex">rgba(245, 168, 60, 0.08)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--amber-line</code></td><td class="hex">AmberLine</td><td class="hex">rgba(245, 168, 60, 0.30)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--violet</code></td><td class="hex">Violet</td><td class="hex">#bd8ef0</td><td>Color (info role)</td></tr>
+    <tr><td><code>--violet-bg</code></td><td class="hex">VioletBg</td><td class="hex">rgba(189, 142, 240, 0.10)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--violet-line</code></td><td class="hex">VioletLine</td><td class="hex">rgba(189, 142, 240, 0.30)</td><td>Color with alpha</td></tr>
+    <tr><td><code>--chip-bg</code></td><td class="hex">ChipBg</td><td class="hex">#1a2130</td><td>Color</td></tr>
+    <tr><td><code>--chip-line</code></td><td class="hex">ChipLine</td><td class="hex">#2a3344</td><td>Color</td></tr>
+    <tr><td><code>--chip-text</code></td><td class="hex">ChipText</td><td class="hex">#aab3c2</td><td>Color</td></tr>
+    <tr><td><code>--panel</code></td><td class="hex">Panel</td><td class="hex">#11161f</td><td>Color</td></tr>
+    <tr><td><code>--hover-line</code></td><td class="hex">HoverLine</td><td class="hex">#33405a</td><td>Color</td></tr>
+    <tr><td><code>--selected-bg</code></td><td class="hex">SelectedBg</td><td class="hex">#152031</td><td>Color</td></tr>
+    <tr><td><code>--on-accent</code></td><td class="hex">OnAccent</td><td class="hex">#062730</td><td>Color</td></tr>
+    <tr><td><code>--tab-disabled</code></td><td class="hex">TabDisabled</td><td class="hex">#76808f</td><td>Color</td></tr>
+    <tr><td><code>--seg-active</code></td><td class="hex">SegActive</td><td class="hex">#232c3d</td><td>Color</td></tr>
+    <tr><td><code>--scroll-thumb</code></td><td class="hex">ScrollThumb</td><td class="hex">#263041</td><td>Color</td></tr>
+    <tr><td><code>--backdrop</code></td><td class="hex">Backdrop</td><td class="hex">rgba(4, 6, 10, 0.6)</td><td>Color with alpha (modal overlay)</td></tr>
+    <tr><td><code>--shadow-0</code></td><td class="hex">Shadow0</td><td class="hex">0 1px 0 rgba(255,255,255,0.02) inset, 0 4px 14px rgba(0,0,0,0.25)</td><td>Shadow (see notes)</td></tr>
+    <tr><td><code>--shadow-1</code></td><td class="hex">Shadow1</td><td class="hex">0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.35)</td><td>Shadow (see notes)</td></tr>
+    <tr><td><code>--chrome-shadow</code></td><td class="hex">ChromeShadow</td><td class="hex">none</td><td>Shadow (dark: none)</td></tr>
+    <tr><td><code>--modal-shadow</code></td><td class="hex">ModalShadow</td><td class="hex">0 12px 40px rgba(0, 0, 0, 0.5)</td><td>Shadow (see notes)</td></tr>
+    <tr><td><code>--chevron</code></td><td class="hex">Chevron</td><td class="hex">11px chevron, stroke #6b7484</td><td>DrawingImage / vector icon</td></tr>
+    <tr><td><code>--font-ui</code></td><td class="hex">FontUi</td><td class="hex">"Segoe UI", Inter, system-ui, -apple-system, sans-serif</td><td>FontFamily</td></tr>
+    <tr><td><code>--font-mono</code></td><td class="hex">FontMono</td><td class="hex">"Cascadia Code", "JetBrains Mono", Consolas, "SF Mono", monospace</td><td>FontFamily</td></tr>
+  </table>
+  <p class="dim" style="font-size:12px">Type notes: <code>rgba(r, g, b, a)</code> converts to an ARGB <code>Color</code> with the alpha byte <code>round(a &times; 255)</code> (e.g. <code>rgba(65, 217, 240, 0.45)</code> is <code>#7341D9F0</code>). Shadows have no 1:1 Avalonia property: model each as a <code>DropShadowEffect</code> from the main blur layer (offset, blur and opacity) and drop the 1px inset top highlight, or accept a slightly flatter look. The chevron is an 11px vector (the <code>--chevron</code> data URI is the path); its stroke colour is per theme, so it is a resource, not a constant.</p>
+
+  <h3>Override dictionaries and merge order</h3>
   <ul>
-    <li>One base dictionary (dark) plus small override dictionaries per theme that redefine the same resource keys; merge order decides the winner, later dictionary wins.</li>
-    <li>Avalonia's <code>ThemeVariant</code> gives you the dark/light pair for free (FluentTheme already flips on it). Sepia and dusk have no built-in variant: register them as runtime-swappable dictionaries on <code>Application.Current</code>, or as resource keys the app swaps on change.</li>
-    <li>The prototype's single-attribute model (<code>data-theme</code>) has no direct Avalonia equivalent; the closest is a theme service that (re)merges the chosen dictionaries on change and persists the choice, mirroring <code>CrossdeckTheme</code>'s get/set/persist/sync contract.</li>
-    <li>Verify the Avalonia 12 theme-variant resource syntax in the docs before relying on it; the 11-era patterns have drifted.</li>
+    <li><strong>Base (dark), 39 keys</strong> (the values above). Always present.</li>
+    <li><strong>Theme override, 37 keys each</strong> (light, sepia, dusk): the per-theme columns of the <a href="tokens.html">tokens</a> master table. Merged over the base when that theme is active. "Dark" is the absence of a theme override.</li>
+    <li><strong>Colourblind override, 14 keys</strong>: the four mode tables on the <a href="colourblind.html">colourblind</a> page. Each mode has two key sets: a <em>dark-class</em> set (applies under dark and dusk) and a <em>light-class</em> set (applies under light and sepia). Merged last, after the theme override; "off" is the absence of the merge. Only 14 keys are redefined, so every other key keeps the theme's value and there is no per-theme mode state to desynchronise.</li>
+    <li><strong>Implementation.</strong> A theme service holds the four theme dictionaries and the four colourblind dictionary pairs; on change it (re)merges base + active theme + active mode onto <code>Application.Current.Resources</code> (a <code>MergedDictionary</code>), persists the choice (mirroring <code>CrossdeckTheme</code> / <code>CrossdeckCB</code>'s get/set/persist/sync contract), and the dictionaries themselves are data, so the same values work for XAML controls and for code that reads resources.</li>
+    <li>Avalonia's <code>ThemeVariant</code> covers the dark/light pair only (Fluent themes flip on it); sepia and dusk are runtime-swappable dictionaries as above. Verify the current Avalonia theme-variant resource syntax in the docs before relying on it; the 11-era patterns have drifted.</li>
   </ul>
+
+  <h3>Contrast verification</h3>
+  <p><code>docs/tools/contrast-check.ps1</code> reads the token values straight out of <code>design-system.css</code> and asserts the guarantees this page and the colourblind page make: every mode's four role solids clear 4.5:1 on the worst surface of their theme class and on the role's own tint, <code>Text3</code> on <code>Card</code> clears 4.5:1 in all four themes, the focus ring clears 3:1, and the dusk chevron re-tint and the kind-chip <code>ChipText</code> swap hold. Run it after changing any value; it fails before the port would.</p>
 </main>
 
-<footer class="docs-foot">Source: <a href="../ui-prototype/profiles.html">docs/ui-prototype</a> (design-system.css, theme.js and the six pages); values quoted verbatim from that stylesheet.</footer>
+<footer class="docs-foot">Source: <a href="../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the four theme blocks and the four colourblind blocks); values quoted verbatim from that stylesheet and audited against it.</footer>
 
 <script>
   const t = document.getElementById('themeSelect');

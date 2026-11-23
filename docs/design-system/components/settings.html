@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Settings page</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html" class="active" aria-current="page">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Settings page <span class="cls">.nav-item, .set-row, .switch</span></h1>
+  <p class="page-sub">The settings page's own controls: a section nav column, label-left / control-right rows, the switch, and the chevron select.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">active</a>, <a href="states.html">problem</a>, <a href="states.html">hidden</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Controls</h2>
+
+<div class="example stack">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+        <div style="min-width:180px">
+          <button class="nav-item active" style="min-height:44px; padding:9px 12px; border-radius:8px; font-size:13px; color:var(--cyan); background:var(--cyan-bg); font-weight:600; text-align:left; width:100%" type="button">General</button>
+          <button class="nav-item" style="min-height:44px; padding:9px 12px; border-radius:8px; font-size:13px; color:var(--text-2); text-align:left; width:100%; margin-top:2px" type="button">Simulators</button>
+        </div>
+        <div class="set-row" style="flex:1; min-width:280px">
+          <div class="lbl"><div class="t">Restore last profile</div><div class="d" style="color:var(--text-3); font-size:12px; margin-top:2px; line-height:1.4">Re-apply the last active profile at startup</div></div>
+          <div class="ctl" style="margin-left:auto">
+            <label class="switch" style="position:relative; width:38px; height:21px; flex:none; display:inline-block"><input type="checkbox" checked aria-label="Restore last profile" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer"><span class="track" style="position:absolute; inset:0; background:var(--cyan-bg); border:1px solid var(--cyan-line); border-radius:999px"></span><span class="thumb" style="position:absolute; top:3px; left:3px; width:15px; height:15px; border-radius:50%; background:var(--cyan); transform:translateX(17px)"></span></label>
+          </div>
+        </div>
+      </div>
+      <span class="cap">A section nav item and a label-left / control-right setting row with the switch in the checked state.</span>
+    </div>
+
+  <h3>Nav item <span class="cls">.nav-item</span></h3>
+  <ul class="spec-list">
+    <li>A 44 minimum height section selector: 9/12 padding, radius 8, 13px <code>--text-2</code></li>
+    <li>Hover <code>--text</code> on <code>--inset</code></li>
+    <li>The active item is <code>--cyan</code> on <code>--cyan-bg</code> at 600</li>
+    <li>The nav column is a radio group that roves with the up/down arrow keys</li>
+    <li>At 1180 wide the column becomes a wrapping row</li>
+  </ul>
+  <h3>Setting row <span class="cls">.set-row</span></h3>
+  <ul class="spec-list">
+    <li>Label and control 12 apart, 13/16 padding, a divider between rows</li>
+    <li>The label block (<code>.lbl</code>) holds a title <code>.t</code> (13px 600) over a description <code>.d</code> (12px <code>--text-3</code>)</li>
+    <li>The control (<code>.ctl</code>) pins to the right edge (value-only rows use <code>.val</code>, mono 12.5px)</li>
+    <li>At 640 the row wraps and the control goes full width</li>
+  </ul>
+  <h3>Switch <span class="cls">.switch</span></h3>
+  <ul class="spec-list">
+    <li>A 38x21 track (<code>--inset</code> / <code>--line</code>, radius 999) with a 15px thumb (<code>--text-3</code>, 3 in from the left)</li>
+    <li>Checked: the track is <code>--cyan-bg</code> / <code>--cyan-line</code> and the thumb is <code>--cyan</code>, moved 17 across</li>
+    <li>Keyboard focus shows the ring on the track; an invisible 44px hit area</li>
+    <li>A 0.15s transition that stops under reduced motion</li>
+  </ul>
+  <h3>Save hint <span class="cls">.save-hint</span></h3>
+  <ul class="spec-list">
+    <li>The amber box variant on this page: <code>--amber-bg</code> / <code>--amber-line</code>, radius 8, 9/13 padding, 12px <code>--amber</code>, with a 6px amber dot and a 600 count</li>
+    <li>Hidden at zero</li>
+    <li>The <a href="variables.html">variables</a>, <a href="profiles.html">profiles</a> and <a href="devices.html">devices</a> pages use a lighter centred text variant (11.5-12px <code>--text-3</code>, amber dot and count)</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .nav-item        Nav item
+  .set-row         Setting row
+  .switch          Switch
+  .save-hint       Save hint</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--text-2</code> <code>--text</code> <code>--inset</code> <code>--cyan</code> <code>--cyan-bg</code> <code>--text-3</code> <code>--line</code> <code>--cyan-line</code> <code>--amber-bg</code> <code>--amber-line</code> <code>--amber</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: the page-local <code>&lt;style&gt;</code> block in <a href="../../ui-prototype/settings.html">docs/ui-prototype/settings.html</a>, on top of the shared tokens and primitives in <a href="../../ui-prototype/design-system.css">design-system.css</a>; values quoted verbatim from those stylesheets.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

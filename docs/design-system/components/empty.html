@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Detail and empty states</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html" class="active" aria-current="page">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Detail and empty states <span class="cls">.detail-head, .detail-empty, .empty-state</span></h1>
+  <p class="page-sub">The detail pane's title row, its no-selection placeholder, and the dashed no-contents panel for lists.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Anatomy</h2>
+
+<div class="example stack">
+      <div class="detail-head"><h2 style="font-size:18px; font-weight:700">button:14</h2><span class="chip">Button</span></div>
+      <div class="detail-empty">Select a variable to see its details.</div>
+      <div class="empty-state" style="width:100%">No devices in this profile yet.<br>Add one to start binding it.</div>
+      <span class="cap">The detail head, the no-selection placeholder, and the dashed empty panel.</span>
+    </div>
+
+  <h3>Detail head <span class="cls">.detail-head</span></h3>
+  <ul class="spec-list">
+    <li>The pane's title row, 10 apart, 16 below, an 18px 700 head</li>
+    <li>The <a href="devices.html">devices</a> page sets the head to the mono face</li>
+    <li>The <a href="editor.html">editor</a> appends a <code>.device-ref</code> link at the right edge (<code>--text-3</code> 12.5px, underline on hover)</li>
+  </ul>
+  <h3>Empty placeholder <span class="cls">.detail-empty</span></h3>
+  <ul class="spec-list">
+    <li>12.5px <code>--text-3</code>, 6/2 padding: the "select an item" prompt</li>
+  </ul>
+  <h3>Empty panel <span class="cls">.empty-state</span></h3>
+  <ul class="spec-list">
+    <li>A 1px dashed <code>--line</code> box, radius 10, 26/18 padding</li>
+    <li>Centred 12.5px <code>--text-3</code> at 1.6 line height</li>
+    <li>The <a href="editor.html">editor</a> page allows a button inside, 14 down</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .detail-head     Detail head
+  .detail-empty    Empty placeholder
+  .empty-state     Empty panel</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--text-3</code> <code>--line</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: <a href="../../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the shared stylesheet); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

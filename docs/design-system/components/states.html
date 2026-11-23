@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - States and behaviour</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html" class="active" aria-current="page">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>States and behaviour</h1>
+  <p class="page-sub">Every visual state in the system and what triggers it.</p>
+
+
+  <h2>Hover</h2>
+  <p class="trig">Trigger: Pointer over</p>
+  <ul class="spec-list"><li>Borders move to <code>--hover-line</code> (cards, pills, secondary buttons, device/profile cards)</li>
+<li>Fills move to <code>--inset</code> (rows, picker rows, rail items)</li>
+<li>Outline buttons fill <code>--cyan-bg</code></li>
+<li>The primary button brightens to 1.06</li>
+<li>Links underline</li>
+<li>Plus/delete marks fade in</li>
+<li>Destructive marks turn amber</li></ul>
+
+  <h2>Active</h2>
+  <p class="trig">Trigger: The item is the current one</p>
+  <ul class="spec-list"><li>The cyan treatment: rail items (fill + indicator bar)</li>
+<li>Tabs and segments (<code>--seg-active</code>)</li>
+<li>Outline/secondary buttons (cyan fill)</li>
+<li>Pills</li></ul>
+
+  <h2>Selected</h2>
+  <p class="trig">Trigger: The user has selected it, mirrored in the detail pane</p>
+  <ul class="spec-list"><li>List cards and binding rows: a <code>--cyan-line</code> border + <code>--selected-bg</code> fill (cards)</li>
+<li>Or a <code>--cyan-bg</code> fill + 2px inset <code>--cyan</code> left bar (rows)</li>
+<li>Variable table rows the same</li></ul>
+
+  <h2>Disabled</h2>
+  <p class="trig">Trigger: The control is disabled</p>
+  <ul class="spec-list"><li>Buttons: not-allowed pointer</li>
+<li><code>.btn.add</code> at 0.4 opacity with no background</li>
+<li>Tabs in <code>--tab-disabled</code></li>
+<li>Already-added aircraft options are disabled</li></ul>
+
+  <h2>Problem</h2>
+  <p class="trig">Trigger: Data indicates an error (left-out counts, unknown refs)</p>
+  <ul class="spec-list"><li>Amber marks on broken items: <code>.ctrl.problem</code>, <code>.when.problem</code>, <code>.stat.amber</code>, <code>.note-line</code> (warn default), <code>.status-pill.warn</code>, <code>.chip.warn</code>, <code>.guard-help.problem</code></li>
+<li>The <code>.problem-line</code> banner renders when a count is above zero</li></ul>
+
+  <h2>Pulsing</h2>
+  <p class="trig">Trigger: The value just changed; all motion stops under reduced motion</p>
+  <ul class="spec-list"><li>The unsaved counter scales (0.45s) on each change</li>
+<li>The newest monitor row <code>.flash</code> (0.9s cyan fade)</li>
+<li>The learn note's static cyan dot</li></ul>
+
+  <h2>Hidden</h2>
+  <p class="trig">Trigger: No content, or nothing to report</p>
+  <ul class="spec-list"><li>The import zone, pickers, modal, save hints, notes, detail blocks and the monitor's unsaved counter hide when there is nothing to show</li>
+<li>Hover-revealed marks (<code>.row-del</code>, <code>.pplus</code>, <code>.src-del</code>) are invisible until the parent is hovered and forced visible at 640</li>
+<li>The top-bar warn pill and problem line disappear when nothing is left out</li></ul>
+
+  <h2>Focus</h2>
+  <p class="trig">Trigger: Keyboard focus</p>
+  <ul class="spec-list"><li>One global ring (2px <code>--cyan</code>, 2px offset)</li>
+<li>The switch shows it on the track</li>
+<li>Activatable elements respond to Enter/Space</li>
+<li>The settings nav roves with the arrow keys</li>
+<li>The editor's tabs follow the standard tabs pattern</li>
+<li>The screen segments announce a pressed/unpressed state</li></ul>
+
+  <h2>Reflow</h2>
+  <p class="trig">Trigger: The viewport narrows (1180 / 900 / 640)</p>
+  <ul class="spec-list"><li>1180 wide: columns stack into rows, the rail narrows to 80</li>
+<li>900 wide: stat rows go two across</li>
+<li>640 wide: a single column, the top bar wraps, the rail becomes a fixed bottom nav, tap targets are 44, and the body reserves 66 of bottom padding</li>
+<li>A wide-preview mode widens the detail column when a preview is present</li></ul>
+
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--hover-line</code> <code>--inset</code> <code>--cyan-bg</code> <code>--seg-active</code> <code>--cyan-line</code> <code>--selected-bg</code> <code>--cyan</code> <code>--tab-disabled</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: <a href="../../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> and the six page-local <code>&lt;style&gt;</code> blocks; values quoted verbatim from those stylesheets.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

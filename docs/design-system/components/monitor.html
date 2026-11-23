@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Monitor page</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html" class="active" aria-current="page">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Monitor page <span class="cls">.event-row, .kind-chips</span></h1>
+  <p class="page-sub">The live event stream: a filter bar with kind pills and summary numbers, plus one row per input event.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">active</a>, <a href="states.html">problem</a>, <a href="states.html">pulsing</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Components</h2>
+
+<div class="example stack">
+      <div style="display:flex; gap:6px; flex-wrap:wrap; width:100%">
+        <button class="chip kind-chip active" style="cursor:pointer" aria-pressed="true">Pressed</button>
+        <button class="chip kind-chip" style="cursor:pointer; opacity:0.45" aria-pressed="false">Released</button>
+        <button class="chip kind-chip" style="cursor:pointer; opacity:0.45" aria-pressed="false">Hat</button>
+      </div>
+      <div class="event-row" style="display:flex; align-items:center; gap:10px; padding:8px 16px; border-bottom:1px solid var(--line-soft); font-size:12px; width:100%">
+        <span class="e-time" style="width:70px; flex:none; font-family:var(--font-mono); font-size:11.5px; color:var(--text-3)">10:42:07</span>
+        <span class="e-dev" style="width:165px; flex:none; font-weight:600; font-size:12.5px; display:flex; align-items:baseline; gap:8px; min-width:0">pap3<span class="e-vid" style="color:var(--text-3); font-size:10.5px; font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-mono)">4098:BF0F</span></span>
+        <span class="e-ctl" style="width:120px; flex:none; font-family:var(--font-mono); font-size:11.5px; color:var(--text-2)">button:lnav</span>
+        <span class="e-kind" style="width:90px; flex:none; justify-content:center"><span class="chip" style="color:var(--violet); background:var(--violet-bg); border-color:var(--violet-line)">Hat</span></span>
+        <span class="e-val" style="width:56px; flex:none; font-family:var(--font-mono); font-size:11.5px; color:var(--text-2); text-align:right">&ndash;</span>
+        <span class="e-route warn" style="margin-left:auto; font-size:11.5px; color:var(--amber); white-space:nowrap">left out &middot; unknown [pwr]</span>
+      </div>
+      <span class="cap">The kind filter pills (active and inactive) and one live event row with its route status.</span>
+    </div>
+
+  <h3>Filter row <span class="cls">.filter-row</span></h3>
+  <ul class="spec-list">
+    <li>The monitor variant: 10 apart, 14/0/12 margins, wrapping</li>
+    <li>The label (<code>.filter-lbl</code>) is 12px 600 <code>--text-3</code></li>
+    <li>The input is 220 wide (full width at 640)</li>
+    <li>The <code>.kind-chips</code> group wraps 6 apart</li>
+  </ul>
+  <h3>Kind chip <span class="cls">.kind-chip</span></h3>
+  <ul class="spec-list">
+    <li>A pill (<code>.chip</code>) used as a filter toggle: inactive at 0.45 opacity and 44 tall at 640</li>
+    <li><code>.chip.cyan</code> / <code>.chip.vio</code> colour the event-kind pills by role family</li>
+  </ul>
+  <h3>Event row <span class="cls">.event-row</span></h3>
+  <ul class="spec-list">
+    <li>10 apart, 8/16 padding, a divider below, 12px</li>
+    <li>Hover <code>--inset</code></li>
+    <li>The newest row <code>.flash</code> fades in on <code>--cyan-bg</code> over 0.9s</li>
+  </ul>
+  <h3>Columns</h3>
+  <ul class="spec-list">
+    <li><code>.e-time</code> 70 wide mono 11.5 <code>--text-3</code></li>
+    <li><code>.e-dev</code> 165 wide 600 with a <code>.e-vid</code> mono 10.5 suffix</li>
+    <li><code>.e-ctl</code> 120 wide mono</li>
+    <li><code>.e-kind</code> 90 wide, centred</li>
+    <li><code>.e-val</code> 56 wide mono, right-aligned</li>
+    <li><code>.e-route</code> pinned right, 11.5 <code>--text-2</code> (<code>.set</code> <code>--cyan</code>, <code>.warn</code> <code>--amber</code>, <code>.dim</code> italic <code>--text-3</code>)</li>
+  </ul>
+  <h3>Empty / help</h3>
+  <ul class="spec-list">
+    <li><code>.stream-empty</code> (26/16, centred <code>--text-3</code>) replaces the rows on no match</li>
+    <li><code>.stream-help</code> offsets the help line</li>
+    <li>The <code>.stat-row</code> here runs four across</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .filter-row      Filter row
+  .kind-chip       Kind chip
+  .event-row       Event row</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--text-3</code> <code>--inset</code> <code>--cyan-bg</code> <code>--text-2</code> <code>--cyan</code> <code>--amber</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: the page-local <code>&lt;style&gt;</code> block in <a href="../../ui-prototype/monitor.html">docs/ui-prototype/monitor.html</a>, on top of the shared tokens and primitives in <a href="../../ui-prototype/design-system.css">design-system.css</a>; values quoted verbatim from those stylesheets.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

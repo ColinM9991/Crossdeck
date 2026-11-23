@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Pills</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html" class="active" aria-current="page">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Pills <span class="cls">.chip, .status-pill</span></h1>
+  <p class="page-sub">Short labels in a fully rounded outline: the common pill shape. The base pill is the quiet tag; the status pill is the bolder version used in top bars and card heads.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">active</a>, <a href="states.html">problem</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Variants</h2>
+
+<div class="example">
+      <span class="chip">plain</span>
+      <span class="chip ok"><span class="dot"></span>connected</span>
+      <span class="chip warn"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>1 left out</span>
+      <span class="chip active"><span class="dot"></span>active</span>
+      <span class="chip off"><span class="ring"></span>not connected</span>
+      <span style="color:var(--violet); background:var(--violet-bg); border:1px solid var(--violet-line); border-radius:999px; padding:2px 9px; font-size:10.5px; font-weight:500; font-family:var(--font-mono)">written by bnd-fn</span>
+      <span class="status-pill ok"><span class="dot"></span>X-Plane ready</span>
+      <span class="status-pill warn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>1 left out</span>
+      <span class="cap">The base pill variants (plain, ok, warn, active, off) and the two status pills.</span>
+    </div>
+
+  <h3>Base pill <span class="cls">.chip</span></h3>
+  <ul class="spec-list">
+    <li>11px 500, radius 999, 2/9 padding, contents 6 apart, in the neutral <code>--chip-bg</code> / <code>--chip-line</code> / <code>--chip-text</code> colours</li>
+    <li>Lead-in shapes: a 6px filled <code>.dot</code> or a 7px hollow <code>.ring</code></li>
+  </ul>
+  <h3>Colour variants</h3>
+  <ul class="spec-list">
+    <li><code>.ok</code> (green family + dot)</li>
+    <li><code>.warn</code> (amber family + a triangle mark)</li>
+    <li><code>.active</code> (cyan family + dot)</li>
+    <li><code>.off</code> (neutral + ring)</li>
+  </ul>
+  <h3>Page variants</h3>
+  <ul class="spec-list">
+    <li><code>.write</code> (violet, mono 10.5) and <code>.read</code> (cyan, mono 10.5) on the <a href="variables.html">variables</a> page</li>
+    <li><code>.cyan</code> / <code>.vio</code> event-kind pills on the <a href="monitor.html">monitor</a> page</li>
+  </ul>
+  <h3>Status pill <span class="cls">.status-pill</span></h3>
+  <ul class="spec-list">
+    <li>Contents 7 apart, radius 999, 5/12 padding, 12px 600, single line</li>
+    <li>The <code>.dot</code> is 7px in <code>currentColor</code>; at 640 wide it is 4/9 padding at 11px</li>
+    <li>The <a href="profiles.html">profiles</a> page adds <code>.status-pill.off</code> (<code>--text-3</code> on <code>--inset</code>, <code>--line</code> border) for "no profile running"</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .chip            Base pill
+  .status-pill     Status pill</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--chip-bg</code> <code>--chip-line</code> <code>--chip-text</code> <code>--text-3</code> <code>--inset</code> <code>--line</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: <a href="../../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the shared stylesheet); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Tabs</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html" class="active" aria-current="page">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Tabs <span class="cls">.tab-row, .tab</span></h1>
+  <p class="page-sub">Segmented page/section tabs. They render as pills on a bare canvas rather than bare text, because text tabs blend into the background in every theme.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">active</a>, <a href="states.html">disabled</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Anatomy</h2>
+
+<div class="example">
+      <div class="tab-row" style="width:100%; border-bottom:none; margin-bottom:0">
+        <div class="tablist" role="tablist" style="display:flex; gap:4px">
+          <button class="tab active" role="tab" aria-selected="true">Inputs<span class="tab-count">3</span></button>
+          <button class="tab" role="tab" aria-selected="false">Outputs<span class="tab-count">2</span></button>
+          <button class="tab disabled" role="tab" aria-selected="false">Logic<span class="phase-chip" style="font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--text-3); background:var(--chip-bg); border:1px solid var(--chip-line); border-radius:999px; padding:1px 7px; margin-left:7px">phase 2</span></button>
+        </div>
+        <button class="btn outline add" style="margin-left:auto" type="button">+ Add input</button>
+      </div>
+      <span class="cap">Active, inactive and disabled tabs, a count badge, and the phase-2 chip on a disabled tab.</span>
+    </div>
+
+  <h3>Row <span class="cls">.tab-row</span></h3>
+  <ul class="spec-list">
+    <li>The tab strip: tabs 4 apart, a 1px <code>--line-soft</code> bottom edge, 14 below</li>
+  </ul>
+  <h3>Tab <span class="cls">.tab</span></h3>
+  <ul class="spec-list">
+    <li>6/12 padding, 12.5px 600 in <code>--text-2</code>, <code>--inset</code> background, 1px <code>--line-soft</code>, radius 6</li>
+    <li>A <code>.tab-count</code> badge is 11px 500 <code>--text-3</code>, 5 to the right of the label</li>
+  </ul>
+  <h3>Active <span class="cls">.tab.active</span></h3>
+  <ul class="spec-list">
+    <li><code>--seg-active</code> background, <code>--line</code> border, <code>--text</code></li>
+    <li>The count moves to <code>--text-2</code></li>
+  </ul>
+  <h3>Disabled <span class="cls">.tab.disabled</span></h3>
+  <ul class="spec-list">
+    <li>Not-allowed pointer, colour <code>--tab-disabled</code></li>
+  </ul>
+
+  <h2>Behaviour</h2>
+
+  <h3>Keyboard</h3>
+  <ul class="spec-list">
+    <li>The <a href="editor.html">editor</a> groups them in a list with the standard tabs keyboard pattern (arrow-key movement, roving focus)</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .tab-row         Row
+  .tab             Tab
+  .tab.active      Active
+  .tab.disabled    Disabled</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--line-soft</code> <code>--text-2</code> <code>--inset</code> <code>--text-3</code> <code>--seg-active</code> <code>--line</code> <code>--text</code> <code>--tab-disabled</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: <a href="../../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the shared stylesheet); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

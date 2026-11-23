@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Rail</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html">Buttons</a>
+  <a href="rail.html" class="active" aria-current="page">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Rail <span class="cls">.rail, .rail-item</span></h1>
+  <p class="page-sub">Cross-page navigation: the 92px icon column on the left, which becomes a fixed bottom nav at 640 wide.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">active</a>, <a href="states.html">hidden</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Anatomy</h2>
+
+<div class="example">
+      <div style="width:100%; display:flex; flex-direction:column; gap:6px; align-items:center; padding:10px 0">
+        <button class="rail-item" style="width:72px" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></button>
+        <button class="rail-item" style="width:72px" type="button"><span class="glyph-braces">{ }</span></button>
+        <button class="rail-item active" style="width:72px" aria-current="page" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg><span class="rail-badge">3</span></button>
+      </div>
+      <span class="cap">The icon rail: one item per page, the active item in the cyan treatment with a count badge.</span>
+    </div>
+
+  <h3>Rail <span class="cls">.rail</span></h3>
+  <ul class="spec-list">
+    <li>The 92px column</li>
+    <li>A 1px <code>--line-soft</code> edge, items centred and 6 apart, 16 top / 14 bottom padding</li>
+    <li>Announced as the primary navigation</li>
+  </ul>
+  <h3>Item <span class="cls">.rail-item</span></h3>
+  <ul class="spec-list">
+    <li>72 wide, 9 vertical padding, radius 10, 11px in <code>--text-3</code>, with 19px stroke-1.7 icons</li>
+    <li>The Variables item uses a mono 14px 600 "{ }" glyph (<code>.glyph-braces</code>)</li>
+    <li>Hover: <code>--text-2</code> on <code>--inset</code></li>
+    <li>The active item is <code>--cyan</code> on <code>--cyan-bg</code> with a 3px rounded <code>--cyan</code> indicator 14 out from the left edge (7 inset top/bottom)</li>
+    <li>At 640 wide the indicator moves to the item's bottom edge, 24 wide</li>
+  </ul>
+  <h3>Badge <span class="cls">.rail-badge</span></h3>
+  <ul class="spec-list">
+    <li>A count tag at the item's top-right (4 / 10 in)</li>
+    <li><code>--chip-bg</code> / <code>--chip-line</code> / <code>--chip-text</code>, 9px 700, radius 999, 0/5 padding, 13 line height</li>
+  </ul>
+  <h3>Push <span class="cls">.push</span></h3>
+  <ul class="spec-list">
+    <li>Pins the last item (Settings) to the rail's foot</li>
+    <li>Hidden in the bottom nav</li>
+  </ul>
+  <h3>640 bottom nav</h3>
+  <ul class="spec-list">
+    <li>Fixed to the left, right and bottom edges</li>
+    <li><code>--panel</code> background, <code>--line-soft</code> top edge, safe-area padding</li>
+    <li>Items 52 wide / 48 tall minimum, 2 apart</li>
+    <li>The body reserves 66 of bottom padding</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .rail            Rail
+  .rail-item       Item
+  .rail-badge      Badge
+  .push            Push</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--line-soft</code> <code>--text-3</code> <code>--text-2</code> <code>--inset</code> <code>--cyan</code> <code>--cyan-bg</code> <code>--chip-bg</code> <code>--chip-line</code> <code>--chip-text</code> <code>--panel</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: <a href="../../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the shared stylesheet); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crossdeck Design System - Buttons and links</title>
+<link rel="stylesheet" href="../../ui-prototype/design-system.css">
+<script src="../../ui-prototype/theme.js"></script>
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="docs-top">
+  <div class="brand">Crossdeck <span class="v">design system, calm v5</span></div>
+  <nav class="docs-nav" aria-label="Design system pages">
+    <a class="tab" href="../index.html">Overview</a>
+    <a class="tab" href="../tokens.html">Tokens</a>
+    <a class="tab" href="../themes.html">Themes</a>
+    <a class="tab" href="../colourblind.html">Colourblind</a>
+    <a class="tab active" aria-current="page" href="../components.html">Components</a>
+  </nav>
+  <div class="docs-controls">
+    <span class="lbl">Theme</span>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="sepia">Sepia</option>
+      <option value="dusk">Dusk</option>
+    </select>
+    <span class="lbl">Colourblind</span>
+    <select id="cbSelect" aria-label="Colourblind mode">
+      <option value="">Off</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="achromatopsia">Achromatopsia</option>
+    </select>
+  </div>
+</header>
+<nav class="comp-nav" aria-label="Components">
+  <a class="cn-back" href="../components.html">All components</a>
+  <div class="cn-g">Foundation</div>
+  <a href="topbar.html">Top bar</a>
+  <a href="buttons.html" class="active" aria-current="page">Buttons</a>
+  <a href="rail.html">Rail</a>
+  <a href="columns.html">Columns</a>
+  <a href="tabs.html">Tabs</a>
+  <a href="pills.html">Pills</a>
+  <a href="cards.html">Cards</a>
+  <a href="kv.html">Key-value</a>
+  <a href="stats.html">Stat cards</a>
+  <a href="notes.html">Notes</a>
+  <a href="fields.html">Fields</a>
+  <a href="empty.html">Empty states</a>
+  <div class="cn-g">Pages</div>
+  <a href="settings.html">Settings</a>
+  <a href="variables.html">Variables</a>
+  <a href="profiles.html">Profiles</a>
+  <a href="devices.html">Devices</a>
+  <a href="editor.html">Editor</a>
+  <a href="monitor.html">Monitor</a>
+  <div class="cn-g">Reference</div>
+  <a href="states.html">States and behaviour</a>
+</nav>
+
+<main class="docs-main comp-main">
+  <h1>Buttons and links <span class="cls">.btn, .link</span></h1>
+  <p class="page-sub">Every action in the app. Actions are buttons, never dead anchors.</p>
+<p class="notation">Notation: a<b>/</b>b figures are vertical/horizontal (padding, or the gap when followed by <i>apart</i>); <i>radius N</i> is a border radius in px; <i>13px 600</i> is font size and weight; <i>11px in --text-3</i> names the colour token; a bare <code>--token</code> is defined on the <a href="../tokens.html">Tokens</a> page.</p>
+  <p class="states-line">States this component has: <a href="states.html">hover</a>, <a href="states.html">active</a>, <a href="states.html">disabled</a>, <a href="states.html">problem</a>; the full catalogue is on the <a href="states.html">states page</a>.</p>
+
+  <h2>Variants</h2>
+
+<div class="example">
+      <button class="btn primary" type="button">Save and apply</button>
+      <button class="btn outline" type="button">Learn</button>
+      <button class="btn secondary" type="button">Pause</button>
+      <button class="btn outline add" type="button">+ New profile</button>
+      <button class="btn outline add" type="button" disabled>+ Add device</button>
+      <button class="link" type="button">Stop</button>
+      <button class="link ghost" type="button">Discard</button>
+      <span class="cap">Every action style: primary, outline, secondary, the smaller add button (including disabled), and the link and ghost-link actions.</span>
+    </div>
+
+  <h3>Base</h3>
+  <ul class="spec-list">
+    <li>Contents 8 apart, radius 8, 8/15 padding, 13px 600, single line</li>
+    <li>At 640 wide the minimum height is 44</li>
+  </ul>
+  <h3>Primary <span class="cls">.primary</span></h3>
+  <ul class="spec-list">
+    <li>Filled <code>--cyan</code>, text <code>--on-accent</code></li>
+    <li>Hover brightens to 1.06</li>
+  </ul>
+  <h3>Outline <span class="cls">.outline</span></h3>
+  <ul class="spec-list">
+    <li><code>--cyan</code> text on a <code>--cyan-line</code> border</li>
+    <li>Hover and the active state fill <code>--cyan-bg</code></li>
+  </ul>
+  <h3>Secondary <span class="cls">.secondary</span></h3>
+  <ul class="spec-list">
+    <li><code>--card</code> background, <code>--line</code> border</li>
+    <li>Hover border <code>--hover-line</code>; the active state takes the cyan treatment</li>
+  </ul>
+  <h3>Add <span class="cls">.add</span></h3>
+  <ul class="spec-list">
+    <li>The smaller "+ New" companion: 7/13 padding, 12.5px</li>
+    <li>Disabled: 0.4 opacity with no background</li>
+  </ul>
+  <h3>Link <span class="cls">.link</span></h3>
+  <ul class="spec-list">
+    <li><code>--cyan</code>, 12.5px 600, 24 minimum height, underline on hover</li>
+    <li>The <code>.ghost</code> variant is the muted form: <code>--text-3</code>, hover <code>--text-2</code></li>
+  </ul>
+  <h3>Destructive</h3>
+  <ul class="spec-list">
+    <li>There is no red in the system</li>
+    <li>Destructive actions are the neutral controls that turn to the warn role on hover</li>
+    <li>The per-row delete marks (<code>.row-del</code>, <code>.src-del</code>, <code>.card-del</code>) hover to <code>--amber</code> on <code>--amber-bg</code></li>
+    <li>The full-width <code>.remove-action</code> CTA (see <a href="variables.html">Variables</a>) hovers to an amber border, text and icon</li>
+  </ul>
+
+  <h2>Structure</h2>
+<pre>  .primary         Primary
+  .outline         Outline
+  .secondary       Secondary
+  .add             Add
+  .link            Link</pre>
+<h2>Tokens referenced</h2>
+<p class="tokline"><code>--cyan</code> <code>--on-accent</code> <code>--cyan-line</code> <code>--cyan-bg</code> <code>--card</code> <code>--line</code> <code>--hover-line</code> <code>--text-3</code> <code>--text-2</code> <code>--amber</code> <code>--amber-bg</code></p>
+
+</main>
+
+<footer class="docs-foot">Source: <a href="../../ui-prototype/design-system.css">docs/ui-prototype/design-system.css</a> (the shared stylesheet); values quoted verbatim from that stylesheet.</footer>
+
+<script>
+  const t = document.getElementById('themeSelect');
+  t.value = CrossdeckTheme.get() || 'dark';
+  t.addEventListener('change', () => CrossdeckTheme.set(t.value));
+  const c = document.getElementById('cbSelect');
+  c.value = CrossdeckCB.get() || '';
+  c.addEventListener('change', () => CrossdeckCB.set(c.value));
+</script>
+</body>
+</html>
